@@ -1,0 +1,44 @@
+{
+  "name": "dgx-patron-creator-service",
+  "version": "0.0.1",
+  "description": "NYPL Patron Creator Service",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "swagger-start": "swagger project start",
+    "swagger-edit": "swagger project edit",
+    "test": "swagger project test"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "keywords": [
+    "expess",
+    "postgresql",
+    "swagger"
+  ],
+  "author": "NYPL Digital Experience Team",
+  "license": "",
+  "bugs": {
+    "url": "https://bitbucket.org/NYPL/patron-creator-service"
+  },
+  "dependencies": {
+    "babel-core": "6.17.0",
+    "babel-loader": "6.2.5",
+    "babel-preset-es2015": "6.16.0",
+    "body-parser": "1.15.2",
+    "express": "4.12.3",
+    "pg-promise": "5.3.5",
+    "aws-serverless-express": "2.1.3",
+    "swagger-express-mw": "0.6.0",
+    "swagger-tools": "0.10.1",
+    "webpack": "1.13.2",
+    "webpack-dev-server": "1.16.2",
+    "webpack-merge": "0.15.0"
+  },
+  "devDependencies": {
+    "should": "7.1.0",
+    "supertest": "1.0.0"
+  }
+}
