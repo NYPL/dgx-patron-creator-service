@@ -11,12 +11,8 @@ function createPatron(req, res, next) {
   var user_name=req.body.user;
   var password=req.body.password;
 
-  console.log(req.body);
-  res.status(200)
-    .json({
-      status: 'success',
-      message: 'A new patron is created!'
-    });
+  res.send(req.body);
+  console.log('A new patron is created!');
 }
 
 module.exports = {
