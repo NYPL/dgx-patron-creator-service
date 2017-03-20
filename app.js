@@ -12,7 +12,6 @@ var hello = require('./api/controllers/hello.js');
 
 // The parser for interpret JSON in req.body
 app.use(bodyParser.json());
-module.exports = app;
 
 app.route('/')
   .get(hello.renderHello);
@@ -38,3 +37,5 @@ SwaggerExpress.create(config, function(err, swaggerExpress) {
   var port = process.env.PORT || 3001;
   app.listen(port);
 });
+
+module.exports = app;
