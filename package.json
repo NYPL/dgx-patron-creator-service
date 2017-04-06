@@ -4,8 +4,7 @@
   "description": "NYPL Patron Creator Service",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
-    "swagger-start": "swagger project start",
+    "start": "swagger project start",
     "swagger-edit": "swagger project edit",
     "test": "swagger project test"
   },
@@ -25,6 +24,7 @@
   },
   "dependencies": {
     "aws-serverless-express": "^2.1.3",
+    "axios": "0.15.3",
     "babel-core": "6.17.0",
     "babel-loader": "6.2.5",
     "babel-preset-es2015": "6.16.0",

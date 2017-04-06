@@ -8,15 +8,11 @@ var app = express();
 var SwaggerUi = require('swagger-tools/middleware/swagger-ui');
 // Import controllers
 var createPatron = require('./api/controllers/createPatron.js');
-var hello = require('./api/controllers/hello.js');
 
 // The parser for interpret JSON in req.body
 app.use(bodyParser.json());
 
-app.route('/')
-  .get(hello.renderHello);
-
-app.route('/v0.1/patrons')
+app.route('/api/v0.1/patrons')
   .post(createPatron.createPatron);
 
 // required config
