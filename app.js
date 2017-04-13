@@ -1,13 +1,11 @@
-'use strict';
-
-var SwaggerExpress = require('swagger-express-mw');
-var express = require('express');
-var bodyParser = require('body-parser');
-var app = express();
+const SwaggerExpress = require('swagger-express-mw');
+const express = require('express');
+const bodyParser = require('body-parser');
+const app = express();
 // The module for generating the swagger doc
-var SwaggerUi = require('swagger-tools/middleware/swagger-ui');
+const SwaggerUi = require('swagger-tools/middleware/swagger-ui');
 // Import controllers
-var createPatron = require('./api/controllers/createPatron.js');
+const createPatron = require('./api/controllers/createPatron.js');
 
 // The parser for interpret JSON in req.body
 app.use(bodyParser.json());
@@ -16,11 +14,11 @@ app.route('/api/v0.1/patrons')
   .post(createPatron.createPatron);
 
 // required config
-var config = {
-  appRoot: __dirname
+const config = {
+  appRoot: __dirname,
 };
 
-SwaggerExpress.create(config, function(err, swaggerExpress) {
+SwaggerExpress.create(config, (err, swaggerExpress) => {
   if (err) { throw err; }
 
   // To generate a swagger doc page
@@ -29,9 +27,9 @@ SwaggerExpress.create(config, function(err, swaggerExpress) {
 
   // install middleware
   swaggerExpress.register(app);
-
-  var port = process.env.PORT || 3001;
-  app.listen(port);
 });
+
+const port = process.env.PORT || 3001;
+app.listen(port);
 
 module.exports = app;
