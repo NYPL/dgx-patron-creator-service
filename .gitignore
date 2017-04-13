@@ -33,6 +33,9 @@ config/runtime.yaml
 # AWS credentials
 .env
 
+# NYPL Simplified's Card Creator API credentials
+config/ccConfig.js
+
 # Built files
 dist
 
