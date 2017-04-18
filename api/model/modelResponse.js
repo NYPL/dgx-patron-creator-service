@@ -1,5 +1,13 @@
 const url = require("url");
 
+/**
+ * modelPatronCreatorResponse(data, status)
+ * Model the response from creating a new patron.
+ *
+ * @param {data} object
+ * @param {status} number
+ * @return object
+ */
 function modelPatronCreatorResponse(data, status) {
   const detail = (data && data.debug_info) ? JSON.parse(data.debug_info) : {};
 
@@ -19,6 +27,14 @@ function modelPatronCreatorResponse(data, status) {
   };
 }
 
+/**
+ * parseJSON(str)
+ * The "debug_message" of an error response could be a JSON type string.
+ * This function is to parse the string back to its original JSON format.
+ *
+ * @param {str} string
+ * @return object
+ */
 function parseJSON(str) {
   try {
     return JSON.parse(str);
@@ -27,18 +43,36 @@ function parseJSON(str) {
   }
 }
 
-function modelErrorResponse(obj) {
-  var typeSlug = '';
+/**
+ * parseTypeURL(str)
+ * The "type" of an error response could be a URL with the error type slug.
+ * This function is to extract the slug out of the URL.
+ *
+ * @param {str} string
+ * @return string
+ */
+function parseTypeURL(str) {
+  try {
+    const typeURL = url.parse(str);
 
-  if (obj && obj.type) {
-    const typeURL = url.parse(obj.type);
-    typeSlug = typeURL.pathname.split('/').pop();
+    return typeURL.pathname.split('/').pop();
+  } catch (e) {
+    return str;
   }
+}
 
+/**
+ * modelErrorResponse(obj)
+ * Model the error response from creating a new patron.
+ *
+ * @param {obj} object
+ * @return object
+ */
+function modelErrorResponse(obj) {
   return {
     data: {
       status_code_from_card_creator: obj.status || null,
-      type: typeSlug,
+      type: (obj && obj.type) ? parseTypeURL(obj.type) : '',
       patron: null,
       simplePatron: null,
       message: obj.message,

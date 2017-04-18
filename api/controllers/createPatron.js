@@ -4,7 +4,7 @@ const ccAPIConfig = require('./../../config/ccAPIConfig.js');
 const modelResponse = require('./../model/modelResponse.js');
 
 /**
- * collectResponseData(status, type, message, title, debugMessage)
+ * collectErrorResponseData(status, type, message, title, debugMessage)
  * Model the response from a failed request.
  *
  * @param {status} number
@@ -14,7 +14,7 @@ const modelResponse = require('./../model/modelResponse.js');
  * @param {debugMessage} string
  * @return object
  */
-function collectResponseData(status, type, message, title, debugMessage) {
+function collectErrorResponseData(status, type, message, title, debugMessage) {
   return {
     status: status || null,
     type: type || '',
@@ -79,7 +79,7 @@ function createPatron(req, res) {
     })
     .catch(response => {
       if (response.response && response.response.data) {
-        const responseObject = collectResponseData(
+        const responseObject = collectErrorResponseData(
           response.response.data.status,
           response.response.data.type,
           response.response.data.detail,
@@ -90,7 +90,7 @@ function createPatron(req, res) {
         renderResponse(req, res, modelResponse.errorResponse(responseObject));
       } else {
         renderResponse(req, res, modelResponse.errorResponse(
-          collectResponseData(null, '', '', '', '')
+          collectErrorResponseData(null, '', '', '', '')
         ));
       }
     });
