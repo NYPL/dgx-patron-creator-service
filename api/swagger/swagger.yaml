@@ -82,19 +82,34 @@ definitions:
   PatronsCreatorResponseModel:
     required:
       - status_code_from_card_creator
-      - valid
-      - type
-      - username
-      - temporary
+      - simplePatron
       - message
       - detail
+      - count
     properties:
       status_code_from_card_creator:
         type: number
         example: 200
-      valid:
-        type: boolean
-        example: true
+      patron:
+        type: object
+        example: {}
+      simplePatron:
+        $ref: '#/definitions/SimplePatronModel'
+      message:
+        type: string
+        example: Your library card is temporary because your address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.
+      detail:
+        type: object
+        example: {}
+      count:
+        type: number
+        example: 1
+  SimplePatronModel:
+    required:
+      - type
+      - username
+      - temporary
+    properties:
       type:
         type: string
         example: card-granted
@@ -104,12 +119,6 @@ definitions:
       temporary:
         type: boolean
         example: true
-      message:
-        type: string
-        example: Your library card is temporary because your address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.
-      detail:
-        type: object
-        example: {}
   AddressModel:
       type: object
       required:
@@ -185,15 +194,21 @@ definitions:
         example: Internal server error
   ErrorModel:
     required:
-      - valid
+      - patron
+      - simplePatron
       - detail
+      - count
     properties:
-      valid:
-        type: boolean
-        example: false
+      patron:
+        type: object
+      simplePatron:
+        type: object
       detail:
         type: object
         example: {"title": "Not found.", "debug": "Invalid endpoint: [POST] /v2/patrons"}
+      count:
+        type: number
+        example: 0
 tags:
   - name: patrons
     description: Patron API
