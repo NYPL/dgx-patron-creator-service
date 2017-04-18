@@ -180,3 +180,4 @@ It will deploy your server as a Lambda instance to your AWS account.
 #### Update
   - update the swagger documentation.
   - add [helmet](https://helmetjs.github.io/docs/) for security.
+  - update the data structures of the responses.
