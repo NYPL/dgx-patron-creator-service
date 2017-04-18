@@ -4,6 +4,27 @@ const ccAPIConfig = require('./../../config/ccAPIConfig.js');
 const modelResponse = require('./../model/modelResponse.js');
 
 /**
+ * collectResponseData(status, type, message, title, debugMessage)
+ * Model the response from a failed request.
+ *
+ * @param {status} number
+ * @param {type} string
+ * @param {message} string
+ * @param {title} string
+ * @param {debugMessage} string
+ * @return object
+ */
+function collectResponseData(status, type, message, title, debugMessage) {
+  return {
+    status: status || null,
+    type: type || '',
+    message: message || '',
+    title: title || '',
+    debug_message: debugMessage || '',
+  };
+}
+
+/**
  * renderResponse(req, res, message)
  * Render the response from Card Creator API.
  *
@@ -57,17 +78,21 @@ function createPatron(req, res) {
       renderResponse(req, res, modelResponse.patronCreator(response.data, response.status));
     })
     .catch(response => {
-      console.log(response.response.data);
+      if (response.response && response.response.data) {
+        const responseObject = collectResponseData(
+          response.response.data.status,
+          response.response.data.type,
+          response.response.data.detail,
+          response.response.data.title,
+          response.response.data.debug_message
+        );
 
-      const responseMessage = {
-        status: response.response.data.status,
-        type: response.response.data.type,
-        message: response.response.data.detail,
-        title: response.response.data.title,
-        debug_message: response.response.data.debug_message,
-      };
-
-      renderResponse(req, res, modelResponse.errorResponse(responseMessage));
+        renderResponse(req, res, modelResponse.errorResponse(responseObject));
+      } else {
+        renderResponse(req, res, modelResponse.errorResponse(
+          collectResponseData(null, '', '', '', '')
+        ));
+      }
     });
 }
 

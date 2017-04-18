@@ -27,24 +27,24 @@ function parseJSON(str) {
   }
 }
 
-function modelErrorResponse(data) {
+function modelErrorResponse(obj) {
   var typeSlug = '';
 
-  if (data && data.type) {
-    const typeURL = url.parse(data.type);
-    typeSlug = typeURL.pathname.split("/").pop();
+  if (obj && obj.type) {
+    const typeURL = url.parse(obj.type);
+    typeSlug = typeURL.pathname.split('/').pop();
   }
 
   return {
     data: {
-      status_code_from_card_creator: data.status || null,
+      status_code_from_card_creator: obj.status || null,
       type: typeSlug,
       patron: null,
       simplePatron: null,
-      message: data.message,
+      message: obj.message,
       detail: {
-        title: data.title || '',
-        debug: (data.debug_message) ? parseJSON(data.debug_message) : {},
+        title: obj.title || '',
+        debug: (obj.debug_message) ? parseJSON(obj.debug_message) : {},
       },
       count: 0,
     },
