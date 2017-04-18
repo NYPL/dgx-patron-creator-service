@@ -77,6 +77,8 @@ app.use(errorHandler);
 app.route('/api/v0.1/patrons')
   .post(createPatron.createPatron);
 
+// This route will make a request for swaggerDoc.json
+// If you don't have it yet, check README.md for how to generate one based on swagger.yaml
 app.route('/swagger-json')
   .get(apiDoc.renderApiDoc);
 
