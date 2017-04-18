@@ -1,4 +1,5 @@
 const axios = require('axios');
+const _isEmpty = require('underscore').isEmpty;
 const ccConfig = require('./../../config/ccConfig.js');
 const ccAPIConfig = require('./../../config/ccAPIConfig.js');
 const modelResponse = require('./../model/modelResponse.js');
@@ -39,6 +40,18 @@ function renderResponse(req, res, message) {
     .json(message);
 }
 
+function checkRequiredMissing(array) {
+  const missingFields = [];
+
+  array.forEach(element => {
+    if (!element.value || _isEmpty(element.value)) {
+      missingFields.push({ name: element.name, value: `Missing ${element.name}.`, });
+    }
+  });
+
+  return missingFields;
+}
+
 /**
  * createPatron(req, res)
  * The callback for the route "/patrons".
@@ -48,17 +61,50 @@ function renderResponse(req, res, message) {
  * @param {res} HTTP response
  */
 function createPatron(req, res) {
-  // Check if the user name field has valid input
-  if (!req.body.username) {
+  const requiredFields = [
+    { name: "name", value: req.body.name, },
+    { name: "address", value: req.body.address, },
+    { name: "username", value: req.body.username, },
+    { name: "pin", value: req.body.pin, },
+  ];
+
+  // Check if we get all the required information from the client
+  if (checkRequiredMissing(requiredFields).length > 0) {
+    const testMessage = {
+      name: [],
+      address: [],
+      username: [],
+      pin: [],
+    };
+
+    checkRequiredMissing(requiredFields).forEach(element => {
+      if (element.value) {
+        testMessage[element.name].push(element.value);
+      }
+    });
+
+    const debugMessage = {
+      name: (testMessage.name.length > 0) ? testMessage.name : undefined,
+      address: (testMessage.address.length > 0) ? testMessage.address : undefined,
+      username: (testMessage.username.length > 0) ? testMessage.username : undefined,
+      pin: (testMessage.pin.length > 0) ? testMessage.pin : undefined,
+    };
+
     res
       .status(400)
       .header('Content-Type', 'application/json')
       .json({
-        status_code: 400,
-        type: 'error_type',
-        message: 'No username',
-        error: {},
-        debug_info: {},
+        data: {
+          status_code_from_card_creator: null,
+          type: 'invalid-request',
+          patron: null,
+          simplePatron: null,
+          message: 'Missing required patron information.',
+          detail: {
+            debug: debugMessage,
+          },
+          count: 0,
+        },
       });
 
     return;
@@ -98,4 +144,5 @@ function createPatron(req, res) {
 
 module.exports = {
   createPatron,
+  renderResponse,
 };

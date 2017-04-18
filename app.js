@@ -59,15 +59,15 @@ function errorHandler(err, req, res, next) {
   );
 
   res
-    .status(err.status)
-    .json(validations.renderResponseData(
-      null,
-      false,
-      'invalid-request',
-      null,
-      `Error request with request body ${err.body}`,
-      {}
-    ));
+    .status(err.status);
+    // .json(validations.renderResponseData(
+    //   null,
+    //   false,
+    //   'invalid-request',
+    //   null,
+    //   `Error request with request body ${err.body}`,
+    //   {}
+    // ));
 }
 
 // Error handling
