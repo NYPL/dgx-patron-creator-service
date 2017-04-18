@@ -6,6 +6,7 @@
   "scripts": {
     "start": "swagger project start",
     "swagger-edit": "swagger project edit",
+    "package-deploy": "yaml2json ./api/swagger/swagger.yaml > ./api/swagger/swaggerDoc.json && node-lambda deploy",
     "test": "swagger project test"
   },
   "repository": {
