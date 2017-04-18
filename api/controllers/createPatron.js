@@ -1,5 +1,7 @@
 const axios = require('axios');
 const ccConfig = require('./../../config/ccConfig.js');
+const ccAPIConfig = require('./../../config/ccAPIConfig.js');
+const modelResponse = require('./../model/modelResponse.js');
 
 /**
  * renderResponse(req, res, message)
@@ -43,7 +45,7 @@ function createPatron(req, res) {
 
   axios({
     method: 'post',
-    url: 'http://qa.patrons.librarysimplified.org//v1/create_patron',
+    url: ccAPIConfig.base + ccAPIConfig.createPatron,
     data: req.body,
     headers: {
       'Content-Type': 'application/json',
@@ -52,18 +54,20 @@ function createPatron(req, res) {
     auth: ccConfig,
   })
     .then(response => {
-      renderResponse(req, res, response.data);
+      renderResponse(req, res, modelResponse.patronCreator(response.data, response.status));
     })
     .catch(response => {
+      console.log(response.response.data);
+
       const responseMessage = {
-        status_code: response.status,
-        type: 'error_type',
-        message: response.message,
-        error: {},
-        debug_info: {},
+        status: response.response.data.status,
+        type: response.response.data.type,
+        message: response.response.data.detail,
+        title: response.response.data.title,
+        debug_message: response.response.data.debug_message,
       };
 
-      renderResponse(req, res, responseMessage);
+      renderResponse(req, res, modelResponse.errorResponse(responseMessage));
     });
 }
 
