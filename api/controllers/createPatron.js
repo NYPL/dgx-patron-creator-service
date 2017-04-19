@@ -50,10 +50,10 @@ function renderResponse(req, res, message) {
  */
 function createPatron(req, res) {
   const requiredFields = [
-    { name: 'name', value: req.body.name },
-    { name: 'address', value: req.body.address },
-    { name: 'username', value: req.body.username },
-    { name: 'pin', value: req.body.pin },
+    { name: 'name', value: req.body.simplePatron.name },
+    { name: 'address', value: req.body.simplePatron.address },
+    { name: 'username', value: req.body.simplePatron.username },
+    { name: 'pin', value: req.body.simplePatron.pin },
   ];
   // Check if we get all the required information from the client
   const missingFields = modelDebug.checkMissingRequiredField(requiredFields);
@@ -84,7 +84,7 @@ function createPatron(req, res) {
   axios({
     method: 'post',
     url: ccAPIConfig.base + ccAPIConfig.createPatron,
-    data: req.body,
+    data: req.body.simplePatron,
     headers: {
       'Content-Type': 'application/json',
     },
