@@ -58,7 +58,7 @@ function createPatron(req, res) {
   // Check if we get all the required information from the client
   const missingFields = modelDebug.checkMissingRequiredField(requiredFields);
 
-  if (missingFields.length > 0) {
+  if (missingFields.length) {
     const debugMessage = modelDebug.renderDebugMessage(missingFields);
 
     res
