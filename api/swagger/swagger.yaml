@@ -51,6 +51,12 @@ paths:
 definitions:
   PatronsCreatorData:
     required:
+      - simplePatron
+    properties:
+      simplePatron:
+        $ref: '#/definitions/SimplePatron'
+  SimplePatron:
+    required:
       - name
       - address
       - username
