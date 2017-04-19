@@ -18,7 +18,7 @@ app.use(helmet.noCache());
 
 /**
  * allowCrossDomain(req, res, next)
- * Set up the middileware to support CORS. It will be used in every response.
+ * Set up the middleware to support CORS. It will be used in every response.
  *
  * @param {req} HTTP request
  * @param {res} HTTP response

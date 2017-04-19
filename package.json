@@ -7,7 +7,8 @@
     "start": "swagger project start",
     "swagger-edit": "swagger project edit",
     "build-swagger-doc": "yaml2json ./api/swagger/swagger.yaml > ./api/swagger/swaggerDoc.json",
-    "package-deploy": "yaml2json ./api/swagger/swagger.yaml > ./api/swagger/swaggerDoc.json && node-lambda deploy",
+    "deploy-package": "node-lambda deploy",
+    "build-doc-deploy-package": "npm run build-swagger-doc && node-lambda deploy",
     "test": "swagger project test"
   },
   "repository": {
@@ -34,7 +35,7 @@
     "dotenv": "^4.0.0",
     "eslint": "0.24.0",
     "express": "4.12.3",
-    "helmet": "^3.5.0",
+    "helmet": "3.5.0",
     "pg-promise": "5.3.5",
     "serverless": "^1.9.0",
     "serverless-plugin-write-env-vars": "^1.0.1",
