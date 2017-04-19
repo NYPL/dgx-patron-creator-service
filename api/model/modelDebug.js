@@ -1,3 +1,4 @@
+const _filter = require('underscore').filter;
 const _isEmpty = require('underscore').isEmpty;
 
 /**
@@ -8,15 +9,9 @@ const _isEmpty = require('underscore').isEmpty;
  * @return array
  */
 function checkMissingRequiredField(array) {
-  const missingFields = [];
-
-  array.forEach(element => {
-    if (!element.value || _isEmpty(element.value)) {
-      missingFields.push({ name: element.name, value: `Missing ${element.name}.` });
-    }
+  return _filter(array, element => {
+    return (!element.value || _isEmpty(element.value));
   });
-
-  return missingFields;
 }
 
 /**
@@ -29,10 +24,10 @@ function checkMissingRequiredField(array) {
 function renderDebugMessage(missingFields) {
   const debugMessage = {};
 
-  if (missingFields && missingFields.length > 0) {
+  if (missingFields && missingFields.length) {
     missingFields.forEach(element => {
       debugMessage[element.name] = [];
-      debugMessage[element.name].push(element.value);
+      debugMessage[element.name].push(`Missing ${element.name}.`);
     });
   }
 
