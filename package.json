@@ -7,7 +7,8 @@
     "start": "swagger project start",
     "swagger-edit": "swagger project edit",
     "build-swagger-doc": "yaml2json ./api/swagger/swagger.yaml > ./api/swagger/swaggerDoc.json",
-    "package-deploy": "npm run build-swagger-doc && node-lambda deploy",
+    "deploy-package": "node-lambda deploy",
+    "build-doc-deploy-package": "npm run build-swagger-doc && node-lambda deploy",
     "test": "swagger project test"
   },
   "repository": {
