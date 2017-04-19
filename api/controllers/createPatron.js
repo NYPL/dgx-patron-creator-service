@@ -40,6 +40,13 @@ function renderResponse(req, res, message) {
     .json(message);
 }
 
+/**
+ * checkRequiredMissing(array)
+ * Checks if any required field is empty, and returns a list.
+ *
+ * @param {array} array
+ * @return array
+ */
 function checkRequiredMissing(array) {
   const missingFields = [];
 
@@ -70,7 +77,7 @@ function createPatron(req, res) {
 
   // Check if we get all the required information from the client
   if (checkRequiredMissing(requiredFields).length > 0) {
-    const testMessage = {
+    const debugMessageSet = {
       name: [],
       address: [],
       username: [],
@@ -79,15 +86,15 @@ function createPatron(req, res) {
 
     checkRequiredMissing(requiredFields).forEach(element => {
       if (element.value) {
-        testMessage[element.name].push(element.value);
+        debugMessageSet[element.name].push(element.value);
       }
     });
 
     const debugMessage = {
-      name: (testMessage.name.length > 0) ? testMessage.name : undefined,
-      address: (testMessage.address.length > 0) ? testMessage.address : undefined,
-      username: (testMessage.username.length > 0) ? testMessage.username : undefined,
-      pin: (testMessage.pin.length > 0) ? testMessage.pin : undefined,
+      name: (debugMessageSet.name.length > 0) ? debugMessageSete.name : undefined,
+      address: (debugMessageSet.address.length > 0) ? debugMessageSet.address : undefined,
+      username: (debugMessageSet.username.length > 0) ? debugMessageSet.username : undefined,
+      pin: (debugMessageSet.pin.length > 0) ? debugMessageSet.pin : undefined,
     };
 
     res
