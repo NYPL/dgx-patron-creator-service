@@ -69,7 +69,7 @@ definitions:
         example: mjolson54321
       pin:
         type: string
-        example: 1234
+        example: '1234'
       work_or_school_address:
         $ref: '#/definitions/AddressModel'
   PatronsCreatorResponse:
