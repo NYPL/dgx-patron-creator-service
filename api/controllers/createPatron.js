@@ -151,5 +151,4 @@ function createPatron(req, res) {
 
 module.exports = {
   createPatron,
-  renderResponse,
 };
