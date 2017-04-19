@@ -9,9 +9,7 @@ const _isEmpty = require('underscore').isEmpty;
  * @return array
  */
 function checkMissingRequiredField(array) {
-  return _filter(array, element => {
-    return (!element.value || _isEmpty(element.value));
-  });
+  return _filter(array, element => (!element.value || _isEmpty(element.value)));
 }
 
 /**
