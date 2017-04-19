@@ -50,10 +50,10 @@ function renderResponse(req, res, message) {
  */
 function createPatron(req, res) {
   const requiredFields = [
-    { name: "name", value: req.body.name, },
-    { name: "address", value: req.body.address, },
-    { name: "username", value: req.body.username, },
-    { name: "pin", value: req.body.pin, },
+    { name: 'name', value: req.body.name },
+    { name: 'address', value: req.body.address },
+    { name: 'username', value: req.body.username },
+    { name: 'pin', value: req.body.pin },
   ];
   // Check if we get all the required information from the client
   const missingFields = modelDebug.checkMissingRequiredField(requiredFields);
