@@ -1,8 +1,8 @@
 const axios = require('axios');
-const _isEmpty = require('underscore').isEmpty;
 const ccConfig = require('./../../config/ccConfig.js');
 const ccAPIConfig = require('./../../config/ccAPIConfig.js');
 const modelResponse = require('./../model/modelResponse.js');
+const modelDebug = require('./../model/modelDebug.js');
 
 /**
  * collectErrorResponseData(status, type, message, title, debugMessage)
@@ -41,25 +41,6 @@ function renderResponse(req, res, message) {
 }
 
 /**
- * checkRequiredMissing(array)
- * Checks if any required field is empty, and returns a list.
- *
- * @param {array} array
- * @return array
- */
-function checkRequiredMissing(array) {
-  const missingFields = [];
-
-  array.forEach(element => {
-    if (!element.value || _isEmpty(element.value)) {
-      missingFields.push({ name: element.name, value: `Missing ${element.name}.`, });
-    }
-  });
-
-  return missingFields;
-}
-
-/**
  * createPatron(req, res)
  * The callback for the route "/patrons".
  * It will fire a POST request to Card Creator API for creating a new patron.
@@ -74,28 +55,11 @@ function createPatron(req, res) {
     { name: "username", value: req.body.username, },
     { name: "pin", value: req.body.pin, },
   ];
-
   // Check if we get all the required information from the client
-  if (checkRequiredMissing(requiredFields).length > 0) {
-    const debugMessageSet = {
-      name: [],
-      address: [],
-      username: [],
-      pin: [],
-    };
+  const missingFields = modelDebug.checkMissingRequiredField(requiredFields);
 
-    checkRequiredMissing(requiredFields).forEach(element => {
-      if (element.value) {
-        debugMessageSet[element.name].push(element.value);
-      }
-    });
-
-    const debugMessage = {
-      name: (debugMessageSet.name.length > 0) ? debugMessageSete.name : undefined,
-      address: (debugMessageSet.address.length > 0) ? debugMessageSet.address : undefined,
-      username: (debugMessageSet.username.length > 0) ? debugMessageSet.username : undefined,
-      pin: (debugMessageSet.pin.length > 0) ? debugMessageSet.pin : undefined,
-    };
+  if (missingFields.length > 0) {
+    const debugMessage = modelDebug.renderDebugMessage(missingFields);
 
     res
       .status(400)
