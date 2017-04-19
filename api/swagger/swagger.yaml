@@ -58,15 +58,15 @@ definitions:
     properties:
       name:
         type: string
-        example: Michael T. Olson Jr.
+        example: Mike Olson, Jr.
       email:
         type: string
-        example: mikeolson@example.com
+        example: mjolson@example.com
       address:
         $ref: '#/definitions/AddressModel'
       username:
         type: string
-        example: mikeolson54321
+        example: mjolson54321
       pin:
         type: string
         example: 1234
