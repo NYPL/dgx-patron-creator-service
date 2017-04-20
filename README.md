@@ -190,4 +190,5 @@ It will deploy your server as a Lambda instance to your AWS account.
   - add [helmet](https://helmetjs.github.io/docs/) for security.
   - update the data structures of the responses.
   - update the route for JSON swaggger documentation.
+  - update the parameters for preparing to connect to Card Creator v2.
 
