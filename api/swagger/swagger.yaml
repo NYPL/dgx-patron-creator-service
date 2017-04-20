@@ -58,13 +58,18 @@ definitions:
   SimplePatron:
     required:
       - name
+      - dateOfBirth
       - address
       - username
       - pin
+      - policy_type
     properties:
       name:
         type: string
-        example: Mike Olson, Jr.
+        example: Mikey Olson, Jr.
+      dateOfBirth:
+        type: string
+        example: 11/11/1987
       email:
         type: string
         example: mjolson@example.com
@@ -78,6 +83,9 @@ definitions:
         example: '1234'
       work_or_school_address:
         $ref: '#/definitions/AddressModel'
+      policy_type:
+        type: string
+        example: web_applicant
   PatronsCreatorResponse:
     type: object
     required:
@@ -135,7 +143,7 @@ definitions:
       properties:
         line_1:
           type: string
-          example: 123 W40th Street
+          example: 123 Fake Street
         line_2:
           type: string
           example: ''
