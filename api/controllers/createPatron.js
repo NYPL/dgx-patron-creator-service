@@ -1,6 +1,7 @@
 const axios = require('axios');
 const ccConfig = require('./../../config/ccConfig.js');
 const ccAPIConfig = require('./../../config/ccAPIConfig.js');
+const modelRequestBody = require('./../model/modelRequestBody.js');
 const modelResponse = require('./../model/modelResponse.js');
 const modelDebug = require('./../model/modelDebug.js');
 
@@ -49,11 +50,14 @@ function renderResponse(req, res, message) {
  * @param {res} HTTP response
  */
 function createPatron(req, res) {
+  const simplePatron = modelRequestBody.modelSimplePatron(req.body);
   const requiredFields = [
-    { name: 'name', value: req.body.simplePatron.name },
-    { name: 'address', value: req.body.simplePatron.address },
-    { name: 'username', value: req.body.simplePatron.username },
-    { name: 'pin', value: req.body.simplePatron.pin },
+    { name: 'name', value: simplePatron.name },
+    { name: 'birthdate', value: simplePatron.birthdate },
+    { name: 'address', value: simplePatron.address },
+    { name: 'username', value: simplePatron.username },
+    { name: 'pin', value: simplePatron.pin },
+    { name: 'policy_type', value: simplePatron.policy_type },
   ];
   // Check if we get all the required information from the client
   const missingFields = modelDebug.checkMissingRequiredField(requiredFields);
@@ -84,7 +88,7 @@ function createPatron(req, res) {
   axios({
     method: 'post',
     url: ccAPIConfig.base + ccAPIConfig.createPatron,
-    data: req.body.simplePatron,
+    data: simplePatron,
     headers: {
       'Content-Type': 'application/json',
     },
