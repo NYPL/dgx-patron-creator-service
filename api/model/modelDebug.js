@@ -19,7 +19,7 @@ function checkMissingRequiredField(array) {
  * @param {missingFields} array
  * @return object
  */
-function renderDebugMessage(missingFields) {
+function renderMissingFieldDebugMessage(missingFields) {
   const debugMessage = {};
 
   if (missingFields && missingFields.length) {
@@ -34,5 +34,5 @@ function renderDebugMessage(missingFields) {
 
 module.exports = {
   checkMissingRequiredField,
-  renderDebugMessage,
+  renderMissingFieldDebugMessage,
 };

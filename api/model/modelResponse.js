@@ -68,7 +68,7 @@ function parseTypeURL(str) {
  * @param {obj} object
  * @return object
  */
-function modelErrorResponse(obj) {
+function modelErrorResponseData(obj) {
   return {
     data: {
       status_code_from_card_creator: obj.status || null,
@@ -87,5 +87,5 @@ function modelErrorResponse(obj) {
 
 module.exports = {
   patronCreator: modelPatronCreatorResponse,
-  errorResponse: modelErrorResponse,
+  errorResponseData: modelErrorResponseData,
 };

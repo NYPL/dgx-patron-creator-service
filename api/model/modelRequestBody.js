@@ -11,7 +11,6 @@ function extractSimplePatron(obj) {
   }
 
   return {};
-  // here should return error response
 }
 
 /**

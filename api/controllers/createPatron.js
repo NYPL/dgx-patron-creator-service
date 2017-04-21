@@ -1,4 +1,5 @@
 const axios = require('axios');
+const _isEmpty = require('underscore').isEmpty;
 const ccConfig = require('./../../config/ccConfig.js');
 const ccAPIConfig = require('./../../config/ccAPIConfig.js');
 const modelRequestBody = require('./../model/modelRequestBody.js');
@@ -59,28 +60,42 @@ function createPatron(req, res) {
     { name: 'pin', value: simplePatron.pin },
     { name: 'policy_type', value: simplePatron.policy_type },
   ];
+
+  if (!simplePatron || _isEmpty(simplePatron)) {
+    res
+      .status(400)
+      .header('Content-Type', 'application/json')
+      .json(modelResponse.errorResponseData(
+        collectErrorResponseData(
+          null,
+          'invalid-request',
+          'Missing required patron information.',
+          null,
+          { form: ['Can not find the object "simplePatron".'] }
+        )
+      ));
+
+    return;
+  }
+
   // Check if we get all the required information from the client
   const missingFields = modelDebug.checkMissingRequiredField(requiredFields);
 
   if (missingFields.length) {
-    const debugMessage = modelDebug.renderDebugMessage(missingFields);
+    const debugMessage = modelDebug.renderMissingFieldDebugMessage(missingFields);
 
     res
       .status(400)
       .header('Content-Type', 'application/json')
-      .json({
-        data: {
-          status_code_from_card_creator: null,
-          type: 'invalid-request',
-          patron: null,
-          simplePatron: null,
-          message: 'Missing required patron information.',
-          detail: {
-            debug: debugMessage,
-          },
-          count: 0,
-        },
-      });
+      .json(modelResponse.errorResponseData(
+        collectErrorResponseData(
+          null,
+          'invalid-request',
+          'Missing required patron information.',
+          null,
+          debugMessage
+        )
+      ));
 
     return;
   }
@@ -113,9 +128,9 @@ function createPatron(req, res) {
           response.response.data.debug_message
         );
 
-        renderResponse(req, res, modelResponse.errorResponse(responseObject));
+        renderResponse(req, res, modelResponse.errorResponseData(responseObject));
       } else {
-        renderResponse(req, res, modelResponse.errorResponse(
+        renderResponse(req, res, modelResponse.errorResponseData(
           collectErrorResponseData(null, '', '', '', '')
         ));
       }
