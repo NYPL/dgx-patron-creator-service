@@ -105,7 +105,10 @@ SwaggerExpress.create(config, (err, swaggerExpress) => {
   swaggerExpress.register(app);
 });
 
-const port = process.env.PORT || 3001;
-app.listen(port);
+// Do not listen to connections in Lambda environment
+if (!process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  const port = process.env.PORT || 3001;
+  app.listen(port);
+}
 
 module.exports = app;
