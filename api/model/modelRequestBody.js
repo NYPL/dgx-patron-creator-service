@@ -34,6 +34,21 @@ function updateDateOfBirthToBirthdate(obj) {
 }
 
 /**
+ * checkPolicyType(obj)
+ * Checks if the policy_type is set. If no, use the default type "web_applicant".
+ *
+ * @param {obj} object
+ * @return object
+ */
+function checkPolicyType(obj) {
+  const newObj = obj;
+
+  newObj.policy_type = (newObj.policy_type) ? newObj.policy_type : 'web_applicant';
+
+  return newObj;
+}
+
+/**
  * modelSimplePatron(obj)
  * Takes the original request.body from the client and models it for the Card Creartor.
  *
@@ -41,7 +56,11 @@ function updateDateOfBirthToBirthdate(obj) {
  * @return object
  */
 function modelSimplePatron(obj) {
-  return updateDateOfBirthToBirthdate(extractSimplePatron(obj));
+  const modeledSimplePatron = updateDateOfBirthToBirthdate(extractSimplePatron(obj));
+
+  checkPolicyType(modeledSimplePatron);
+
+  return modeledSimplePatron;
 }
 
 module.exports = {

@@ -58,7 +58,6 @@ function createPatron(req, res) {
     { name: 'address', value: simplePatron.address },
     { name: 'username', value: simplePatron.username },
     { name: 'pin', value: simplePatron.pin },
-    { name: 'policy_type', value: simplePatron.policy_type },
   ];
 
   if (!simplePatron || _isEmpty(simplePatron)) {
