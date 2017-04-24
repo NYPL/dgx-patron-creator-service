@@ -97,8 +97,19 @@ definitions:
         $ref: '#/definitions/PatronsCreatorResponseModel'
   PatronsCreatorResponseModel:
     required:
-      - status_code_from_card_creator
       - simplePatron
+    properties:
+      simplePatron:
+        $ref: '#/definitions/SimplePatronModel'
+      patron:
+        type: object
+        example: {}
+  SimplePatronModel:
+    required:
+      - status_code_from_card_creator
+      - type
+      - username
+      - temporary
       - message
       - detail
       - count
@@ -106,26 +117,6 @@ definitions:
       status_code_from_card_creator:
         type: number
         example: 200
-      patron:
-        type: object
-        example: {}
-      simplePatron:
-        $ref: '#/definitions/SimplePatronModel'
-      message:
-        type: string
-        example: Your library card is temporary because your address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.
-      detail:
-        type: object
-        example: {}
-      count:
-        type: number
-        example: 1
-  SimplePatronModel:
-    required:
-      - type
-      - username
-      - temporary
-    properties:
       type:
         type: string
         example: card-granted
@@ -135,6 +126,15 @@ definitions:
       temporary:
         type: boolean
         example: true
+      message:
+        type: string
+        example: Your library card is temporary because your address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.
+      detail:
+        type: object
+        example: {}
+      count:
+        type: number
+        example: 1
   AddressModel:
       type: object
       required:
@@ -166,7 +166,7 @@ definitions:
         $ref: '#/definitions/400ErrorResponseContent'
   400ErrorResponseContent:
     allOf:
-      - $ref: '#/definitions/400ErrorStatusModel'
+      - $ref: '#/definitions/400ErrorStatusSimplePatron'
       - $ref: '#/definitions/ErrorModel'
   500ErrorResponse:
     required:
@@ -176,13 +176,21 @@ definitions:
         $ref: '#/definitions/500ErrorResponseContent'
   500ErrorResponseContent:
     allOf:
-      - $ref: '#/definitions/500ErrorStatusModel'
+      - $ref: '#/definitions/500ErrorStatusSimplePatron'
       - $ref: '#/definitions/ErrorModel'
+  400ErrorStatusSimplePatron:
+    required:
+      - simplePatron
+    properties:
+      simplePatron:
+        $ref: '#/definitions/400ErrorStatusModel'
   400ErrorStatusModel:
     required:
       - status_code_from_card_creator
       - type
       - message
+      - detail
+      - count
     properties:
       status_code_from_card_creator:
         type: number
@@ -193,11 +201,25 @@ definitions:
       message:
         type: string
         example: No data
+      detail:
+        type: object
+        example: {}
+      count:
+        type: number
+        example: 0
+  500ErrorStatusSimplePatron:
+    required:
+      - simplePatron
+    properties:
+      simplePatron:
+        $ref: '#/definitions/500ErrorStatusModel'
   500ErrorStatusModel:
     required:
       - status_code_from_card_creator
       - type
       - message
+      - detail
+      - count
     properties:
       status_code_from_card_creator:
         type: number
@@ -208,23 +230,18 @@ definitions:
       message:
         type: string
         example: Internal server error
-  ErrorModel:
-    required:
-      - patron
-      - simplePatron
-      - detail
-      - count
-    properties:
-      patron:
-        type: object
-      simplePatron:
-        type: object
       detail:
         type: object
-        example: {"title": "Not found.", "debug": "Invalid endpoint: [POST] /v2/patrons"}
+        example: {}
       count:
         type: number
         example: 0
+  ErrorModel:
+    required:
+      - patron
+    properties:
+      patron:
+        type: object
 tags:
   - name: patrons
     description: Patron API
