@@ -6,7 +6,7 @@ const _isEmpty = require('underscore').isEmpty;
  * Checks if any required field is empty, and returns a list.
  *
  * @param {array} array
- * @return array
+ * @return {array}
  */
 function checkMissingRequiredField(array) {
   return _filter(array, element => (!element.value || _isEmpty(element.value)));
@@ -16,8 +16,8 @@ function checkMissingRequiredField(array) {
  * renderDebugMessage(missingFields)
  * Renders the debug message object based on the missing required fields.
  *
- * @param {missingFields} array
- * @return object
+ * @param {array} missingFields
+ * @return {object}
  */
 function renderMissingFieldDebugMessage(missingFields) {
   const debugMessage = {};

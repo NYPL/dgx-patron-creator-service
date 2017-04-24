@@ -2,8 +2,8 @@
  * extractSimplePatron(obj)
  * Gets the item "simplePatron" out of the original request body from the client.
  *
- * @param {obj} object
- * @return object
+ * @param {object} obj
+ * @return {object}
  */
 function extractSimplePatron(obj) {
   if (obj && obj.simplePatron) {
@@ -17,8 +17,8 @@ function extractSimplePatron(obj) {
  * updateDateOfBirthToBirthdate(obj)
  * Replaces the item "dateOfBirth" by creating a new item "birthdate" and deleting "dateOfBirth".
  *
- * @param {obj} object
- * @return object
+ * @param {object} obj
+ * @return {object}
  */
 function updateDateOfBirthToBirthdate(obj) {
   // Assignes a new object here to prevent the airbnb eslint rule:
@@ -37,8 +37,8 @@ function updateDateOfBirthToBirthdate(obj) {
  * checkPolicyType(obj)
  * Checks if the policy_type is set. If no, use the default type "web_applicant".
  *
- * @param {obj} object
- * @return object
+ * @param {object} obj
+ * @return {object}
  */
 function checkPolicyType(obj) {
   const newObj = obj;
@@ -52,8 +52,8 @@ function checkPolicyType(obj) {
  * modelSimplePatron(obj)
  * Takes the original request.body from the client and models it for the Card Creartor.
  *
- * @param {obj} object
- * @return object
+ * @param {object} obj
+ * @return {object}
  */
 function modelSimplePatron(obj) {
   const modeledSimplePatron = updateDateOfBirthToBirthdate(extractSimplePatron(obj));
