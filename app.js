@@ -55,7 +55,9 @@ app.use(bodyParser.urlencoded({
  */
 function errorHandler(err, req, res, next) {
   console.error(
-    `status_code: ${err.status}, type: invalid-request, message: error request with ${err.body}`
+    `status_code: ${err.status}, ` +
+    `type: "invalid-request", ` +
+    `message: "error request with ${err.body}"`
   );
 
   res
