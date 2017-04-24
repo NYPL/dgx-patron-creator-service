@@ -60,14 +60,17 @@ function errorHandler(err, req, res, next) {
 
   res
     .status(err.status)
-    .json(validations.renderResponseData(
-      null,
-      false,
-      'invalid-request',
-      null,
-      `Error request with request body ${err.body}`,
-      {}
-    ));
+    .json({
+      data: {
+        status_code_from_card_creator: null,
+        type: 'invalid-request',
+        patron: null,
+        simplePatron: null,
+        message: `Error request with request body ${err.body}`,
+        detail: {},
+        count: 0,
+      },
+    });
 }
 
 // Error handling
