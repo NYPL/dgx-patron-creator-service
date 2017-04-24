@@ -115,7 +115,9 @@ function createPatron(req, res) {
     })
     .catch(response => {
       console.error(
-        `status_code: ${response.response.data.status}, message: ${response.message} ` +
+        `status_code: ${response.response.data.status}, ` +
+        `type: invalid-request, ` +
+        `message: ${response.message} ` +
         'from NYPL Simplified Card Creator.'
       );
 
@@ -131,7 +133,7 @@ function createPatron(req, res) {
         renderResponse(
           req,
           res,
-          collectErrorResponseData.status,
+          responseObject.status,
           modelResponse.errorResponseData(responseObject)
         );
       } else {
