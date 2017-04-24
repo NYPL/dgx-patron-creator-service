@@ -35,7 +35,7 @@ function updateDateOfBirthToBirthdate(obj) {
 
 /**
  * checkPolicyType(obj)
- * Checks if the policy_type is set. If no, use the default type "web_applicant".
+ * Checks if the policy_type is set. If not, use the default type "web_applicant".
  *
  * @param {object} obj
  * @return {object}
