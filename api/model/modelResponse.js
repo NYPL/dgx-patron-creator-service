@@ -13,16 +13,16 @@ function modelPatronCreatorResponse(data, status) {
 
   return {
     data: {
-      status_code_from_card_creator: status || null,
-      patron: {},
       simplePatron: {
+        status_code_from_card_creator: status || null,
         type: data.type || null,
         username: data.username || '',
         temporary: data.temporary || false,
+        message: data.message || '',
+        detail,
+        count: 1,
       },
-      message: data.message || '',
-      detail,
-      count: 1,
+      patron: {},
     },
   };
 }
@@ -71,16 +71,17 @@ function parseTypeURL(str) {
 function modelErrorResponseData(obj) {
   return {
     data: {
-      status_code_from_card_creator: obj.status || null,
-      type: (obj && obj.type) ? parseTypeURL(obj.type) : '',
-      patron: null,
-      simplePatron: null,
-      message: obj.message,
-      detail: {
-        title: obj.title || '',
-        debug: (obj.debug_message) ? parseJSON(obj.debug_message) : {},
+      simplePatron: {
+        status_code_from_card_creator: obj.status || null,
+        type: (obj && obj.type) ? parseTypeURL(obj.type) : '',
+        message: obj.message,
+        detail: {
+          title: obj.title || '',
+          debug: (obj.debug_message) ? parseJSON(obj.debug_message) : {},
+        },
+        count: 0,
       },
-      count: 0,
+      patron: null,
     },
   };
 }

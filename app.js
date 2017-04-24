@@ -62,13 +62,14 @@ function errorHandler(err, req, res, next) {
     .status(err.status)
     .json({
       data: {
-        status_code_from_card_creator: null,
-        type: 'invalid-request',
+        simplePatron: {
+          status_code_from_card_creator: null,
+          type: 'invalid-request',
+          message: `Error request with request body ${err.body}`,
+          detail: {},
+          count: 0,
+        },
         patron: null,
-        simplePatron: null,
-        message: `Error request with request body ${err.body}`,
-        detail: {},
-        count: 0,
       },
     });
 }
