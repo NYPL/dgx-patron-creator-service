@@ -111,7 +111,7 @@ Visit _localhost:3001/api/v0.1/validations/swagger_ for the JSON version of the 
 
 ### Visit and Edit the Swagger Documentation
 
-Visit _http://localhost:3001/docs_ to see your API service's documentation if executing the service locally. (Be sure you have swagger installed globally already)
+Visit _http://localhost:3001/docs_ to see your API service's documentation if executing the service locally(Be sure you have swagger installed globally already).
 
 To edit the documentation with interactive UI, run this command below in your terminal.
 
