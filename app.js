@@ -76,13 +76,17 @@ function errorHandler(err, req, res, next) {
 // Error handling
 app.use(errorHandler);
 
-// Below are the routes
-app.route('/api/v0.1/patrons')
+// Belows are routes
+const router = express.Router();
+
+app.use('/api/v0.1/patrons', router);
+
+router.route('/')
   .post(createPatron.createPatron);
 
 // This route will make a request for swaggerDoc.json
 // If you don't have it yet, check README.md for how to generate one based on swagger.yaml
-app.route('/swagger-json')
+router.route('/swagger-json')
   .get(apiDoc.renderApiDoc);
 
 // required config
