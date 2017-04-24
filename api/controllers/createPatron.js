@@ -130,10 +130,12 @@ function createPatron(req, res) {
           response.response.data.debug_message
         );
 
+        const statusCode = (responseObject.status) ? responseObject.status : 400;
+
         renderResponse(
           req,
           res,
-          responseObject.status,
+          statusCode,
           modelResponse.errorResponseData(responseObject)
         );
       } else {
