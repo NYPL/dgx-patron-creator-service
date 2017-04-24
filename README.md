@@ -57,7 +57,7 @@ module.exports = {
 Please contact [NYPL's Simplied Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials.
 
 ### API Routes
-#### Create a Patron
+#### 1. Create a Patron
 
 With a valid credential, now you can make a POST request to _localhost:3001/api/v0.1/patrons_ to create a new patron.
 
@@ -105,9 +105,17 @@ A successful JSON response example will be as below,
 }
 ```
 
-#### JSON Documentation
+Three kinds of error messages could be returned from the Card Creator API.
 
-Visit _localhost:3001/api/v0.1/validations/swagger_ for the JSON version of the service swagger documentation.
+| type   | status   | title   | detail   | debug_message   |
+|--------|:--------:|---------|----------|-----------------|
+|'remote-integration-failure'|502|'Third-party service failed.'|'The library could not complete your request because a third-party service has failed.'|-|
+|'invalid-request'|400|'Invalid request.'|'Valid request parameters are required.'|Varies|
+| 'no-available-barcodes'|422|'No available barcodes.'|'There are no barcodes currently available.'|-|
+
+#### 2. JSON Documentation
+
+Visit _http://localhost:3001/api/v0.1/patrons/swagger-json_ for the JSON version of the service swagger documentation.
 
 ### Visit and Edit the Swagger Documentation
 
