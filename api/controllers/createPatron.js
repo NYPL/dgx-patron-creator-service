@@ -10,12 +10,12 @@ const modelDebug = require('./../model/modelDebug.js');
  * collectErrorResponseData(status, type, message, title, debugMessage)
  * Model the response from a failed request.
  *
- * @param {status} number
- * @param {type} string
- * @param {message} string
- * @param {title} string
- * @param {debugMessage} string
- * @return object
+ * @param {number} status
+ * @param {string} type
+ * @param {string} message
+ * @param {string} title
+ * @param {string} debugMessage
+ * @return {object}
  */
 function collectErrorResponseData(status, type, message, title, debugMessage) {
   return {
@@ -28,16 +28,17 @@ function collectErrorResponseData(status, type, message, title, debugMessage) {
 }
 
 /**
- * renderResponse(req, res, message)
+ * renderResponse(req, res, status, message)
  * Render the response from Card Creator API.
  *
- * @param {req} HTTP request
- * @param {res} HTTP response
- * @param {message} object
+ * @param {HTTP request} req
+ * @param {HTTP response} res
+ * @param {number} status
+ * @param {object} message
  */
-function renderResponse(req, res, message) {
+function renderResponse(req, res, status, message) {
   res
-    .status(200)
+    .status(status)
     .header('Content-Type', 'application/json')
     .json(message);
 }
@@ -47,8 +48,8 @@ function renderResponse(req, res, message) {
  * The callback for the route "/patrons".
  * It will fire a POST request to Card Creator API for creating a new patron.
  *
- * @param {req} HTTP request
- * @param {res} HTTP response
+ * @param {HTTP request} req
+ * @param {HTTP response} res
  */
 function createPatron(req, res) {
   const simplePatron = modelRequestBody.modelSimplePatron(req.body);
@@ -110,7 +111,7 @@ function createPatron(req, res) {
     auth: ccConfig,
   })
     .then(response => {
-      renderResponse(req, res, modelResponse.patronCreator(response.data, response.status));
+      renderResponse(req, res, 201, modelResponse.patronCreator(response.data, response.status));
     })
     .catch(response => {
       console.error(
@@ -127,9 +128,14 @@ function createPatron(req, res) {
           response.response.data.debug_message
         );
 
-        renderResponse(req, res, modelResponse.errorResponseData(responseObject));
+        renderResponse(
+          req,
+          res,
+          collectErrorResponseData.status,
+          modelResponse.errorResponseData(responseObject)
+        );
       } else {
-        renderResponse(req, res, modelResponse.errorResponseData(
+        renderResponse(req, res, 400, modelResponse.errorResponseData(
           collectErrorResponseData(null, '', '', '', '')
         ));
       }
