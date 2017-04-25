@@ -115,7 +115,7 @@ function createPatron(req, res) {
     })
     .catch(response => {
       console.error(
-        `status_code: ${response.response.data.status}, ` +
+        `status_code: ${response.response.status}, ` +
         `type: "invalid-request", ` +
         `message: "${response.message} from NYPL Simplified Card Creator.", ` +
         `response: ${JSON.stringify(response.response.data)}`
@@ -123,14 +123,14 @@ function createPatron(req, res) {
 
       if (response.response && response.response.data) {
         const responseObject = collectErrorResponseData(
-          response.response.data.status,
+          response.response.status,
           response.response.data.type,
           response.response.data.detail,
           response.response.data.title,
           response.response.data.debug_message
         );
 
-        const statusCode = (responseObject.status) ? responseObject.status : 400;
+        const statusCode = (responseObject.status) ? responseObject.status : 500;
 
         renderResponse(
           req,
@@ -139,7 +139,7 @@ function createPatron(req, res) {
           modelResponse.errorResponseData(responseObject)
         );
       } else {
-        renderResponse(req, res, 400, modelResponse.errorResponseData(
+        renderResponse(req, res, 500, modelResponse.errorResponseData(
           collectErrorResponseData(null, '', '', '', '')
         ));
       }
