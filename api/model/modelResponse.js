@@ -1,12 +1,12 @@
-const url = require("url");
+const url = require('url');
 
 /**
  * modelPatronCreatorResponse(data, status)
  * Model the response from creating a new patron.
  *
- * @param {data} object
- * @param {status} number
- * @return object
+ * @param {object} data
+ * @param {number} status
+ * @return {object}
  */
 function modelPatronCreatorResponse(data, status) {
   const detail = (data && data.debug_info) ? JSON.parse(data.debug_info) : {};
@@ -32,8 +32,8 @@ function modelPatronCreatorResponse(data, status) {
  * The "debug_message" of an error response could be a JSON type string.
  * This function is to parse the string back to its original JSON format.
  *
- * @param {str} string
- * @return object
+ * @param {string} str
+ * @return {object}
  */
 function parseJSON(str) {
   try {
@@ -48,8 +48,8 @@ function parseJSON(str) {
  * The "type" of an error response could be a URL with the error type slug.
  * This function is to extract the slug out of the URL.
  *
- * @param {str} string
- * @return string
+ * @param {string} str
+ * @return {string}
  */
 function parseTypeURL(str) {
   try {
@@ -65,10 +65,10 @@ function parseTypeURL(str) {
  * modelErrorResponse(obj)
  * Model the error response from creating a new patron.
  *
- * @param {obj} object
- * @return object
+ * @param {object} obj
+ * @return {object}
  */
-function modelErrorResponse(obj) {
+function modelErrorResponseData(obj) {
   return {
     data: {
       status_code_from_card_creator: obj.status || null,
@@ -87,5 +87,5 @@ function modelErrorResponse(obj) {
 
 module.exports = {
   patronCreator: modelPatronCreatorResponse,
-  errorResponse: modelErrorResponse,
+  errorResponseData: modelErrorResponseData,
 };

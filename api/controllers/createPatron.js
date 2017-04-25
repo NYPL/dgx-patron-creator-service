@@ -1,6 +1,8 @@
 const axios = require('axios');
+const _isEmpty = require('underscore').isEmpty;
 const ccConfig = require('./../../config/ccConfig.js');
 const ccAPIConfig = require('./../../config/ccAPIConfig.js');
+const modelRequestBody = require('./../model/modelRequestBody.js');
 const modelResponse = require('./../model/modelResponse.js');
 const modelDebug = require('./../model/modelDebug.js');
 
@@ -49,34 +51,50 @@ function renderResponse(req, res, message) {
  * @param {res} HTTP response
  */
 function createPatron(req, res) {
+  const simplePatron = modelRequestBody.modelSimplePatron(req.body);
   const requiredFields = [
-    { name: 'name', value: req.body.simplePatron.name },
-    { name: 'address', value: req.body.simplePatron.address },
-    { name: 'username', value: req.body.simplePatron.username },
-    { name: 'pin', value: req.body.simplePatron.pin },
+    { name: 'name', value: simplePatron.name },
+    { name: 'birthdate', value: simplePatron.birthdate },
+    { name: 'address', value: simplePatron.address },
+    { name: 'username', value: simplePatron.username },
+    { name: 'pin', value: simplePatron.pin },
   ];
+
+  if (!simplePatron || _isEmpty(simplePatron)) {
+    res
+      .status(400)
+      .header('Content-Type', 'application/json')
+      .json(modelResponse.errorResponseData(
+        collectErrorResponseData(
+          null,
+          'invalid-request',
+          'Missing required patron information.',
+          null,
+          { form: ['Can not find the object "simplePatron".'] }
+        )
+      ));
+
+    return;
+  }
+
   // Check if we get all the required information from the client
   const missingFields = modelDebug.checkMissingRequiredField(requiredFields);
 
   if (missingFields.length) {
-    const debugMessage = modelDebug.renderDebugMessage(missingFields);
+    const debugMessage = modelDebug.renderMissingFieldDebugMessage(missingFields);
 
     res
       .status(400)
       .header('Content-Type', 'application/json')
-      .json({
-        data: {
-          status_code_from_card_creator: null,
-          type: 'invalid-request',
-          patron: null,
-          simplePatron: null,
-          message: 'Missing required patron information.',
-          detail: {
-            debug: debugMessage,
-          },
-          count: 0,
-        },
-      });
+      .json(modelResponse.errorResponseData(
+        collectErrorResponseData(
+          null,
+          'invalid-request',
+          'Missing required patron information.',
+          null,
+          debugMessage
+        )
+      ));
 
     return;
   }
@@ -84,7 +102,7 @@ function createPatron(req, res) {
   axios({
     method: 'post',
     url: ccAPIConfig.base + ccAPIConfig.createPatron,
-    data: req.body.simplePatron,
+    data: simplePatron,
     headers: {
       'Content-Type': 'application/json',
     },
@@ -109,9 +127,9 @@ function createPatron(req, res) {
           response.response.data.debug_message
         );
 
-        renderResponse(req, res, modelResponse.errorResponse(responseObject));
+        renderResponse(req, res, modelResponse.errorResponseData(responseObject));
       } else {
-        renderResponse(req, res, modelResponse.errorResponse(
+        renderResponse(req, res, modelResponse.errorResponseData(
           collectErrorResponseData(null, '', '', '', '')
         ));
       }

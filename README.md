@@ -61,27 +61,31 @@ Please contact [NYPL's Simplied Card Creator team](https://github.com/NYPL-Simpl
 
 With a valid credential, now you can make a POST request to _localhost:3001/api/v0.1/patrons_ to create a new patron.
 
-The request data format should be in JSON with at least "name", "address", "username", and "pin". For instance,
+The request data format should be in JSON with at least "name", "dateOfBirth", "address", "username", and "pin". For instance,
 
 ```javascript
 {
-  "name": "Michael T. Olson Jr.",
-  "email": "mikeolson@example.com",
-  "address": {
-    "line_1": "123 W40th Street",
-    "line_2": "",
-    "city": "New York",
-    "state": "NY",
-    "zip": 10018
-  },
-  "username": "mikeolson54321",
-  "pin": 1234,
-  "work_or_school_address": {
-    "line_1": "123 W40th Street",
-    "line_2": "",
-    "city": "New York",
-    "state": "NY",
-    "zip": 10018
+  "simplePatron": {
+    "name": "Mikey Olson, Jr.",
+    "dateOfBirth": "11/11/1987",
+    "email": "mjolson@example.com",
+    "address": {
+      "line_1": "123 Fake Street",
+      "line_2": "",
+      "city": "New York",
+      "state": "NY",
+      "zip": 10018
+    },
+    "username": "mjolson54321",
+    "pin": "1234",
+    "work_or_school_address": {
+      "line_1": "123 Fake Street",
+      "line_2": "",
+      "city": "New York",
+      "state": "NY",
+      "zip": 10018
+    },
+    "policy_type": "web_applicant"
   }
 }
 ```
@@ -196,4 +200,5 @@ It will deploy your server as a Lambda instance to your AWS account.
   - add [helmet](https://helmetjs.github.io/docs/) for security.
   - update the data structures of the responses.
   - update the route for JSON swaggger documentation.
+  - update the parameters for preparing to connect to Card Creator v2.
 
