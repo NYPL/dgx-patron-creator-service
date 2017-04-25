@@ -41,6 +41,8 @@ function updateDateOfBirthToBirthdate(obj) {
  * @return {object}
  */
 function addMissingPolicyType(obj) {
+  // Assignes a new object here to prevent the airbnb eslint rule:
+  // Reassignment of Function Parameters (no-param-reassign)
   const newObj = obj;
 
   newObj.policy_type = (newObj.policy_type) ? newObj.policy_type : 'web_applicant';
@@ -56,9 +58,12 @@ function addMissingPolicyType(obj) {
  * @return {object}
  */
 function modelSimplePatron(obj) {
-  const modeledSimplePatron = updateDateOfBirthToBirthdate(extractSimplePatron(obj));
-
-  addMissingPolicyType(modeledSimplePatron);
+  const modeledSimplePatron =
+    addMissingPolicyType(
+      updateDateOfBirthToBirthdate(
+        extractSimplePatron(obj)
+      )
+    );
 
   return modeledSimplePatron;
 }
