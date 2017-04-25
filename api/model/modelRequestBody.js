@@ -34,13 +34,13 @@ function updateDateOfBirthToBirthdate(obj) {
 }
 
 /**
- * checkPolicyType(obj)
+ * addMissingPolicyType(obj)
  * Checks if the policy_type is set. If not, use the default type "web_applicant".
  *
  * @param {object} obj
  * @return {object}
  */
-function checkPolicyType(obj) {
+function addMissingPolicyType(obj) {
   const newObj = obj;
 
   newObj.policy_type = (newObj.policy_type) ? newObj.policy_type : 'web_applicant';
@@ -58,7 +58,7 @@ function checkPolicyType(obj) {
 function modelSimplePatron(obj) {
   const modeledSimplePatron = updateDateOfBirthToBirthdate(extractSimplePatron(obj));
 
-  checkPolicyType(modeledSimplePatron);
+  addMissingPolicyType(modeledSimplePatron);
 
   return modeledSimplePatron;
 }
