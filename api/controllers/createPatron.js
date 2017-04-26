@@ -115,8 +115,10 @@ function createPatron(req, res) {
     })
     .catch(response => {
       console.error(
-        `status_code: ${response.response.status}, message: ${response.message} ` +
-        'from NYPL Simplified Card Creator.'
+        `status_code: ${response.response.status}, ` +
+        `type: "invalid-request", ` +
+        `message: "${response.message} from NYPL Simplified Card Creator.", ` +
+        `response: ${JSON.stringify(response.response.data)}`
       );
 
       if (response.response && response.response.data) {
