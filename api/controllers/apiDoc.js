@@ -4,8 +4,8 @@ const path = require('path');
  * renderApiDoc(req, res)
  * Render the response and the service's documentation file.
  *
- * @param {req} HTTP request
- * @param {res} HTTP response
+ * @param {HTTP request} req
+ * @param {HTTP response} res
  */
 function renderApiDoc(req, res) {
   const options = {

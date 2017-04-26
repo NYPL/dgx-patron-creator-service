@@ -20,8 +20,8 @@ app.use(helmet.noCache());
  * allowCrossDomain(req, res, next)
  * Set up the middleware to support CORS. It will be used in every response.
  *
- * @param {req} HTTP request
- * @param {res} HTTP response
+ * @param {HTTP request} req
+ * @param {HTTP response} res
  * @param {next}
  */
 function allowCrossDomain(req, res, next) {
@@ -48,9 +48,9 @@ app.use(bodyParser.urlencoded({
  * Rendering the error response if the request to this service fails.
  * We need "next" here as the forth argument following the Express's convention
  *
- * @param {err} error object
- * @param {req} HTTP request
- * @param {res} HTTP response
+ * @param {error object} err
+ * @param {HTTP request} req
+ * @param {HTTP response} res
  * @param {next}
  */
 function errorHandler(err, req, res, next) {
