@@ -32,7 +32,7 @@ paths:
           schema:
             $ref: '#/definitions/PatronsCreatorData'
       responses:
-        '200':
+        '201':
           description: Successful operation
           schema:
             # a pointer to a definition
