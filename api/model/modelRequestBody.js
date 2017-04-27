@@ -51,6 +51,23 @@ function addMissingPolicyType(obj) {
 }
 
 /**
+ * convertEcommunicationsValue(obj)
+ * Converts ecommunications's value from true/false to 's'/'-'.
+ *
+ * @param {object} obj
+ * @return {object}
+ */
+function convertEcommunicationsValue(obj) {
+  // Assignes a new object here to prevent the airbnb eslint rule:
+  // Reassignment of Function Parameters (no-param-reassign)
+  const newObj = obj;
+
+  newObj.ecommunications = (newObj.ecommunications) ? 's' : '-';
+
+  return newObj;
+}
+
+/**
  * modelSimplePatron(obj)
  * Takes the original request.body from the client and models it for the Card Creartor.
  *
@@ -59,9 +76,11 @@ function addMissingPolicyType(obj) {
  */
 function modelSimplePatron(obj) {
   const modeledSimplePatron =
-    addMissingPolicyType(
-      updateDateOfBirthToBirthdate(
-        extractSimplePatron(obj)
+    convertEcommunicationsValue(
+      addMissingPolicyType(
+        updateDateOfBirthToBirthdate(
+          extractSimplePatron(obj)
+        )
       )
     );
 

@@ -64,7 +64,6 @@ definitions:
       - address
       - username
       - pin
-      - policy_type
     properties:
       name:
         type: string
@@ -77,6 +76,10 @@ definitions:
         example: mjolson@example.com
       address:
         $ref: '#/definitions/AddressModel'
+      # the field for subscribing newsletters
+      ecommunications:
+        type: boolean
+        example: true
       username:
         type: string
         example: mjolson54321
@@ -157,7 +160,7 @@ definitions:
           example: NY
         zip:
           type: string
-          example: 10018
+          example: "10018"
   400ErrorResponse:
     required:
       - data
