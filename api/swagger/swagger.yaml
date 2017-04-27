@@ -92,9 +92,13 @@ definitions:
     type: object
     required:
       - data
+      - count
     properties:
       data:
         $ref: '#/definitions/PatronsCreatorResponseModel'
+      count:
+        type: number
+        example: 1
   PatronsCreatorResponseModel:
     required:
       - simplePatron
@@ -112,7 +116,6 @@ definitions:
       - temporary
       - message
       - detail
-      - count
     properties:
       status_code_from_card_creator:
         type: number
@@ -132,9 +135,6 @@ definitions:
       detail:
         type: object
         example: {}
-      count:
-        type: number
-        example: 1
   AddressModel:
       type: object
       required:
@@ -161,9 +161,13 @@ definitions:
   400ErrorResponse:
     required:
       - data
+      - count
     properties:
       data:
         $ref: '#/definitions/400ErrorResponseContent'
+      count:
+        type: number
+        example: 0
   400ErrorResponseContent:
     allOf:
       - $ref: '#/definitions/400ErrorStatusSimplePatron'
@@ -171,9 +175,13 @@ definitions:
   500ErrorResponse:
     required:
       - data
+      - count
     properties:
       data:
         $ref: '#/definitions/500ErrorResponseContent'
+      count:
+        type: number
+        example: 0
   500ErrorResponseContent:
     allOf:
       - $ref: '#/definitions/500ErrorStatusSimplePatron'
@@ -190,7 +198,6 @@ definitions:
       - type
       - message
       - detail
-      - count
     properties:
       status_code_from_card_creator:
         type: number
@@ -204,9 +211,6 @@ definitions:
       detail:
         type: object
         example: {}
-      count:
-        type: number
-        example: 0
   500ErrorStatusSimplePatron:
     required:
       - simplePatron
@@ -219,7 +223,6 @@ definitions:
       - type
       - message
       - detail
-      - count
     properties:
       status_code_from_card_creator:
         type: number
@@ -233,9 +236,6 @@ definitions:
       detail:
         type: object
         example: {}
-      count:
-        type: number
-        example: 0
   ErrorModel:
     required:
       - patron
