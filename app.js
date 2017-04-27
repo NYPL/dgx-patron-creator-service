@@ -69,10 +69,10 @@ function errorHandler(err, req, res, next) {
           type: 'invalid-request',
           message: `Error request with request body ${err.body}`,
           detail: {},
-          count: 0,
         },
         patron: null,
       },
+      count: 0,
     });
 }
 
