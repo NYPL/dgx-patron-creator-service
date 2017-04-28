@@ -20,10 +20,10 @@ function modelPatronCreatorResponse(data, status) {
         temporary: data.temporary || false,
         message: data.message || '',
         detail,
-        count: 1,
       },
       patron: {},
     },
+    count: 1,
   };
 }
 
@@ -79,10 +79,10 @@ function modelErrorResponseData(obj) {
           title: obj.title || '',
           debug: (obj.debug_message) ? parseJSON(obj.debug_message) : {},
         },
-        count: 0,
       },
       patron: null,
     },
+    count: 0,
   };
 }
 
