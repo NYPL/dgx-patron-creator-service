@@ -21,16 +21,12 @@ function extractSimplePatron(obj) {
  * @return {object}
  */
 function updateDateOfBirthToBirthdate(obj) {
-  // Assignes a new object here to prevent the airbnb eslint rule:
-  // Reassignment of Function Parameters (no-param-reassign)
-  const newObj = obj;
-
-  if (newObj && newObj.dateOfBirth) {
-    newObj.birthdate = newObj.dateOfBirth;
+  if (obj && obj.dateOfBirth) {
+    obj.birthdate = obj.dateOfBirth;
   }
 
-  delete newObj.dateOfBirth;
-  return newObj;
+  delete obj.dateOfBirth;
+  return obj;
 }
 
 /**
@@ -41,13 +37,9 @@ function updateDateOfBirthToBirthdate(obj) {
  * @return {object}
  */
 function addMissingPolicyType(obj) {
-  // Assignes a new object here to prevent the airbnb eslint rule:
-  // Reassignment of Function Parameters (no-param-reassign)
-  const newObj = obj;
+  obj.policy_type = (obj.policy_type) ? obj.policy_type : 'web_applicant';
 
-  newObj.policy_type = (newObj.policy_type) ? newObj.policy_type : 'web_applicant';
-
-  return newObj;
+  return obj;
 }
 
 /**
@@ -58,13 +50,9 @@ function addMissingPolicyType(obj) {
  * @return {object}
  */
 function convertEcommunicationsValue(obj) {
-  // Assignes a new object here to prevent the airbnb eslint rule:
-  // Reassignment of Function Parameters (no-param-reassign)
-  const newObj = obj;
+  obj.ecommunications = (obj.ecommunications) ? 's' : '-';
 
-  newObj.ecommunications = (newObj.ecommunications) ? 's' : '-';
-
-  return newObj;
+  return obj;
 }
 
 /**
