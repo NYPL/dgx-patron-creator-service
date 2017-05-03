@@ -85,6 +85,7 @@ The request data format should be in JSON with at least "name", "dateOfBirth", "
       "state": "NY",
       "zip": 10018
     },
+    "ecommunications_pref": true,
     "policy_type": "web_applicant"
   }
 }
@@ -201,4 +202,5 @@ It will deploy your server as a Lambda instance to your AWS account.
   - update the data structures of the responses.
   - update the route for JSON swaggger documentation.
   - update the parameters for preparing to connect to Card Creator v2.
+  - Add the data field of "ecommunications_pref" for the patron's newsletter subscription.
 
