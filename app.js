@@ -1,7 +1,6 @@
 const SwaggerExpress = require('swagger-express-mw');
 const express = require('express');
 const bodyParser = require('body-parser');
-const helmet = require('helmet');
 const app = express();
 // The module for generating the swagger document
 const SwaggerUi = require('swagger-tools/middleware/swagger-ui');
@@ -10,11 +9,6 @@ const createPatron = require('./api/controllers/createPatron.js');
 const apiDoc = require('./api/controllers/apiDoc.js');
 
 // Below are the middlewares for response headers
-
-// Use Helmet for service security. helmet() will use default helmet settings
-app.use(helmet());
-// This line will add no cache setting
-app.use(helmet.noCache());
 
 /**
  * allowCrossDomain(req, res, next)
