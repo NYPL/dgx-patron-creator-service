@@ -44,13 +44,13 @@ function addMissingPolicyType(obj) {
 
 /**
  * convertEcommunicationsValue(obj)
- * Converts ecommunications's value from true/false to 's'/'-'.
+ * Converts ecommunications_pref's value from true/false to 's'/'-'.
  *
  * @param {object} obj
  * @return {object}
  */
 function convertEcommunicationsValue(obj) {
-  obj.ecommunications = (obj.ecommunications) ? 's' : '-';
+  obj.ecommunications_pref = (obj.ecommunications_pref) ? 's' : '-';
 
   return obj;
 }
