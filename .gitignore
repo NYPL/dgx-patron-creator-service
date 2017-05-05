@@ -33,6 +33,9 @@ config/runtime.yaml
 # AWS credentials
 .env
 
+# Environment files
+*.env
+
 # Built files
 dist
 
