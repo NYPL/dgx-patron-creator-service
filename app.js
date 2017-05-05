@@ -1,3 +1,5 @@
+require('dotenv').config({path: __dirname + '/config/.env'})
+
 const SwaggerExpress = require('swagger-express-mw');
 const express = require('express');
 const bodyParser = require('body-parser');
