@@ -5,6 +5,7 @@ const ccAPIConfig = require('./../../config/ccAPIConfig.js');
 const modelRequestBody = require('./../model/modelRequestBody.js');
 const modelResponse = require('./../model/modelResponse.js');
 const modelDebug = require('./../model/modelDebug.js');
+const streamPublish = require('./../helpers/streamPublish');
 
 /**
  * collectErrorResponseData(status, type, message, title, debugMessage)
@@ -111,6 +112,18 @@ function createPatron(req, res) {
     auth: ccConfig,
   })
     .then(response => {
+      streamPublish.streamPublish(
+        process.env.PATRON_SCHEMA_NAME,
+        process.env.PATRON_STREAM_NAME,
+        req.body
+      )
+        .then(function (data) {
+          console.log('Published to stream successfully!');
+        })
+        .catch(function (error) {
+          console.error('Error publishing to stream: ' + error);
+        });
+
       renderResponse(req, res, 201, modelResponse.patronCreator(response.data, response.status));
     })
     .catch(response => {
