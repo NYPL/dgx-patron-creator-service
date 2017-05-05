@@ -1,7 +1,7 @@
 const axios = require('axios');
 const _isEmpty = require('underscore').isEmpty;
 const ccConfig = require('./../../config/ccConfig.js');
-const ccAPIConfig = require('./../../config/ccAPIConfig.js');
+const config = require('./../../config/config.js');
 const modelRequestBody = require('./../model/modelRequestBody.js');
 const modelResponse = require('./../model/modelResponse.js');
 const modelDebug = require('./../model/modelDebug.js');
@@ -103,7 +103,7 @@ function createPatron(req, res) {
 
   axios({
     method: 'post',
-    url: ccAPIConfig.base + ccAPIConfig.createPatron,
+    url: config.ccBase + config.ccCreatePatron,
     data: simplePatron,
     headers: {
       'Content-Type': 'application/json',
@@ -113,7 +113,7 @@ function createPatron(req, res) {
   })
     .then(response => {
       streamPublish.streamPublish(
-        process.env.PATRON_SCHEMA_NAME,
+        config.patronSchemaName,
         process.env.PATRON_STREAM_NAME,
         req.body
       )
