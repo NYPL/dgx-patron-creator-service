@@ -49,6 +49,20 @@ $ npm start
 ```
 The server will be executed on _localhost:3001_. As the help from swagger, you don't need to restart the server to see the changes you made to the code.
 
+### Call the APIs
+
+You need credentials for making a successful API call to NYPL's Simplied Card Creator.
+In the root of the folder, create a file called "ccConfig.js". Inside "ccConfig.js", paste the code below with your credentials.
+
+```javascript
+// The credentials for NYPL's Simplified Card Creator API
+module.exports = {
+  username: [your user name],
+  password: [your password],
+};
+```
+
+Please contact [NYPL's Simplied Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials.
 
 ### API Routes
 #### 1. Create a Patron
@@ -79,10 +93,12 @@ The request data format should be in JSON with at least "name", "dateOfBirth", "
       "state": "NY",
       "zip": 10018
     },
+    "ecommunications_pref": true,
     "policy_type": "web_applicant"
   }
 }
 ```
+*Notice: `ecommunications_pref` takes a boolean type of value from "Get a Library Card" form, but it will output a string as `s` or `-` based on `true` or `false`. The reason is that the Card Creator API takes `s` or `-`.*
 
 A successful JSON response example will be as below,
 
@@ -166,6 +182,9 @@ $ npm run package-deploy-qa
 ```
 or
 
+To get your AWS Lambda service credentials, please visit [AWS Lambda's website](https://aws.amazon.com/lambda/).
+
+After set up the ".env", run
 ```sh
 $ npm run package-deploy-production
 ```
@@ -177,8 +196,8 @@ It will deploy your server as a Lambda instance to your AWS account.
 ### v0.0.1
 #### Update
   - update the swagger documentation.
-  - add [helmet](https://helmetjs.github.io/docs/) for security.
   - update the data structures of the responses.
   - update the route for JSON swaggger documentation.
   - update the parameters for preparing to connect to Card Creator v2.
-
+#### Add
+  - add the data field of "ecommunications_pref" for the patron's newsletter subscription.
