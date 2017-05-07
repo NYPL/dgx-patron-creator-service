@@ -20,6 +20,14 @@ v0.0.1
   - [helmet](https://helmetjs.github.io/docs/) - The npm module to improve security.
   - [yamljs](https://www.npmjs.com/package/yamljs) - The npm module helps convert the YAML swagger documentation to JSON format and vice versa.
 
+## Configuration
+
+To setup the app configuration. copy the `.env.example` file to `.env` and update the necessary configuration parameters.
+
+You need credentials for making a successful API call to NYPL's Simplied Card Creator and AWS credentials to connect to Kinesis.
+
+Please contact [NYPL's Simplied Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials.
+
 
 ## Install and Run
 
@@ -41,20 +49,6 @@ $ npm start
 ```
 The server will be executed on _localhost:3001_. As the help from swagger, you don't need to restart the server to see the changes you made to the code.
 
-### Call the APIs
-
-You need credentials for making a successful API call to NYPL's Simplied Card Creator.
-In the root of the folder, create a file called "ccConfig.js". Inside "ccConfig.js", paste the code below with your credentials.
-
-```javascript
-// The credentials for NYPL's Simplified Card Creator API
-module.exports = {
-  username: [your user name],
-  password: [your password],
-};
-```
-
-Please contact [NYPL's Simplied Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials.
 
 ### API Routes
 #### 1. Create a Patron
@@ -119,7 +113,7 @@ Three kinds of error messages could be returned from the Card Creator API.
 
 #### 2. JSON Documentation
 
-Visit _http://localhost:3001/api/v0.1/patrons/swagger-json_ for the JSON version of the service swagger documentation.
+Visit _http://localhost:3001/docs/patron_creator_ for the JSON version of the service swagger documentation.
 
 ### Visit and Edit the Swagger Documentation
 
@@ -161,33 +155,19 @@ Also, if you haven't installed [yamljs](https://www.npmjs.com/package/yamljs), y
 $ npm install -g yamljs
 ```
 
-Third, in the root of the folder, create a file named ".env". Follow the format below,
-
-```sh
-AWS_ENVIRONMENT=[the environment you want]
-AWS_ACCESS_KEY_ID=[your access key]
-AWS_SECRET_ACCESS_KEY=[your access key secret]
-AWS_PROFILE=
-AWS_SESSION_TOKEN=
-AWS_ROLE_ARN=[your lambda instance role]
-AWS_REGION=[your lambda region]
-AWS_FUNCTION_NAME=
-AWS_HANDLER=index.handler
-AWS_MEMORY_SIZE=128
-AWS_TIMEOUT=3
-AWS_DESCRIPTION=
-AWS_RUNTIME=nodejs4.3
-AWS_VPC_SUBNETS=
-AWS_VPC_SECURITY_GROUPS=
-EXCLUDE_GLOBS="event.json"
-PACKAGE_DIRECTORY=build
-```
+Third, copy the `deploy_env.env.example` in the root of the folder, to the appropriate environment.
+For example to deploy to the QA environment, copy the file to `deploy_qa.env`.
 
 To get your AWS Lambda service credentials, please visit [AWS Lambda's website](https://aws.amazon.com/lambda/).
 
-After set up the ".env", run
+After setting up the "deploy_qa.env" and "deploy_production.env" files, run
 ```sh
-$ npm run package-deploy
+$ npm run package-deploy-qa
+```
+or
+
+```sh
+$ npm run package-deploy-production
 ```
 
 It will deploy your server as a Lambda instance to your AWS account.
