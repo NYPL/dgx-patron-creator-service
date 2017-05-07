@@ -4,7 +4,7 @@ const avsc = require('avsc')
 const crypto = require('crypto');
 
 var AWS = require('aws-sdk');
-var kinesisClient = new AWS.Kinesis();
+var kinesisClient = new AWS.Kinesis({region: 'us-east-1'});
 
 function getSchema(schemaName) {
   return new Promise(function(resolve, reject) {
@@ -53,9 +53,7 @@ function publishStream(streamName, data) {
       StreamName: streamName
     };
 
-    var kinesis = kinesis = new AWS.Kinesis({region: 'us-east-1'});
-
-    kinesis.putRecord(params, function(err, data) {
+    kinesisClient.putRecord(params, function(err, data) {
       if (err) {
         reject(err);
       }
@@ -81,6 +79,7 @@ function streamPublish(schemaName, streamName, data, callback) {
         resolve(publishStream(streamName, avroData));
       })
       .catch(response => {
+        console.error(response);
         reject(response);
       });
   })
