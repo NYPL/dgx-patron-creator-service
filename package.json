@@ -7,7 +7,7 @@
     "start": "swagger project start",
     "swagger-edit": "swagger project edit",
     "build-swagger-doc": "yaml2json ./api/swagger/swagger.yaml > ./api/swagger/swaggerDoc.json",
-    "deploy-package-qa": "node-lambda deploy -e qa -f qa.env",
+    "deploy-package-qa": "node-lambda deploy -e qa -f deploy_qa.env",
     "deploy-package-production": "node-lambda deploy -e production -f deploy_production.env",
     "build-doc-deploy-package": "npm run build-swagger-doc && npm run deploy-package",
     "test": "swagger project test"

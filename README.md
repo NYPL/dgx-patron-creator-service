@@ -178,7 +178,7 @@ To get your AWS Lambda service credentials, please visit [AWS Lambda's website](
 
 After setting up the "deploy_qa.env" and "deploy_production.env" files, run
 ```sh
-$ npm run package-deploy-qa
+$ npm deploy-package-qa
 ```
 or
 
@@ -186,7 +186,7 @@ To get your AWS Lambda service credentials, please visit [AWS Lambda's website](
 
 After set up the ".env", run
 ```sh
-$ npm run package-deploy-production
+$ npm deploy-package-production
 ```
 
 It will deploy your server as a Lambda instance to your AWS account.
