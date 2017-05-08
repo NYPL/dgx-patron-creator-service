@@ -21,7 +21,7 @@ function getSchema(schemaName) {
   });
 }
 
-function createAvroSchema(schema) {
+function createAvroSchemaObject(schema) {
   return new Promise(function(resolve, reject) {
     var avroSchema = avsc.Type.forSchema(schema);
 
@@ -33,7 +33,7 @@ function createAvroSchema(schema) {
   });
 }
 
-function getAvroData(avroSchema, data) {
+function transformToAvroData(avroSchema, data) {
   return new Promise(function(resolve, reject) {
     var avroData = avroSchema.toBuffer(data);
 
@@ -63,17 +63,17 @@ function publishStream(streamName, data) {
   });
 }
 
-function streamPublish(schemaName, streamName, data, callback) {
+function streamPublish(schemaName, streamName, streamData, callback) {
   return new Promise(function(resolve, reject) {
     if (!streamName) reject('streamName is missing')
-    if (!data) reject('data is missing')
+    if (!streamData) reject('data is missing')
 
     getSchema(schemaName)
       .then(function (schema) {
-        return createAvroSchema(schema);
+        return createAvroSchemaObject(schema);
       })
       .then(function (avroSchema) {
-        return getAvroData(avroSchema, data);
+        return transformToAvroData(avroSchema, streamData);
       })
       .then(function (avroData) {
         resolve(publishStream(streamName, avroData));
