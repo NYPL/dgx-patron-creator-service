@@ -5,6 +5,7 @@ const config = require('./../../config/config.js');
 const modelRequestBody = require('./../model/modelRequestBody.js');
 const modelResponse = require('./../model/modelResponse.js');
 const modelDebug = require('./../model/modelDebug.js');
+const modelStreamPatron = require('./../model/modelStreamPatron.js').modelStreamPatron;
 const streamPublish = require('./../helpers/streamPublish');
 
 /**
@@ -112,15 +113,18 @@ function createPatron(req, res) {
     auth: ccConfig,
   })
     .then(response => {
-      streamPublish.streamPublish(
-        config.patronSchemaName,
-        process.env.PATRON_STREAM_NAME,
-        req.body
-      )
-        .then(function (data) {
+      modelStreamPatron.transformSimplePatronRequest(req.body)
+        .then(function (streamPatron) {
+          return streamPublish.streamPublish(
+            config.patronSchemaName,
+            process.env.PATRON_STREAM_NAME,
+            streamPatron
+          )
+        })
+        .then(function () {
           console.log('Published to stream successfully!');
         })
-        .catch(function (error) {
+        .catch(error => {
           console.error('Error publishing to stream: ' + error);
         });
 

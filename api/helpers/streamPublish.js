@@ -83,7 +83,6 @@ function streamPublish(schemaName, streamName, data, callback) {
         reject(response);
       });
   })
-
 }
 
 module.exports = {
