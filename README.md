@@ -97,15 +97,17 @@ A successful JSON response example will be as below,
 ```javascript
 {
   "data": {
-    "status_code_from_card_creator": 200,
-    patron: {},
     simplePatron: {
+      "status_code_from_card_creator": 200,
       "type": "card-granted",
       "username": "mikeolson54321",
-      "temporary": true
+      "temporary": true,
+      "patron_id": "25553095887111",
+      "barcode": "25553095887111",
+      "message": "Your library card is temporary because your address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.",
+      "detail": {},
     },
-    "message": "Your library card is temporary because your address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.",
-    "detail": {},
+    patron: {},
     "count": 1
   }
 }
@@ -205,3 +207,4 @@ It will deploy your server as a Lambda instance to your AWS account.
 #### Add
   - add [helmet](https://helmetjs.github.io/docs/) for security.
   - add the data field of "ecommunications_pref" for the patron's newsletter subscription.
+  - add the data fields of "patron_id" and "barcode" in the response.
