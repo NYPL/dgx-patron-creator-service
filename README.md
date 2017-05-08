@@ -107,9 +107,9 @@ A successful JSON response example will be as below,
       "message": "Your library card is temporary because your address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.",
       "detail": {},
     },
-    patron: {},
-    "count": 1
-  }
+    patron: {}
+  },
+  "count": 1
 }
 ```
 
