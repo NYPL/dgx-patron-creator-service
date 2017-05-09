@@ -1,7 +1,7 @@
 var modelStreamPatron = {
   data: {
     simplePatron: {
-      id: '',
+      patron_id: '',
       barcode: '',
       name: '',
       email: '',
@@ -21,15 +21,23 @@ var modelStreamPatron = {
     }
   },
 
-  transformRequest: function(data) {
+  /**
+   * Transform the
+   * @param data
+   * @param addedData
+   * @return {Promise}
+   */
+  transformRequest: function(data, addedData) {
     return new Promise(function(resolve, reject) {
       if (!data.simplePatron) {
         reject('simplePatron object was not found');
       }
 
-      for (var key in data.simplePatron) {
+      var simplePatron = Object.assign({}, data.simplePatron, addedData);
+
+      for (var key in simplePatron) {
         if (modelStreamPatron.data.simplePatron.hasOwnProperty(key)) {
-          modelStreamPatron.data.simplePatron[key] = data.simplePatron[key];
+          modelStreamPatron.data.simplePatron[key] = simplePatron[key];
         }
       }
 

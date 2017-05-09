@@ -113,7 +113,7 @@ function createPatron(req, res) {
     auth: ccConfig,
   })
     .then(response => {
-      modelStreamPatron.transformRequest(req.body)
+      modelStreamPatron.transformRequest(req.body, response.data)
         .then(function (streamPatron) {
           return streamPublish.streamPublish(
             config.patronSchemaName,
