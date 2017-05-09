@@ -108,8 +108,8 @@ A successful JSON response example will be as below,
       "type": "card-granted",
       "username": "mikeolson54321",
       "temporary": true,
-      "patron_id": "25553095887111",
-      "barcode": "25553095887111",
+      "patron_id": "6367028",
+      "barcode": "6367028",
       "message": "Your library card is temporary because your address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.",
       "detail": {},
     },
@@ -165,26 +165,28 @@ To deploy the service as an AWS Lambda instance, we need the npm module [node-la
 $ npm install -g node-lambda
 ```
 
-Also, if you haven't installed [yamljs](https://www.npmjs.com/package/yamljs), you need to install it now. Run
-
-```sh
-$ npm install -g yamljs
-```
-
-Third, create the appropriate deploy `.env` file. For example to deploy to the QA environment, create the file `deploy_qa.env` and copy the `deploy_env.env.example` in the root of the folder to `deploy_qa.env` that you just created.
+Second, create the appropriate deploy `.env` file. For example to deploy to the QA environment, create the file `deploy_qa.env` and copy the `deploy_env.env.example` in the root of the folder to `deploy_qa.env` that you just created.
 
 After setting up the "deploy_qa.env" and "deploy_production.env" files, run
 ```sh
-$ npm deploy-package-qa
+$ npm run deploy-package-qa
 ```
 or
 ```sh
-$ npm deploy-package-production
+$ npm run deploy-package-production
 ```
 
-*To get your AWS Lambda service credentials, please visit [AWS Lambda's website](https://aws.amazon.com/lambda/).*
+You can also run
+```sh
+$ npm run build-doc-deploy-package-qa
+```
+or
+```sh
+$ npm build-doc-deploy-package-production
+```
+It will convert the swagger YAML documenaton to JSON documentaion before deployment thus to make sure the instance has the latest documentation.
 
-It will deploy your server as a Lambda instance to your AWS account.
+*To get your AWS Lambda service credentials, please visit [AWS Lambda's website](https://aws.amazon.com/lambda/).*
 
 ## Development Change Log
 

@@ -136,10 +136,10 @@ definitions:
         example: true
       patron_id:
         type: string
-        example: "25553095887111"
+        example: "6367028"
       barcode:
         type: string
-        example: "25553095887111"
+        example: "6367028"
       message:
         type: string
         example: Your library card is temporary because your address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.
