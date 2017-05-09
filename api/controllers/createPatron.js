@@ -1,6 +1,7 @@
 const axios = require('axios');
 const _isEmpty = require('underscore').isEmpty;
 const config = require('./../../config/config.js');
+const ccConfig = require('./../../config/ccConfig.js');
 const modelRequestBody = require('./../model/modelRequestBody.js');
 const modelResponse = require('./../model/modelResponse.js');
 const modelDebug = require('./../model/modelDebug.js');
@@ -109,7 +110,7 @@ function createPatron(req, res) {
       'Content-Type': 'application/json',
     },
     withCredentials: true,
-    auth: { username: config.ccUsername, password: config.ccPassword },
+    auth: ccConfig,
   })
     .then(response => {
       modelStreamPatron.transformRequest(req.body)
