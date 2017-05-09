@@ -51,15 +51,12 @@ The server will be executed on _localhost:3001_. As the help from swagger, you d
 
 ### Call the APIs
 
-You need credentials for making a successful API call to NYPL's Simplied Card Creator.
-In the root of the folder, create a file called "ccConfig.js". Inside "ccConfig.js", paste the code below with your credentials.
+You need credentials for making a successful API call to NYPL's Simplied Card Creator. You should set this credentials
+in the `.env` file and, for deployments, in the `deploy_environment.env` files.
 
 ```javascript
-// The credentials for NYPL's Simplified Card Creator API
-module.exports = {
-  username: [your user name],
-  password: [your password],
-};
+CARD_CREATOR_USERNAME=username
+CARD_CREATOR_PASSWORD=password
 ```
 
 Please contact [NYPL's Simplied Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials.
