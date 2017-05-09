@@ -7,7 +7,8 @@
     "start": "swagger project start",
     "swagger-edit": "swagger project edit",
     "build-swagger-doc": "yaml2json ./api/swagger/swagger.yaml > ./api/swagger/swaggerDoc.json",
-    "deploy-package": "node-lambda deploy",
+    "deploy-package-qa": "node-lambda deploy -e qa -f deploy_qa.env",
+    "deploy-package-production": "node-lambda deploy -e production -f deploy_production.env",
     "build-doc-deploy-package": "npm run build-swagger-doc && npm run deploy-package",
     "test": "swagger project test"
   },
@@ -26,24 +27,20 @@
     "url": "https://bitbucket.org/NYPL/patron-creator-service"
   },
   "dependencies": {
+    "avsc": "^5.0.1",
+    "aws-sdk": "^2.49.0",
     "aws-serverless-express": "^2.1.3",
     "axios": "0.15.3",
-    "babel-core": "6.17.0",
-    "babel-loader": "6.2.5",
-    "babel-preset-es2015": "6.16.0",
     "body-parser": "1.15.2",
     "dotenv": "^4.0.0",
     "eslint": "0.24.0",
     "express": "4.12.3",
-    "helmet": "3.5.0",
     "pg-promise": "5.3.5",
+    "promise": "7.1.1",
     "serverless": "^1.9.0",
     "serverless-plugin-write-env-vars": "^1.0.1",
     "swagger-express-mw": "0.6.0",
-    "swagger-tools": "0.10.1",
-    "webpack": "1.13.2",
-    "webpack-dev-server": "1.16.2",
-    "webpack-merge": "0.15.0"
+    "swagger-tools": "0.10.1"
   },
   "devDependencies": {
     "should": "7.1.0",
