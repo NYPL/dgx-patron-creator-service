@@ -13,11 +13,11 @@ function renderApiDoc(req, res) {
   };
 
   const errorCallback = (err) => {
-    console.log(
-      'status_code: 500, message: Can not load the documentation file.'
-    );
-
     if (err) {
+      console.log(
+        'status_code: 500, message: Can not load the documentation file.'
+      );
+
       res.status(500)
         .header('Content-Type', 'application/json')
         .json({
