@@ -26,6 +26,8 @@
     "url": "https://bitbucket.org/NYPL/patron-creator-service"
   },
   "dependencies": {
+    "avsc": "^5.0.1",
+    "aws-sdk": "^2.49.0",
     "aws-serverless-express": "^2.1.3",
     "axios": "0.15.3",
     "babel-core": "6.17.0",
@@ -37,6 +39,7 @@
     "express": "4.12.3",
     "helmet": "3.5.0",
     "pg-promise": "5.3.5",
+    "promise": "7.1.1",
     "serverless": "^1.9.0",
     "serverless-plugin-write-env-vars": "^1.0.1",
     "swagger-express-mw": "0.6.0",
