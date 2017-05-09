@@ -18,6 +18,8 @@ function modelPatronCreatorResponse(data, status) {
         type: data.type || null,
         username: data.username || '',
         temporary: data.temporary || false,
+        patron_id: data.patron_id || '',
+        barcode: data.barcode || '',
         message: data.message || '',
         detail,
       },

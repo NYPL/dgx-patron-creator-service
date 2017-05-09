@@ -77,8 +77,7 @@ app.use(errorHandler);
 
 // This route will make a request for swaggerDoc.json
 // If you don't have it yet, check README.md for how to generate one based on swagger.yaml
-app
-  .get('/docs/patron-creator', apiDoc.renderApiDoc);
+app.get('/docs/patron-creator', apiDoc.renderApiDoc);
 
 // Belows are routes
 const router = express.Router();

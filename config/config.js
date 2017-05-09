@@ -2,5 +2,5 @@
 module.exports = {
   ccBase: process.env.CARD_CREATOR_BASE_URL,
   ccCreatePatron: 'create_patron',
-  patronSchemaName: 'Patron'
+  patronSchemaName: 'Patron',
 };
