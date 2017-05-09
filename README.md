@@ -14,19 +14,11 @@ v0.0.1
 ## Technologies
 
   - [AWS Lambda](https://aws.amazon.com/lambda/) - The service will serve as an AWS Lambda instance.
+  - [Kinesis](https://aws.amazon.com/kinesis/) - The service for streaming data after successfully creating a patron.
   - [aws-serverless-express](https://github.com/awslabs/aws-serverless-express) - The server is built with ExpressJS with the npm module specifically for AWS Lambda.
   - [Swagger](http://swagger.io/) - The framework for the API documentation and architecture.
   - [node-lambda](https://www.npmjs.com/package/node-lambda) - The npm module helps us deploy this Express application as an AWS Lambda instance.
-  - [helmet](https://helmetjs.github.io/docs/) - The npm module to improve security.
   - [yamljs](https://www.npmjs.com/package/yamljs) - The npm module helps convert the YAML swagger documentation to JSON format and vice versa.
-
-## Configuration
-
-To setup the app configuration. copy the `.env.example` file to `.env` and update the necessary configuration parameters.
-
-You need credentials for making a successful API call to NYPL's Simplied Card Creator and AWS credentials to connect to Kinesis.
-
-Please contact [NYPL's Simplied Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials.
 
 
 ## Install and Run
@@ -42,6 +34,16 @@ And then we need to install swagger globally, please run
 $ npm install swagger -g
 ```
 
+### Configuration
+
+To setup the app configuration. copy the `.env.example` file to `.env` and update the necessary configuration parameters.
+
+You need credentials for making a successful API call to NYPL's Simplied Card Creator and AWS credentials to connect to Kinesis.
+
+*Please contact [NYPL's Simplied Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials.*
+*To get your AWS Kinesis service credentials, please visit [AWS Kinesis's website](https://aws.amazon.com/kinesis/).*
+
+
 ### Start the service
 To execute the service locally, run 
 ```sh
@@ -51,15 +53,14 @@ The server will be executed on _localhost:3001_. As the help from swagger, you d
 
 ### Call the APIs
 
-You need credentials for making a successful API call to NYPL's Simplied Card Creator. You should set this credentials
-in the `.env` file and, for deployments, in the `deploy_environment.env` files.
+You need credentials for making a successful API call to NYPL's Simplied Card Creator. You should set this credentials in the `.env` file. For example,
 
 ```javascript
 CARD_CREATOR_USERNAME=username
 CARD_CREATOR_PASSWORD=password
 ```
 
-Please contact [NYPL's Simplied Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials.
+*Please contact [NYPL's Simplied Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials.*
 
 ### API Routes
 #### 1. Create a Patron
@@ -170,8 +171,7 @@ Also, if you haven't installed [yamljs](https://www.npmjs.com/package/yamljs), y
 $ npm install -g yamljs
 ```
 
-Third, copy the `deploy_env.env.example` in the root of the folder, to the appropriate environment.
-For example to deploy to the QA environment, copy the file to `deploy_qa.env`.
+Third, create the appropriate deploy `.env` file. For example to deploy to the QA environment, create the file `deploy_qa.env` and copy the `deploy_env.env.example` in the root of the folder to `deploy_qa.env` that you just created.
 
 After setting up the "deploy_qa.env" and "deploy_production.env" files, run
 ```sh
@@ -194,6 +194,8 @@ It will deploy your server as a Lambda instance to your AWS account.
   - update the data structures of the responses.
   - update the route for JSON swaggger documentation.
   - update the parameters for preparing to connect to Card Creator v2.
+  - update the credentials to .env files.
 #### Add
   - add the data field of "ecommunications_pref" for the patron's newsletter subscription.
+  - add the data streaming after creating a patron with AWS Kinesis.
   - add the data fields of "patron_id" and "barcode" in the response.
