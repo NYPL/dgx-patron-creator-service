@@ -129,7 +129,7 @@ Three kinds of error messages could be returned from the Card Creator API.
 
 #### 2. JSON Documentation
 
-Visit _http://localhost:3001/docs/patron_creator_ for the JSON version of the service swagger documentation.
+Visit _http://localhost:3001/docs/patron-creator_ for the JSON version of the service swagger documentation.
 
 ### Visit and Edit the Swagger Documentation
 
