@@ -1,4 +1,4 @@
-require('dotenv').config()
+require('dotenv').config();
 
 const SwaggerExpress = require('swagger-express-mw');
 const express = require('express');
