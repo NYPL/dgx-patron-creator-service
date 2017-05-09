@@ -4,6 +4,7 @@ var modelStreamPatron = {
       id: '',
       barcode: '',
       name: '',
+      email: '',
       birthdate: '',
       address: {
         line_1: '',
