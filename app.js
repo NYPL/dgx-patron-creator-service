@@ -3,7 +3,6 @@ require('dotenv').config();
 const SwaggerExpress = require('swagger-express-mw');
 const express = require('express');
 const bodyParser = require('body-parser');
-const helmet = require('helmet');
 const app = express();
 // The module for generating the swagger document
 const SwaggerUi = require('swagger-tools/middleware/swagger-ui');
@@ -12,11 +11,6 @@ const createPatron = require('./api/controllers/createPatron.js');
 const apiDoc = require('./api/controllers/apiDoc.js');
 
 // Below are the middlewares for response headers
-
-// Use Helmet for service security. helmet() will use default helmet settings
-app.use(helmet());
-// This line will add no cache setting
-app.use(helmet.noCache());
 
 /**
  * allowCrossDomain(req, res, next)
@@ -81,6 +75,11 @@ function errorHandler(err, req, res, next) {
 // Error handling
 app.use(errorHandler);
 
+// This route will make a request for swaggerDoc.json
+// If you don't have it yet, check README.md for how to generate one based on swagger.yaml
+app
+  .get('/docs/patron-creator', apiDoc.renderApiDoc);
+
 // Belows are routes
 const router = express.Router();
 
@@ -89,10 +88,6 @@ app.use('/api/v0.1/patrons', router);
 router.route('/')
   .post(createPatron.createPatron);
 
-// This route will make a request for swaggerDoc.json
-// If you don't have it yet, check README.md for how to generate one based on swagger.yaml
-router.route('/swagger-json')
-  .get(apiDoc.renderApiDoc);
 
 // required config
 const config = {
