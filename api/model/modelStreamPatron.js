@@ -23,16 +23,20 @@ var modelStreamPatron = {
   /**
    * Transform the request into the StreamPatron data model
    * @param {object} data
-   * @param {object} addedData
+   * @param {object} modeledResponse
    * @return {Promise}
    */
-  transformRequest: function(data, addedData) {
+  transformSimplePatronRequest: function(data, modeledResponse) {
     return new Promise(function(resolve, reject) {
       if (!data.simplePatron) {
         reject('simplePatron object was not found');
       }
 
-      var simplePatron = Object.assign({}, data.simplePatron, addedData);
+      if (!modeledResponse.data.simplePatron) {
+        reject('modeledResponse simplePatron object was not found');
+      }
+
+      var simplePatron = Object.assign({}, data.simplePatron, modeledResponse.data.simplePatron);
 
       for (var key in simplePatron) {
         if (modelStreamPatron.data.simplePatron.hasOwnProperty(key)) {

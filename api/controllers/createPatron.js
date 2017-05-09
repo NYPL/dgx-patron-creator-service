@@ -113,8 +113,11 @@ function createPatron(req, res) {
     auth: ccConfig,
   })
     .then(response => {
-      modelStreamPatron.transformRequest(req.body, response.data)
+      var modeledResponse = modelResponse.patronCreator(response.data, response.status);
+
+      modelStreamPatron.transformSimplePatronRequest(req.body, modeledResponse)
         .then(function (streamPatron) {
+          console.log(streamPatron);
           return streamPublish.streamPublish(
             config.patronSchemaName,
             process.env.PATRON_STREAM_NAME,
@@ -128,7 +131,7 @@ function createPatron(req, res) {
           console.error('Error publishing to stream: ' + error);
         });
 
-      renderResponse(req, res, 201, modelResponse.patronCreator(response.data, response.status));
+      renderResponse(req, res, 201, modeledResponse);
     })
     .catch(response => {
       console.error(
