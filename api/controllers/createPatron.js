@@ -1,10 +1,12 @@
 const axios = require('axios');
 const _isEmpty = require('underscore').isEmpty;
 const ccConfig = require('./../../config/ccConfig.js');
-const ccAPIConfig = require('./../../config/ccAPIConfig.js');
+const config = require('./../../config/config.js');
 const modelRequestBody = require('./../model/modelRequestBody.js');
 const modelResponse = require('./../model/modelResponse.js');
 const modelDebug = require('./../model/modelDebug.js');
+const modelStreamPatron = require('./../model/modelStreamPatron.js').modelStreamPatron;
+const streamPublish = require('./../helpers/streamPublish');
 
 /**
  * collectErrorResponseData(status, type, message, title, debugMessage)
@@ -102,7 +104,7 @@ function createPatron(req, res) {
 
   axios({
     method: 'post',
-    url: ccAPIConfig.base + ccAPIConfig.createPatron,
+    url: config.ccBase + config.ccCreatePatron,
     data: simplePatron,
     headers: {
       'Content-Type': 'application/json',
@@ -111,6 +113,21 @@ function createPatron(req, res) {
     auth: ccConfig,
   })
     .then(response => {
+      modelStreamPatron.transformRequest(req.body)
+        .then(function (streamPatron) {
+          return streamPublish.streamPublish(
+            config.patronSchemaName,
+            process.env.PATRON_STREAM_NAME,
+            streamPatron
+          )
+        })
+        .then(function () {
+          console.log('Published to stream successfully!');
+        })
+        .catch(error => {
+          console.error('Error publishing to stream: ' + error);
+        });
+
       renderResponse(req, res, 201, modelResponse.patronCreator(response.data, response.status));
     })
     .catch(response => {
