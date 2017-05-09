@@ -171,20 +171,16 @@ $ npm install -g yamljs
 Third, copy the `deploy_env.env.example` in the root of the folder, to the appropriate environment.
 For example to deploy to the QA environment, copy the file to `deploy_qa.env`.
 
-To get your AWS Lambda service credentials, please visit [AWS Lambda's website](https://aws.amazon.com/lambda/).
-
 After setting up the "deploy_qa.env" and "deploy_production.env" files, run
 ```sh
 $ npm deploy-package-qa
 ```
 or
-
-To get your AWS Lambda service credentials, please visit [AWS Lambda's website](https://aws.amazon.com/lambda/).
-
-After set up the ".env", run
 ```sh
 $ npm deploy-package-production
 ```
+
+*To get your AWS Lambda service credentials, please visit [AWS Lambda's website](https://aws.amazon.com/lambda/).*
 
 It will deploy your server as a Lambda instance to your AWS account.
 
