@@ -13,7 +13,6 @@ var modelStreamPatron = {
         state: '',
         zip: ''
       },
-      ecommunications: '',
       username: '',
       pin: '',
       policy_type: '',
@@ -22,9 +21,9 @@ var modelStreamPatron = {
   },
 
   /**
-   * Transform the
-   * @param data
-   * @param addedData
+   * Transform the request into the StreamPatron data model
+   * @param {object} data
+   * @param {object} addedData
    * @return {Promise}
    */
   transformRequest: function(data, addedData) {
