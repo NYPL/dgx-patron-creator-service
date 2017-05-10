@@ -1,7 +1,7 @@
 var modelStreamPatron = {
   data: {
     simplePatron: {
-      id: '',
+      patron_id: '',
       barcode: '',
       name: '',
       email: '',
@@ -13,7 +13,6 @@ var modelStreamPatron = {
         state: '',
         zip: ''
       },
-      ecommunications: '',
       username: '',
       pin: '',
       policy_type: '',
@@ -21,15 +20,27 @@ var modelStreamPatron = {
     }
   },
 
-  transformRequest: function(data) {
+  /**
+   * Transform the request into the StreamPatron data model
+   * @param {object} data
+   * @param {object} modeledResponse
+   * @return {Promise}
+   */
+  transformSimplePatronRequest: function(data, modeledResponse) {
     return new Promise(function(resolve, reject) {
       if (!data.simplePatron) {
         reject('simplePatron object was not found');
       }
 
-      for (var key in data.simplePatron) {
+      if (!modeledResponse.data.simplePatron) {
+        reject('modeledResponse simplePatron object was not found');
+      }
+
+      var simplePatron = Object.assign({}, data.simplePatron, modeledResponse.data.simplePatron);
+
+      for (var key in simplePatron) {
         if (modelStreamPatron.data.simplePatron.hasOwnProperty(key)) {
-          modelStreamPatron.data.simplePatron[key] = data.simplePatron[key];
+          modelStreamPatron.data.simplePatron[key] = simplePatron[key];
         }
       }
 
