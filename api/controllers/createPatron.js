@@ -115,22 +115,25 @@ function createPatron(req, res) {
     .then(response => {
       var modeledResponse = modelResponse.patronCreator(response.data, response.status);
 
-      modelStreamPatron.transformSimplePatronRequest(req.body, modeledResponse)
+      modelStreamPatron.transformSimplePatronRequest(
+        req.body,
+        modelResponse.patronCreator(response.data, response.status)
+      )
         .then(function (streamPatron) {
           return streamPublish.streamPublish(
             config.patronSchemaName,
             process.env.PATRON_STREAM_NAME,
             streamPatron
-          )
+          );
         })
         .then(function () {
+          renderResponse(req, res, 201, modeledResponse);
           console.log('Published to stream successfully!');
         })
         .catch(error => {
+          renderResponse(req, res, 201, modeledResponse);
           console.error('Error publishing to stream: ' + error);
-        });
-
-      renderResponse(req, res, 201, modeledResponse);
+        })
     })
     .catch(response => {
       console.error(
