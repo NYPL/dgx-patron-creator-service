@@ -117,7 +117,6 @@ function createPatron(req, res) {
 
       modelStreamPatron.transformSimplePatronRequest(req.body, modeledResponse)
         .then(function (streamPatron) {
-          console.log(streamPatron);
           return streamPublish.streamPublish(
             config.patronSchemaName,
             process.env.PATRON_STREAM_NAME,
