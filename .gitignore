@@ -30,11 +30,8 @@ node_modules
 # Runtime configuration for swagger app
 config/runtime.yaml
 
-# AWS credentials
-.env
-
-# NYPL Simplified's Card Creator API credentials
-config/ccConfig.js
+# Environment files
+*.env
 
 # Built files
 dist
