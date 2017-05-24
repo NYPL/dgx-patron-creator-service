@@ -201,3 +201,7 @@ It will convert the swagger YAML documenaton to JSON documentaion before deploym
   - add the data field of "ecommunications_pref" for the patron's newsletter subscription.
   - add the data streaming after creating a patron with AWS Kinesis.
   - add the data fields of "patron_id" and "barcode" in the response.
+
+### v0.0.2
+#### Update
+  - update the swagger and JSON documentations to remove "work_or_school_address" from the parameters, as we are using production Card Creator v2. This version currently does not supprot "work_or_school_address".
