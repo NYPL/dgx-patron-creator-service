@@ -9,7 +9,7 @@ The form on NYPL's website will fire a POST request to the service after it has 
 The Card Creator's documentation can be found [here](https://github.com/NYPL-Simplified/card-creator).
 
 ## Version
-v0.0.1
+v0.0.2
 
 ## Technologies
 
@@ -190,6 +190,10 @@ It will convert the swagger YAML documenaton to JSON documentaion before deploym
 
 ## Development Change Log
 
+### v0.0.2
+#### Update
+  - update the swagger and JSON documentations to remove "work_or_school_address" from the parameters, as we are using production Card Creator v2. This version currently does not supprot "work_or_school_address".
+
 ### v0.0.1
 #### Update
   - update the swagger documentation.
@@ -201,7 +205,3 @@ It will convert the swagger YAML documenaton to JSON documentaion before deploym
   - add the data field of "ecommunications_pref" for the patron's newsletter subscription.
   - add the data streaming after creating a patron with AWS Kinesis.
   - add the data fields of "patron_id" and "barcode" in the response.
-
-### v0.0.2
-#### Update
-  - update the swagger and JSON documentations to remove "work_or_school_address" from the parameters, as we are using production Card Creator v2. This version currently does not supprot "work_or_school_address".
