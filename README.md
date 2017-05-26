@@ -9,7 +9,7 @@ The form on NYPL's website will fire a POST request to the service after it has 
 The Card Creator's documentation can be found [here](https://github.com/NYPL-Simplified/card-creator).
 
 ## Version
-v0.0.2
+v0.1.0
 
 ## Technologies
 
@@ -84,15 +84,9 @@ The request data format should be in JSON with at least "name", "dateOfBirth", "
     },
     "username": "mjolson54321",
     "pin": "1234",
-    "work_or_school_address": {
-      "line_1": "123 Fake Street",
-      "line_2": "",
-      "city": "New York",
-      "state": "NY",
-      "zip": 10018
-    },
     "ecommunications_pref": true,
-    "policy_type": "web_applicant"
+    "policy_type": "web_applicant",
+    "patron_agency": "198"
   }
 }
 ```
@@ -189,6 +183,10 @@ It will convert the swagger YAML documenaton to JSON documentaion before deploym
 *To get your AWS Lambda service credentials, please visit [AWS Lambda's website](https://aws.amazon.com/lambda/).*
 
 ## Development Change Log
+
+### v0.1.0
+#### Add
+  - add the parameter field of "patron_agency" to determine which patron type the Card Creator is going to create. Currently, the value of "patron_agency" will be "198" for NYC residents and also as the default, while "patron_agency" will be "199" for NYS residents but live outside of the city.
 
 ### v0.0.2
 #### Update
