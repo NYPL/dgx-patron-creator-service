@@ -9,7 +9,7 @@ The form on NYPL's website will fire a POST request to the service after it has 
 The Card Creator's documentation can be found [here](https://github.com/NYPL-Simplified/card-creator).
 
 ## Version
-v0.0.2
+v0.1.0
 
 ## Technologies
 
@@ -84,19 +84,15 @@ The request data format should be in JSON with at least "name", "dateOfBirth", "
     },
     "username": "mjolson54321",
     "pin": "1234",
-    "work_or_school_address": {
-      "line_1": "123 Fake Street",
-      "line_2": "",
-      "city": "New York",
-      "state": "NY",
-      "zip": 10018
-    },
     "ecommunications_pref": true,
-    "policy_type": "web_applicant"
+    "policy_type": "web_applicant",
+    "patron_agency": "198"
   }
 }
 ```
 *Notice: `ecommunications_pref` takes a boolean type of value from "Get a Library Card" form, but it will output a string as `s` or `-` based on `true` or `false`. The reason is that the Card Creator API takes `s` or `-`.*
+
+*Notice: `patron_agency` is for telling the Card Creator which patron type is going to be created. While `198` is default and for NYC residents, `199` is for NYS residents but not live in NYC.*
 
 A successful JSON response example will be as below,
 
@@ -189,6 +185,10 @@ It will convert the swagger YAML documenaton to JSON documentaion before deploym
 *To get your AWS Lambda service credentials, please visit [AWS Lambda's website](https://aws.amazon.com/lambda/).*
 
 ## Development Change Log
+
+### v0.1.0
+#### Add
+  - add the parameter field of "patron_agency" to determine which patron type the Card Creator is going to create. Currently, the value of "patron_agency" will be "198" for NYC residents and also as the default, while "patron_agency" will be "199" for NYS residents but live outside of the city.
 
 ### v0.0.2
 #### Update
