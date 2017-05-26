@@ -1,6 +1,6 @@
 swagger: '2.0'
 info:
-  version: '0.0.2'
+  version: '0.1.0'
   title: dgx-patron-creator-service
 host: localhost:3001
 # basePath prefixes all resource paths
@@ -89,6 +89,9 @@ definitions:
       policy_type:
         type: string
         example: web_applicant
+      patron_agency:
+        type: string
+        example: "198"
   PatronsCreatorResponse:
     type: object
     required:
