@@ -92,6 +92,8 @@ The request data format should be in JSON with at least "name", "dateOfBirth", "
 ```
 *Notice: `ecommunications_pref` takes a boolean type of value from "Get a Library Card" form, but it will output a string as `s` or `-` based on `true` or `false`. The reason is that the Card Creator API takes `s` or `-`.*
 
+*Notice: `patron_agency` is for telling the Card Creator which patron type is going to be created. While `198` is default and for NYC residents, `199` is for NYS residents but not live in NYC.*
+
 A successful JSON response example will be as below,
 
 ```javascript
