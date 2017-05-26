@@ -94,8 +94,6 @@ function modelSimplePatron(obj) {
       )
     );
 
-  console.log(modeledSimplePatron);
-
   return modeledSimplePatron;
 }
 
