@@ -9,7 +9,7 @@ The form on NYPL's website will fire a POST request to the service after it has 
 The Card Creator's documentation can be found [here](https://github.com/NYPL-Simplified/card-creator).
 
 ## Version
-v0.1.0
+v0.1.1
 
 ## Technologies
 
