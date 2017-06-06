@@ -19,6 +19,7 @@ v0.1.0
   - [Swagger](http://swagger.io/) - The framework for the API documentation and architecture.
   - [node-lambda](https://www.npmjs.com/package/node-lambda) - The npm module helps us deploy this Express application as an AWS Lambda instance.
   - [yamljs](https://www.npmjs.com/package/yamljs) - The npm module helps convert the YAML swagger documentation to JSON format and vice versa.
+  - [AWS](https://aws.amazon.com/sdk-for-node-js/) - The SDK helps take the complexity out of coding by providing JavaScript objects for AWS services. We use it here for streaming the data to Amazon [Kinesis](https://aws.amazon.com/kinesis/).
 
 
 ## Install and Run
