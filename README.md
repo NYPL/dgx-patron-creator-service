@@ -187,6 +187,10 @@ It will convert the swagger YAML documenaton to JSON documentaion before deploym
 
 ## Development Change Log
 
+### v0.1.1
+#### Add
+  - add the parameter field of "patron_agency" to streaming patron data model.
+
 ### v0.1.0
 #### Add
   - add the parameter field of "patron_agency" to determine which patron type the Card Creator is going to create. Currently, the value of "patron_agency" will be "198" for NYC residents and also as the default, while "patron_agency" will be "199" for NYS residents but live outside of the city.
