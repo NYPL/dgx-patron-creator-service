@@ -1,6 +1,6 @@
 {
   "name": "dgx-patron-creator-service",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "NYPL Patron Creator Service",
   "main": "app.js",
   "scripts": {

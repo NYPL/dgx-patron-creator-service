@@ -16,7 +16,8 @@ var modelStreamPatron = {
       username: '',
       pin: '',
       policy_type: '',
-      ecommunications_pref: ''
+      ecommunications_pref: '',
+      patron_agency: ''
     }
   },
 
