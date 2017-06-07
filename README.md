@@ -9,16 +9,17 @@ The form on NYPL's website will fire a POST request to the service after it has 
 The Card Creator's documentation can be found [here](https://github.com/NYPL-Simplified/card-creator).
 
 ## Version
-v0.1.0
+v0.1.1
 
 ## Technologies
 
   - [AWS Lambda](https://aws.amazon.com/lambda/) - The service will serve as an AWS Lambda instance.
-  - [Kinesis](https://aws.amazon.com/kinesis/) - The service for streaming data after successfully creating a patron.
+  - [Amazon Kinesis](https://aws.amazon.com/kinesis/) - The service for streaming data after successfully creating a patron.
   - [aws-serverless-express](https://github.com/awslabs/aws-serverless-express) - The server is built with ExpressJS with the npm module specifically for AWS Lambda.
   - [Swagger](http://swagger.io/) - The framework for the API documentation and architecture.
   - [node-lambda](https://www.npmjs.com/package/node-lambda) - The npm module helps us deploy this Express application as an AWS Lambda instance.
   - [yamljs](https://www.npmjs.com/package/yamljs) - The npm module helps convert the YAML swagger documentation to JSON format and vice versa.
+  - [AWS](https://aws.amazon.com/sdk-for-node-js/) - The SDK helps take the complexity out of coding by providing JavaScript objects for AWS services. We use it here for streaming the data to [Amazon Kinesis](https://aws.amazon.com/kinesis/).
 
 
 ## Install and Run
@@ -185,6 +186,10 @@ It will convert the swagger YAML documenaton to JSON documentaion before deploym
 *To get your AWS Lambda service credentials, please visit [AWS Lambda's website](https://aws.amazon.com/lambda/).*
 
 ## Development Change Log
+
+### v0.1.1
+#### Add
+  - add the parameter field of "patron_agency" to streaming patron data model.
 
 ### v0.1.0
 #### Add
