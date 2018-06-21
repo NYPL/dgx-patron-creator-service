@@ -1,6 +1,6 @@
 # dgx-patron-creator-service
 
-This is the repository of the New York Public Library's patron creator microservice. The micorservice offers the API endpoint to create a new patron with the information from the "Get a Library Card" form.
+This is the repository of the New York Public Library's patron creator microservice. The microservice offers the API endpoint to create a new patron with the information from the "Get a Library Card" form.
 
 The Link to the repository from [here](https://bitbucket.org/NYPL/dgx-patron-creator-service).
 
@@ -24,7 +24,7 @@ v0.1.1
 
 ## Install and Run
 
-Clone the repo. Open your terminal and in the folder you just downloaded, run 
+Clone the repo. Open your terminal and in the folder you just downloaded, run
 ```sh
 $ npm install
 ```
@@ -39,14 +39,14 @@ $ npm install swagger -g
 
 To setup the app configuration. copy the `.env.example` file to `.env` and update the necessary configuration parameters.
 
-You need credentials for making a successful API call to NYPL's Simplied Card Creator and AWS credentials to connect to Kinesis.
+You need credentials for making a successful API call to NYPL's Simplified Card Creator and AWS credentials to connect to Kinesis.
 
-*Please contact [NYPL's Simplied Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials.*
+*Please contact [NYPL's Simplified Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials.*
 *To get your AWS Kinesis service credentials, please visit [AWS Kinesis's website](https://aws.amazon.com/kinesis/).*
 
 
 ### Start the service
-To execute the service locally, run 
+To execute the service locally, run
 ```sh
 $ npm start
 ```
@@ -54,14 +54,14 @@ The server will be executed on _localhost:3001_. As the help from swagger, you d
 
 ### Call the APIs
 
-You need credentials for making a successful API call to NYPL's Simplied Card Creator. You should set this credentials in the `.env` file. For example,
+You need credentials for making a successful API call to NYPL's Simplified Card Creator. You should set this credentials in the `.env` file. For example,
 
 ```javascript
 CARD_CREATOR_USERNAME=username
 CARD_CREATOR_PASSWORD=password
 ```
 
-*Please contact [NYPL's Simplied Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials.*
+*Please contact [NYPL's Simplified Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials.*
 
 ### API Routes
 #### 1. Create a Patron
@@ -181,7 +181,7 @@ or
 ```sh
 $ npm build-doc-deploy-package-production
 ```
-It will convert the swagger YAML documenaton to JSON documentaion before deployment thus to make sure the instance has the latest documentation.
+It will convert the swagger YAML documentation to JSON documentation before deployment thus to make sure the instance has the latest documentation.
 
 *To get your AWS Lambda service credentials, please visit [AWS Lambda's website](https://aws.amazon.com/lambda/).*
 
@@ -197,7 +197,7 @@ It will convert the swagger YAML documenaton to JSON documentaion before deploym
 
 ### v0.0.2
 #### Update
-  - update the swagger and JSON documentations to remove "work_or_school_address" from the parameters, as we are using production Card Creator v2. This version currently does not supprot "work_or_school_address".
+  - update the swagger and JSON documentations to remove "work_or_school_address" from the parameters, as we are using production Card Creator v2. This version currently does not support "work_or_school_address".
 
 ### v0.0.1
 #### Update
