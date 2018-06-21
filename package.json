@@ -11,7 +11,8 @@
     "deploy-package-production": "node-lambda deploy -e production -f deploy_production.env",
     "build-doc-deploy-package-qa": "npm run build-swagger-doc && npm run deploy-package-qa",
     "build-doc-deploy-package-production": "npm run build-swagger-doc && npm run deploy-package-production",
-    "test": "swagger project test"
+    "test": "jest --watchAll",
+    "swagger-test": "swagger project test"
   },
   "repository": {
     "type": "git",
@@ -33,6 +34,7 @@
     "aws-serverless-express": "2.1.3",
     "axios": "0.15.3",
     "body-parser": "1.15.2",
+    "console": "^0.7.2",
     "dotenv": "4.0.0",
     "eslint": "0.24.0",
     "express": "4.12.3",
@@ -44,6 +46,7 @@
     "swagger-tools": "0.10.1"
   },
   "devDependencies": {
+    "jest": "^23.1.0",
     "should": "7.1.0",
     "supertest": "1.0.0"
   }
