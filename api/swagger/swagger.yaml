@@ -1,267 +1,704 @@
-swagger: '2.0'
-info:
-  version: '0.1.1'
-  title: dgx-patron-creator-service
-host: localhost:3001
-# basePath prefixes all resource paths
-basePath: /
-schemes:
-  - https
-# format of bodies a client can send (Content-Type)
-consumes:
-  - application/json
-# format of the responses to the client (Accepts)
-produces:
-  - application/json
-paths:
-  /v0.1/patrons:
-    x-swagger-router-controller: patrons
-    post:
-      # used to help categorize API groups
-      tags:
-        - patrons
-      summary: Create a Patron
-      description: Create a new patron account against NYPL's Simplified Card Creator.
-      # used as the method name of the controller
-      operationId: patrons_creator
-      parameters:
-        - name: patron_data
-          in: body
-          description: The information of the new patron
-          required: true
-          schema:
-            $ref: '#/definitions/PatronsCreatorData'
-      responses:
-        '201':
-          description: Successful operation
-          schema:
-            # a pointer to a definition
-            $ref: '#/definitions/PatronsCreatorResponse'
-        # responses may fall through to errors
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/400ErrorResponse'
-        '500':
-          description: Generic server error
-          schema:
-            $ref: '#/definitions/500ErrorResponse'
-      security:
-        - api_auth:
-          - openid offline_access api
-# complex objects have schema definitions
-definitions:
-  PatronsCreatorData:
-    required:
-      - simplePatron
-    properties:
-      simplePatron:
-        $ref: '#/definitions/SimplePatron'
-  SimplePatron:
-    required:
-      - name
-      - dateOfBirth
-      - address
-      - username
-      - pin
-    properties:
-      name:
-        type: string
-        example: Mikey Olson, Jr.
-      dateOfBirth:
-        type: string
-        example: 11/11/1987
-      email:
-        type: string
-        example: mjolson@example.com
-      address:
-        $ref: '#/definitions/AddressModel'
-      username:
-        type: string
-        example: mjolson54321
-      pin:
-        type: string
-        example: '1234'
-      # the field for subscribing newsletters
-      ecommunications_pref:
-        type: boolean
-        example: true
-      policy_type:
-        type: string
-        example: web_applicant
-      patron_agency:
-        type: string
-        example: "198"
-  PatronsCreatorResponse:
-    type: object
-    required:
-      - data
-      - count
-    properties:
-      data:
-        $ref: '#/definitions/PatronsCreatorResponseModel'
-      count:
-        type: number
-        example: 1
-  PatronsCreatorResponseModel:
-    required:
-      - simplePatron
-    properties:
-      simplePatron:
-        $ref: '#/definitions/SimplePatronModel'
-      patron:
-        type: object
-        example: {}
-  SimplePatronModel:
-    required:
-      - status_code_from_card_creator
-      - type
-      - username
-      - temporary
-      - patron_id
-      - barcode
-      - message
-      - detail
-    properties:
-      status_code_from_card_creator:
-        type: number
-        example: 200
-      type:
-        type: string
-        example: card-granted
-      username:
-        type: string
-        example: mikeolson54321
-      temporary:
-        type: boolean
-        example: true
-      patron_id:
-        type: string
-        example: "6367028"
-      barcode:
-        type: string
-        example: "6367028"
-      message:
-        type: string
-        example: Your library card is temporary because your address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.
-      detail:
-        type: object
-        example: {}
-  AddressModel:
-      type: object
-      required:
-        - line_1
-        - city
-        - state
-        - zip
-      properties:
-        line_1:
-          type: string
-          example: 123 Fake Street
-        line_2:
-          type: string
-          example: ''
-        city:
-          type: string
-          example: New York
-        state:
-          type: string
-          example: NY
-        zip:
-          type: string
-          example: "10018"
-  400ErrorResponse:
-    required:
-      - data
-      - count
-    properties:
-      data:
-        $ref: '#/definitions/400ErrorResponseContent'
-      count:
-        type: number
-        example: 0
-  400ErrorResponseContent:
-    allOf:
-      - $ref: '#/definitions/400ErrorStatusSimplePatron'
-      - $ref: '#/definitions/ErrorModel'
-  500ErrorResponse:
-    required:
-      - data
-      - count
-    properties:
-      data:
-        $ref: '#/definitions/500ErrorResponseContent'
-      count:
-        type: number
-        example: 0
-  500ErrorResponseContent:
-    allOf:
-      - $ref: '#/definitions/500ErrorStatusSimplePatron'
-      - $ref: '#/definitions/ErrorModel'
-  400ErrorStatusSimplePatron:
-    required:
-      - simplePatron
-    properties:
-      simplePatron:
-        $ref: '#/definitions/400ErrorStatusModel'
-  400ErrorStatusModel:
-    required:
-      - status_code_from_card_creator
-      - type
-      - message
-      - detail
-    properties:
-      status_code_from_card_creator:
-        type: number
-        example: 400
-      type:
-        type: string
-        example: invalid-request
-      message:
-        type: string
-        example: No data
-      detail:
-        type: object
-        example: {}
-  500ErrorStatusSimplePatron:
-    required:
-      - simplePatron
-    properties:
-      simplePatron:
-        $ref: '#/definitions/500ErrorStatusModel'
-  500ErrorStatusModel:
-    required:
-      - status_code_from_card_creator
-      - type
-      - message
-      - detail
-    properties:
-      status_code_from_card_creator:
-        type: number
-        example: 500
-      type:
-        type: string
-        example: internal-server-error
-      message:
-        type: string
-        example: Internal server error
-      detail:
-        type: object
-        example: {}
-  ErrorModel:
-    required:
-      - patron
-    properties:
-      patron:
-        type: object
-tags:
-  - name: patrons
-    description: Patron API
-securityDefinitions:
-  api_auth:
-    type: oauth2
-    flow: accessCode
-    authorizationUrl: https://isso.nypl.org/oauth/authorize
-    tokenUrl: https://isso.nypl.org/oauth/token
-    scopes:
-      openid offline_access api: General API access
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "0.2.1",
+    "title": "dgx-patron-creator-service"
+  },
+  "host": "localhost:3001",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v0.1/patrons": {
+      "x-swagger-router-controller": "patrons",
+      "post": {
+        "tags": [
+          "patrons"
+        ],
+        "summary": "Create a Patron",
+        "description": "Create a new patron account via NYPL's Simplified Card Creator.",
+        "operationId": "patrons_creatorV01",
+        "parameters": [
+          {
+            "name": "patron_data",
+            "in": "body",
+            "description": "The information of the new patron",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PatronsCreatorDataV01"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful operation",
+            "schema": {
+              "$ref": "#/definitions/PatronsCreatorResponseV01"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/400ErrorResponseV01"
+            }
+          },
+          "500": {
+            "description": "Generic server error",
+            "schema": {
+              "$ref": "#/definitions/500ErrorResponseV01"
+            }
+          }
+        },
+        "security": [
+          {
+            "api_auth": [
+              "openid offline_access api"
+            ]
+          }
+        ]
+      }
+    },
+    "/v0.2/patrons": {
+      "x-swagger-router-controller": "patrons",
+      "post": {
+        "tags": [
+          "patrons"
+        ],
+        "summary": "Create a Patron",
+        "description": "Create a new patron account via the ILS.",
+        "operationId": "patrons_creatorV02",
+        "parameters": [
+          {
+            "name": "patron_data",
+            "in": "body",
+            "description": "The information of the new patron",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PatronsCreatorDataV02"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful operation",
+            "schema": {
+              "$ref": "#/definitions/PatronsCreatorResponseV02"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/400ErrorResponseV02"
+            }
+          },
+          "500": {
+            "description": "Generic server error",
+            "schema": {
+              "$ref": "#/definitions/500ErrorResponseV02"
+            }
+          }
+        },
+        "security": [
+          {
+            "api_auth": [
+              "openid offline_access api"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "PatronsCreatorDataV01": {
+      "required": [
+        "simplePatron"
+      ],
+      "properties": {
+        "simplePatron": {
+          "$ref": "#/definitions/SimplePatronV01"
+        }
+      }
+    },
+    "SimplePatronV01": {
+      "required": [
+        "name",
+        "dateOfBirth",
+        "address",
+        "username",
+        "pin"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "example": "Mikey Olson, Jr."
+        },
+        "dateOfBirth": {
+          "type": "string",
+          "example": "11/11/1987"
+        },
+        "email": {
+          "type": "string",
+          "example": "mjolson@example.com"
+        },
+        "address": {
+          "$ref": "#/definitions/AddressModel"
+        },
+        "username": {
+          "type": "string",
+          "example": "mjolson54321"
+        },
+        "pin": {
+          "type": "string",
+          "example": "1234"
+        },
+        "ecommunications_pref": {
+          "type": "boolean",
+          "example": true
+        },
+        "policy_type": {
+          "type": "string",
+          "example": "web_applicant"
+        },
+        "patron_agency": {
+          "type": "string",
+          "example": "198"
+        }
+      }
+    },
+    "PatronsCreatorResponseV01": {
+      "type": "object",
+      "required": [
+        "data",
+        "count"
+      ],
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/PatronsCreatorResponseModelV01"
+        },
+        "count": {
+          "type": "number",
+          "example": 1
+        }
+      }
+    },
+    "PatronsCreatorResponseModelV01": {
+      "required": [
+        "simplePatron"
+      ],
+      "properties": {
+        "simplePatron": {
+          "$ref": "#/definitions/SimplePatronModelV01"
+        },
+        "patron": {
+          "type": "object",
+          "example": {
+          }
+        }
+      }
+    },
+    "SimplePatronModelV01": {
+      "required": [
+        "status_code_from_card_creator",
+        "type",
+        "username",
+        "temporary",
+        "patron_id",
+        "barcode",
+        "message",
+        "detail"
+      ],
+      "properties": {
+        "status_code_from_card_creator": {
+          "type": "number",
+          "example": 200
+        },
+        "type": {
+          "type": "string",
+          "example": "card-granted"
+        },
+        "username": {
+          "type": "string",
+          "example": "mikeolson54321"
+        },
+        "temporary": {
+          "type": "boolean",
+          "example": true
+        },
+        "patron_id": {
+          "type": "string",
+          "example": "6367028"
+        },
+        "barcode": {
+          "type": "string",
+          "example": "6367028"
+        },
+        "message": {
+          "type": "string",
+          "example": "Your library card is temporary because your address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card."
+        },
+        "detail": {
+          "type": "object",
+          "example": {
+          }
+        }
+      }
+    },
+    "400ErrorResponseV01": {
+      "required": [
+        "data",
+        "count"
+      ],
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/400ErrorResponseContentV01"
+        },
+        "count": {
+          "type": "number",
+          "example": 0
+        }
+      }
+    },
+    "400ErrorResponseContentV01": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/400ErrorStatusSimplePatronV01"
+        },
+        {
+          "$ref": "#/definitions/ErrorModelV01"
+        }
+      ]
+    },
+    "500ErrorResponseV01": {
+      "required": [
+        "data",
+        "count"
+      ],
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/500ErrorResponseContentV01"
+        },
+        "count": {
+          "type": "number",
+          "example": 0
+        }
+      }
+    },
+    "500ErrorResponseContentV01": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/500ErrorStatusSimplePatronV01"
+        },
+        {
+          "$ref": "#/definitions/ErrorModelV01"
+        }
+      ]
+    },
+    "400ErrorStatusSimplePatronV01": {
+      "required": [
+        "simplePatron"
+      ],
+      "properties": {
+        "simplePatron": {
+          "$ref": "#/definitions/400ErrorStatusModelV01"
+        }
+      }
+    },
+    "400ErrorStatusModelV01": {
+      "required": [
+        "status_code_from_card_creator",
+        "type",
+        "message",
+        "detail"
+      ],
+      "properties": {
+        "status_code_from_card_creator": {
+          "type": "number",
+          "example": 400
+        },
+        "type": {
+          "type": "string",
+          "example": "invalid-request"
+        },
+        "message": {
+          "type": "string",
+          "example": "No data"
+        },
+        "detail": {
+          "type": "object",
+          "example": {
+          }
+        }
+      }
+    },
+    "500ErrorStatusSimplePatronV01": {
+      "required": [
+        "simplePatron"
+      ],
+      "properties": {
+        "simplePatron": {
+          "$ref": "#/definitions/500ErrorStatusModelV01"
+        }
+      }
+    },
+    "500ErrorStatusModelV01": {
+      "required": [
+        "status_code_from_card_creator",
+        "type",
+        "message",
+        "detail"
+      ],
+      "properties": {
+        "status_code_from_card_creator": {
+          "type": "number",
+          "example": 500
+        },
+        "type": {
+          "type": "string",
+          "example": "internal-server-error"
+        },
+        "message": {
+          "type": "string",
+          "example": "Internal server error"
+        },
+        "detail": {
+          "type": "object",
+          "example": {
+          }
+        }
+      }
+    },
+    "ErrorModelV01": {
+      "required": [
+        "patron"
+      ],
+      "properties": {
+        "patron": {
+          "type": "object"
+        }
+      }
+    },
+    "PatronsCreatorDataV02": {
+      "required": [
+        "simplePatron"
+      ],
+      "properties": {
+        "simplePatron": {
+          "$ref": "#/definitions/SimplePatronV02"
+        }
+      }
+    },
+    "SimplePatronV02": {
+      "required": [
+        "name",
+        "dateOfBirth",
+        "address",
+        "username",
+        "pin"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "example": "Mikey Olson, Jr."
+        },
+        "dateOfBirth": {
+          "type": "string",
+          "example": "11/11/1987"
+        },
+        "email": {
+          "type": "string",
+          "example": "mjolson@example.com"
+        },
+        "address": {
+          "$ref": "#/definitions/AddressModel"
+        },
+        "username": {
+          "type": "string",
+          "example": "mjolson54321"
+        },
+        "pin": {
+          "type": "string",
+          "example": "1234"
+        },
+        "ecommunications_pref": {
+          "type": "boolean",
+          "example": true
+        },
+        "policy_type": {
+          "type": "string",
+          "example": "web_applicant"
+        },
+        "patron_agency": {
+          "type": "string",
+          "example": "198"
+        }
+      }
+    },
+    "PatronsCreatorResponseV02": {
+      "type": "object",
+      "required": [
+        "data",
+        "count"
+      ],
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/PatronsCreatorResponseModelV02"
+        },
+        "count": {
+          "type": "number",
+          "example": 1
+        }
+      }
+    },
+    "PatronsCreatorResponseModelV02": {
+      "required": [
+        "simplePatron"
+      ],
+      "properties": {
+        "simplePatron": {
+          "$ref": "#/definitions/SimplePatronModelV02"
+        },
+        "patron": {
+          "type": "object",
+          "example": {
+          }
+        }
+      }
+    },
+    "SimplePatronModelV02": {
+      "required": [
+        "status_code_from_ils",
+        "type",
+        "username",
+        "temporary",
+        "patron_id",
+        "barcode",
+        "message",
+        "detail"
+      ],
+      "properties": {
+        "status_code_from_ils": {
+          "type": "number",
+          "example": 200
+        },
+        "type": {
+          "type": "string",
+          "example": "card-granted"
+        },
+        "username": {
+          "type": "string",
+          "example": "mikeolson54321"
+        },
+        "temporary": {
+          "type": "boolean",
+          "example": true
+        },
+        "patron_id": {
+          "type": "string",
+          "example": "6367028"
+        },
+        "barcode": {
+          "type": "string",
+          "example": "6367028"
+        },
+        "message": {
+          "type": "string",
+          "example": "Your library card is temporary because your address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card."
+        },
+        "detail": {
+          "type": "object",
+          "example": {
+          }
+        }
+      }
+    },
+    "400ErrorResponseV02": {
+      "required": [
+        "data",
+        "count"
+      ],
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/400ErrorResponseContentV02"
+        },
+        "count": {
+          "type": "number",
+          "example": 0
+        }
+      }
+    },
+    "400ErrorResponseContentV02": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/400ErrorStatusSimplePatronV02"
+        },
+        {
+          "$ref": "#/definitions/ErrorModelV01"
+        }
+      ]
+    },
+    "500ErrorResponseV02": {
+      "required": [
+        "data",
+        "count"
+      ],
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/500ErrorResponseContentV02"
+        },
+        "count": {
+          "type": "number",
+          "example": 0
+        }
+      }
+    },
+    "500ErrorResponseContentV02": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/500ErrorStatusSimplePatronV02"
+        },
+        {
+          "$ref": "#/definitions/ErrorModelV02"
+        }
+      ]
+    },
+    "400ErrorStatusSimplePatronV02": {
+      "required": [
+        "simplePatron"
+      ],
+      "properties": {
+        "simplePatron": {
+          "$ref": "#/definitions/400ErrorStatusModelV02"
+        }
+      }
+    },
+    "400ErrorStatusModelV02": {
+      "required": [
+        "status_code_from_ils",
+        "type",
+        "message",
+        "detail"
+      ],
+      "properties": {
+        "status_code_from_ils": {
+          "type": "number",
+          "example": 400
+        },
+        "type": {
+          "type": "string",
+          "example": "invalid-request"
+        },
+        "message": {
+          "type": "string",
+          "example": "No data"
+        },
+        "detail": {
+          "type": "object",
+          "example": {
+          }
+        }
+      }
+    },
+    "500ErrorStatusSimplePatronV02": {
+      "required": [
+        "simplePatron"
+      ],
+      "properties": {
+        "simplePatron": {
+          "$ref": "#/definitions/500ErrorStatusModelV02"
+        }
+      }
+    },
+    "500ErrorStatusModelV02": {
+      "required": [
+        "status_code_from_ils",
+        "type",
+        "message",
+        "detail"
+      ],
+      "properties": {
+        "status_code_from_ils": {
+          "type": "number",
+          "example": 500
+        },
+        "type": {
+          "type": "string",
+          "example": "internal-server-error"
+        },
+        "message": {
+          "type": "string",
+          "example": "Internal server error"
+        },
+        "detail": {
+          "type": "object",
+          "example": {
+          }
+        }
+      }
+    },
+    "ErrorModelV02": {
+      "required": [
+        "patron"
+      ],
+      "properties": {
+        "patron": {
+          "type": "object"
+        }
+      }
+    },
+    "AddressModel": {
+      "type": "object",
+      "required": [
+        "line_1",
+        "city",
+        "state",
+        "zip"
+      ],
+      "properties": {
+        "line_1": {
+          "type": "string",
+          "example": "123 Fake Street"
+        },
+        "line_2": {
+          "type": "string",
+          "example": ""
+        },
+        "city": {
+          "type": "string",
+          "example": "New York"
+        },
+        "state": {
+          "type": "string",
+          "example": "NY"
+        },
+        "zip": {
+          "type": "string",
+          "example": "10018"
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "patrons",
+      "description": "Patron API"
+    }
+  ],
+  "securityDefinitions": {
+    "api_auth": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://isso.nypl.org/oauth/authorize",
+      "tokenUrl": "https://isso.nypl.org/oauth/token",
+      "scopes": {
+        "openid offline_access api": "General API access"
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-const modelResponse = require('../../../api/model/modelResponse');
+const modelResponse = require('../../../../api/models/v0.1/modelResponse');
 
 const exampleStatus = 999;
 const emptyPatronCreatorResponseIn = {};

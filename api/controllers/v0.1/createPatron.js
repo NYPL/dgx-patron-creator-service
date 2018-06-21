@@ -1,11 +1,11 @@
 const axios = require('axios');
 const isEmpty = require('underscore').isEmpty;
-const awsDecrypt = require('./../../config/awsDecrypt.js');
-const modelRequestBody = require('./../model/modelRequestBody.js');
-const modelResponse = require('./../model/modelResponse.js');
-const modelDebug = require('./../model/modelDebug.js');
-const modelStreamPatron = require('./../model/modelStreamPatron.js').modelStreamPatron;
-const streamPublish = require('./../helpers/streamPublish');
+const awsDecrypt = require('./../../../config/awsDecrypt.js');
+const modelRequestBody = require('./../../models/v0.1/modelRequestBody.js');
+const modelResponse = require('./../../models/v0.1/modelResponse.js');
+const modelDebug = require('./../../models/v0.1/modelDebug.js');
+const modelStreamPatron = require('./../../models/v0.1/modelStreamPatron.js').modelStreamPatron;
+const streamPublish = require('./../../helpers/streamPublish');
 
 let cardCreatorUsername;
 let cardCreatorPassword;
@@ -104,11 +104,10 @@ function createPatron(req, res) {
     return;
   }
 
-
-  cardCreatorUsername = cardCreatorUsername ||
-    awsDecrypt.decryptKMS(process.env.CARD_CREATOR_USERNAME);
-  cardCreatorPassword = cardCreatorPassword ||
-    awsDecrypt.decryptKMS(process.env.CARD_CREATOR_PASSWORD);
+  cardCreatorUsername =
+    cardCreatorUsername || awsDecrypt.decryptKMS(process.env.CARD_CREATOR_USERNAME);
+  cardCreatorPassword =
+    cardCreatorPassword || awsDecrypt.decryptKMS(process.env.CARD_CREATOR_PASSWORD);
 
   Promise.all([cardCreatorUsername, cardCreatorPassword]).then((values) => {
     [cardCreatorUsername, cardCreatorPassword] = values;
@@ -129,8 +128,8 @@ function createPatron(req, res) {
           req.body, modeledResponse // eslint-disable-line comma-dangle
         )
           .then(streamPatron => streamPublish.streamPublish(
-            process.env.PATRON_SCHEMA_NAME,
-            process.env.PATRON_STREAM_NAME,
+            process.env.PATRON_SCHEMA_NAME_V01,
+            process.env.PATRON_STREAM_NAME_V01,
             streamPatron // eslint-disable-line comma-dangle
           ))
           .then(() => {
