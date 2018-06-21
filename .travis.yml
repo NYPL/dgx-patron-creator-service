@@ -7,7 +7,7 @@ before_deploy: echo 'All unit tests passed; Successfully built distribution asse
 deploy:
 - provider: script
   skip_cleanup: true
-  script: npm run deploy-package-development
+  script: npm run deploy-development
   on:
     branch: development
 after_deploy: echo 'Successfully executed deploy trigger for DGX Patron Creator Service on AWS'

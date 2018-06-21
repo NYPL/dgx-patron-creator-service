@@ -1,4 +1,4 @@
-describe('example tests', () => {
+describe('example test', () => {
   it('always passes', () => {
   });
 });

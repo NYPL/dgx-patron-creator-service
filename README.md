@@ -162,13 +162,11 @@ To deploy the service as an AWS Lambda instance, we need the npm module [node-la
 $ npm install -g node-lambda
 ```
 
-Second, create the appropriate deploy `.env` file. For example to deploy to the QA environment, create the file `deploy_qa.env` and copy the `deploy_env.env.example` in the root of the folder to `deploy_qa.env` that you just created.
-
-After setting up the "deploy_qa.env" and "deploy_production.env" files, run
+Sensitive environment variables for AWS Lambda are encrypted in source control, and decrypted by AWS as part of deployment.  To deploy to QA, run the following command:
 ```sh
 $ npm run deploy-package-qa
 ```
-or
+To deploy to Production, run the following command:
 ```sh
 $ npm run deploy-package-production
 ```
