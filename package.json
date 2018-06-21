@@ -13,6 +13,7 @@
     "build-doc-deploy-package-qa": "npm run build-swagger-doc && npm run deploy-package-qa",
     "build-doc-deploy-package-production": "npm run build-swagger-doc && npm run deploy-package-production",
     "test": "jest",
+    "test-local": "jest --watchAll",
     "swagger-test": "swagger project test"
   },
   "repository": {
