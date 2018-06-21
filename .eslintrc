@@ -1,9 +1,12 @@
 {
-  "extends": "airbnb",
-  "rules": {
-    "no-param-reassign": [
-      "error",
-      { "props": false, }
-    ],
-  },
+  extends: [
+    "airbnb",
+    "plugin:jest/recommended"
+  ],
+  plugins: ["jest"],
+  rules: {
+    "prefer-destructuring": 0,
+    "class-methods-use-this": 0,
+    "function-paren-newline": 0
+  }
 }

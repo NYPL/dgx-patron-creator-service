@@ -22,12 +22,12 @@ function extractSimplePatron(obj) {
  */
 function updateDateOfBirthToBirthdate(obj) {
   if (obj && obj.dateOfBirth && typeof obj.dateOfBirth === 'string') {
-    obj.birthdate = obj.dateOfBirth;
+    obj.birthdate = obj.dateOfBirth; // eslint-disable-line no-param-reassign
   } else {
-    obj.birthdate = '';
+    obj.birthdate = ''; // eslint-disable-line no-param-reassign
   }
 
-  delete obj.dateOfBirth;
+  delete obj.dateOfBirth; // eslint-disable-line no-param-reassign
   return obj;
 }
 
@@ -39,6 +39,7 @@ function updateDateOfBirthToBirthdate(obj) {
  * @return {object}
  */
 function addMissingPolicyType(obj) {
+  // eslint-disable-next-line no-param-reassign
   obj.policy_type = (obj.policy_type && typeof obj.policy_type === 'string') ?
     obj.policy_type : 'web_applicant';
 
@@ -53,6 +54,7 @@ function addMissingPolicyType(obj) {
  * @return {object}
  */
 function convertEcommunicationsValue(obj) {
+  // eslint-disable-next-line no-param-reassign
   obj.ecommunications_pref =
     (obj.ecommunications_pref && typeof obj.ecommunications_pref === 'boolean') ? 's' : '-';
 
@@ -69,6 +71,7 @@ function convertEcommunicationsValue(obj) {
  * @return {object}
  */
 function addMissingPatronAgency(obj) {
+  // eslint-disable-next-line no-param-reassign
   obj.patron_agency = (obj.patron_agency && typeof obj.patron_agency === 'string') ?
     obj.patron_agency : '198';
 
@@ -88,10 +91,10 @@ function modelSimplePatron(obj) {
       convertEcommunicationsValue(
         addMissingPolicyType(
           updateDateOfBirthToBirthdate(
-            extractSimplePatron(obj)
-          )
-        )
-      )
+            extractSimplePatron(obj),
+          ),
+        ),
+      ),
     );
 
   return modeledSimplePatron;

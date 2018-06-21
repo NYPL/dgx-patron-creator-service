@@ -1,8 +1,8 @@
 # dgx-patron-creator-service
 
-This is the repository of the New York Public Library's patron creator microservice. The micorservice offers the API endpoint to create a new patron with the information from the "Get a Library Card" form.
+This is the repository of the New York Public Library's patron creator microservice. The microservice offers the API endpoint to create a new patron with the information from the "Get a Library Card" form.
 
-The Link to the repository from [here](https://bitbucket.org/NYPL/dgx-patron-creator-service).
+The Link to the repository from [here](https://github.com/NYPL/dgx-patron-creator-service).
 
 The form on NYPL's website will fire a POST request to the service after it has been submitted. The service will then take the information and fire another POST request to NYPL Simplified's Card Creator API. Finally, it will reply the results based on the responses from the Card Creator API.
 
@@ -24,29 +24,23 @@ v0.1.1
 
 ## Install and Run
 
-Clone the repo. Open your terminal and in the folder you just downloaded, run 
+Clone the repo. Open your terminal and in the folder you just downloaded, run
 ```sh
 $ npm install
-```
-
-And then we need to install swagger globally, please run
-
-```sh
-$ npm install swagger -g
 ```
 
 ### Configuration
 
 To setup the app configuration. copy the `.env.example` file to `.env` and update the necessary configuration parameters.
 
-You need credentials for making a successful API call to NYPL's Simplied Card Creator and AWS credentials to connect to Kinesis.
+You need credentials for making a successful API call to NYPL's Simplified Card Creator and AWS credentials to connect to Kinesis.
 
-*Please contact [NYPL's Simplied Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials.*
+*Please contact [NYPL's Simplified Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials.*
 *To get your AWS Kinesis service credentials, please visit [AWS Kinesis's website](https://aws.amazon.com/kinesis/).*
 
 
 ### Start the service
-To execute the service locally, run 
+To execute the service locally, run
 ```sh
 $ npm start
 ```
@@ -54,14 +48,14 @@ The server will be executed on _localhost:3001_. As the help from swagger, you d
 
 ### Call the APIs
 
-You need credentials for making a successful API call to NYPL's Simplied Card Creator. You should set this credentials in the `.env` file. For example,
+You need credentials for making a successful API call to NYPL's Simplified Card Creator. You should set this credentials in the `.env` file. For example,
 
 ```javascript
 CARD_CREATOR_USERNAME=username
 CARD_CREATOR_PASSWORD=password
 ```
 
-*Please contact [NYPL's Simplied Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials.*
+*Please contact [NYPL's Simplified Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials.*
 
 ### API Routes
 #### 1. Create a Patron
@@ -130,7 +124,7 @@ Visit _http://localhost:3001/docs/patron-creator_ for the JSON version of the se
 
 ### Visit and Edit the Swagger Documentation
 
-Visit _http://localhost:3001/docs_ to see your API service's documentation if executing the service locally(Be sure you have swagger installed globally already).
+Visit _http://localhost:3001/docs_ to see your API service's documentation if executing the service locally.
 
 To edit the documentation with interactive UI, run this command below in your terminal.
 
@@ -154,21 +148,18 @@ $ npm run build-swagger-doc
 
 This script will generate _swaggerDoc.json_ based on the YAML documentation.
 
+## Testing
+Use `npm start` to run the app in one window.  This is required to get the integration test to pass. The integration tests uses a local server the QA instance of Card Creator and the Patron Kinesis stream in the Sandbox environment.
+
+Use `INTEGRATION_TESTS=true npm test` in a second window to run all the tests or just `npm test` to run the unit tests.  Check the server to ensure that you see the message "Published to stream successfully!" to verify that the integration test exercised the Kinesis stream.
+
 ## Deployment
 
-To deploy the service as an AWS Lambda instance, we need the npm module [node-lambda](https://www.npmjs.com/package/node-lambda). Please go to the URL and install it globally by running
-
-```sh
-$ npm install -g node-lambda
-```
-
-Second, create the appropriate deploy `.env` file. For example to deploy to the QA environment, create the file `deploy_qa.env` and copy the `deploy_env.env.example` in the root of the folder to `deploy_qa.env` that you just created.
-
-After setting up the "deploy_qa.env" and "deploy_production.env" files, run
+Sensitive environment variables for AWS Lambda are encrypted in source control, and decrypted by AWS as part of deployment.  To deploy to QA, run the following command:
 ```sh
 $ npm run deploy-package-qa
 ```
-or
+To deploy to Production, run the following command:
 ```sh
 $ npm run deploy-package-production
 ```
@@ -181,11 +172,14 @@ or
 ```sh
 $ npm build-doc-deploy-package-production
 ```
-It will convert the swagger YAML documenaton to JSON documentaion before deployment thus to make sure the instance has the latest documentation.
+It will convert the swagger YAML documentation to JSON documentation before deployment thus to make sure the instance has the latest documentation.
 
 *To get your AWS Lambda service credentials, please visit [AWS Lambda's website](https://aws.amazon.com/lambda/).*
 
 ## Development Change Log
+### v0.2.0
+#### Add
+  - add unit tests for models and an integration test for createPatron
 
 ### v0.1.1
 #### Add
@@ -197,7 +191,7 @@ It will convert the swagger YAML documenaton to JSON documentaion before deploym
 
 ### v0.0.2
 #### Update
-  - update the swagger and JSON documentations to remove "work_or_school_address" from the parameters, as we are using production Card Creator v2. This version currently does not supprot "work_or_school_address".
+  - update the swagger and JSON documentations to remove "work_or_school_address" from the parameters, as we are using production Card Creator v2. This version currently does not support "work_or_school_address".
 
 ### v0.0.1
 #### Update

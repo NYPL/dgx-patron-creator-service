@@ -1,12 +1,14 @@
 const axios = require('axios');
-const _isEmpty = require('underscore').isEmpty;
-const config = require('./../../config/config.js');
-const ccConfig = require('./../../config/ccConfig.js');
+const isEmpty = require('underscore').isEmpty;
+const awsDecrypt = require('./../../config/awsDecrypt.js');
 const modelRequestBody = require('./../model/modelRequestBody.js');
 const modelResponse = require('./../model/modelResponse.js');
 const modelDebug = require('./../model/modelDebug.js');
 const modelStreamPatron = require('./../model/modelStreamPatron.js').modelStreamPatron;
 const streamPublish = require('./../helpers/streamPublish');
+
+let cardCreatorUsername;
+let cardCreatorPassword;
 
 /**
  * collectErrorResponseData(status, type, message, title, debugMessage)
@@ -63,7 +65,7 @@ function createPatron(req, res) {
     { name: 'pin', value: simplePatron.pin },
   ];
 
-  if (!simplePatron || _isEmpty(simplePatron)) {
+  if (!simplePatron || isEmpty(simplePatron)) {
     res
       .status(400)
       .header('Content-Type', 'application/json')
@@ -73,8 +75,8 @@ function createPatron(req, res) {
           'invalid-request',
           'Missing required patron information.',
           null,
-          { form: ['Can not find the object "simplePatron".'] }
-        )
+          { form: ['Can not find the object "simplePatron".'] },
+        ),
       ));
 
     return;
@@ -95,77 +97,84 @@ function createPatron(req, res) {
           'invalid-request',
           'Missing required patron information.',
           null,
-          debugMessage
-        )
+          debugMessage,
+        ),
       ));
 
     return;
   }
 
-  axios({
-    method: 'post',
-    url: config.ccBase + config.ccCreatePatron,
-    data: simplePatron,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    withCredentials: true,
-    auth: ccConfig,
-  })
-    .then(response => {
-      var modeledResponse = modelResponse.patronCreator(response.data, response.status);
 
-      modelStreamPatron.transformSimplePatronRequest(
-        req.body,
-        modelResponse.patronCreator(response.data, response.status)
-      )
-        .then(function (streamPatron) {
-          return streamPublish.streamPublish(
-            config.patronSchemaName,
-            process.env.PATRON_STREAM_NAME,
-            streamPatron
-          );
-        })
-        .then(function () {
-          renderResponse(req, res, 201, modeledResponse);
-          console.log('Published to stream successfully!');
-        })
-        .catch(error => {
-          renderResponse(req, res, 201, modeledResponse);
-          console.error('Error publishing to stream: ' + error);
-        })
+  cardCreatorUsername = cardCreatorUsername ||
+    awsDecrypt.decryptKMS(process.env.CARD_CREATOR_USERNAME);
+  cardCreatorPassword = cardCreatorPassword ||
+    awsDecrypt.decryptKMS(process.env.CARD_CREATOR_PASSWORD);
+
+  Promise.all([cardCreatorUsername, cardCreatorPassword]).then((values) => {
+    [cardCreatorUsername, cardCreatorPassword] = values;
+
+    axios({
+      method: 'post',
+      url: process.env.CARD_CREATOR_BASE_URL + process.env.CARD_CREATOR_PATH,
+      data: simplePatron,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      withCredentials: true,
+      auth: { username: cardCreatorUsername, password: cardCreatorPassword },
     })
-    .catch(response => {
-      console.error(
-        `status_code: ${response.response.status}, ` +
-        `type: "invalid-request", ` +
-        `message: "${response.message} from NYPL Simplified Card Creator.", ` +
-        `response: ${JSON.stringify(response.response.data)}`
-      );
-
-      if (response.response && response.response.data) {
-        const responseObject = collectErrorResponseData(
-          response.response.status,
-          response.response.data.type,
-          response.response.data.detail,
-          response.response.data.title,
-          response.response.data.debug_message
+      .then((response) => {
+        const modeledResponse = modelResponse.patronCreator(response.data, response.status);
+        modelStreamPatron.transformSimplePatronRequest(
+          req.body, modeledResponse,
+        )
+          .then(streamPatron => streamPublish.streamPublish(
+            process.env.PATRON_SCHEMA_NAME,
+            process.env.PATRON_STREAM_NAME,
+            streamPatron,
+          ))
+          .then(() => {
+            renderResponse(req, res, 201, modeledResponse);
+            console.log('Published to stream successfully!'); // eslint-disable-line no-console
+          })
+          .catch((error) => {
+            renderResponse(req, res, 201, modeledResponse);
+            console.error(`Error publishing to stream: ${error}`); // eslint-disable-line no-console
+          });
+      })
+      .catch((response) => {
+        // eslint-disable-next-line no-console
+        console.error(
+          `status_code: ${response.response.status}, ` +
+          'type: "invalid-request", ' +
+          `message: "${response.message} from NYPL Simplified Card Creator.", ` +
+          `response: ${JSON.stringify(response.response.data)}`,
         );
 
-        const statusCode = (responseObject.status) ? responseObject.status : 500;
+        if (response.response && response.response.data) {
+          const responseObject = collectErrorResponseData(
+            response.response.status,
+            response.response.data.type,
+            response.response.data.detail,
+            response.response.data.title,
+            response.response.data.debug_message,
+          );
 
-        renderResponse(
-          req,
-          res,
-          statusCode,
-          modelResponse.errorResponseData(responseObject)
-        );
-      } else {
-        renderResponse(req, res, 500, modelResponse.errorResponseData(
-          collectErrorResponseData(null, '', '', '', '')
-        ));
-      }
-    });
+          const statusCode = (responseObject.status) ? responseObject.status : 500;
+
+          renderResponse(
+            req,
+            res,
+            statusCode,
+            modelResponse.errorResponseData(responseObject),
+          );
+        } else {
+          renderResponse(req, res, 500, modelResponse.errorResponseData(
+            collectErrorResponseData(null, '', '', '', ''),
+          ));
+        }
+      });
+  });
 }
 
 module.exports = {
