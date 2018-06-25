@@ -154,6 +154,11 @@ $ npm run build-swagger-doc
 
 This script will generate _swaggerDoc.json_ based on the YAML documentation.
 
+## Testing
+Use `npm start` to run the app in one window.  This is required to get the integration test to pass. The integration tests uses a local server the QA instance of Card Creator and the Patron Kinesis stream in the Sandbox environment.
+
+Use `INTEGRATION_TESTS=true npm test` in a second window to run all the tests or just `npm test` to run the unit tests.  Check the server to ensure that you see the message "Published to stream successfully!" to verify that the integration test exercised the Kinesis stream.
+
 ## Deployment
 
 To deploy the service as an AWS Lambda instance, we need the npm module [node-lambda](https://www.npmjs.com/package/node-lambda). Please go to the URL and install it globally by running
@@ -184,6 +189,9 @@ It will convert the swagger YAML documentation to JSON documentation before depl
 *To get your AWS Lambda service credentials, please visit [AWS Lambda's website](https://aws.amazon.com/lambda/).*
 
 ## Development Change Log
+### v0.2.0
+#### Add
+  - add unit tests for models and an integration test for createPatron
 
 ### v0.1.1
 #### Add

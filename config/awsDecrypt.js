@@ -1,6 +1,4 @@
 // The credentials for NYPL's Simplified Card Creator API
-require('dotenv').config();
-
 const aws = require('aws-sdk');
 let decryptKMS;
 let kms;
@@ -26,6 +24,5 @@ decryptKMS = (key) => {
 };
 
 module.exports = {
-  username: decryptKMS(process.env.CARD_CREATOR_USERNAME),
-  password: decryptKMS(process.env.CARD_CREATOR_PASSWORD)
+  decryptKMS: decryptKMS
 };

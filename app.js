@@ -1,9 +1,9 @@
-require('dotenv').config();
-
 const SwaggerExpress = require('swagger-express-mw');
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
+require('dotenv').config({ path: process.cwd() + '/deploy_' + app.get('env') + '.env' });
+
 // The module for generating the swagger document
 const SwaggerUi = require('swagger-tools/middleware/swagger-ui');
 // Import controllers
@@ -79,14 +79,13 @@ app.use(errorHandler);
 // If you don't have it yet, check README.md for how to generate one based on swagger.yaml
 app.get('/docs/patron-creator', apiDoc.renderApiDoc);
 
-// Belows are routes
+// Below are routes
 const router = express.Router();
 
 app.use('/api/v0.1/patrons', router);
 
 router.route('/')
   .post(createPatron.createPatron);
-
 
 // required config
 const config = {
