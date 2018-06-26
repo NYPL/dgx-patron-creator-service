@@ -11,7 +11,7 @@
     "deploy-package-production": "node-lambda deploy -e production -f deploy_production.env",
     "build-doc-deploy-package-qa": "npm run build-swagger-doc && npm run deploy-package-qa",
     "build-doc-deploy-package-production": "npm run build-swagger-doc && npm run deploy-package-production",
-    "test": "swagger project test"
+    "test": "jest"
   },
   "repository": {
     "type": "git",
