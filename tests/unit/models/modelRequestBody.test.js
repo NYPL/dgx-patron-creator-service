@@ -4,7 +4,7 @@ const emptyPatronObject = null;
 const fullPatronObject = { simplePatron: { dateOfBirth: 'date of birth', policy_type: 'example policy_type', patron_agency: 'example patron_agency' } };
 const ecommunicationsPrefTruePatronObject = { simplePatron: { ecommunications_pref: true } };
 const ecommunicationsPrefFalsePatronObject = { simplePatron: { ecommunications_pref: false } };
-
+  
 describe('modelSimplePatron', () => {
   it('contains an empty birthdate if empty dateOfBirth is given', () => {
     expect(modelRequestBody.modelSimplePatron(emptyPatronObject)).toEqual(expect.objectContaining({ birthdate: ''}));
