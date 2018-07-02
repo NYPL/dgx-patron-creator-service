@@ -29,10 +29,10 @@ var options = {
   }
 }
 
-describe('createPatron v0.1 route', () => {
-  // TODO: Mocking the Kinesis stream as seen here: https://github.com/NYPL-discovery/node-nypl-streams-client/blob/pb/mocked-sdk-in-test-suite/test/encoding.test.js
-
-  if (process.env.INTEGRATION_TESTS == 'true') {
+if (process.env.INTEGRATION_TESTS == 'true') {
+  console.log('*** Running integration tests ***');
+  describe('createPatron v0.1 route', () => {
+    // TODO: Mocking the Kinesis stream as seen here: https://github.com/NYPL-discovery/node-nypl-streams-client/blob/pb/mocked-sdk-in-test-suite/test/encoding.test.js
     it('sends the patron data to Card Creator', (done) => {
       request.post(options, function (err, res, body){
         expect(res.statusCode).to.equal(201);
@@ -41,10 +41,11 @@ describe('createPatron v0.1 route', () => {
         done();
       })
     });
-  } else {
-    describe('example test', () => {
-      it('always passes', () => {
-      });
+  });
+} else {
+  console.log('*** Skipping integration tests ***');
+  describe('example test', () => {
+    it('always passes', () => {
     });
-  };
-});
+  });
+};
