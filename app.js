@@ -2,7 +2,8 @@ const SwaggerExpress = require('swagger-express-mw');
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
-require('dotenv').config({ path: process.cwd() + '/deploy_' + app.get('env') + '.env' });
+const pathName = process.cwd() + '/config/deploy_' + app.get('env') + '.env';
+require('dotenv').config({ path: pathName });
 
 // The module for generating the swagger document
 const SwaggerUi = require('swagger-tools/middleware/swagger-ui');

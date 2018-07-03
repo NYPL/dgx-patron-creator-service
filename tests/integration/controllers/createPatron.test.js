@@ -1,8 +1,6 @@
-const AWS = require('aws-sdk-mock');
 const request = require('request');
 const expect = require('chai').expect;
 const faker = require('faker');
-const sinon = require('sinon');
 let modelResponse = require('../../../api/model/modelResponse');
 
 var options = {
@@ -30,7 +28,6 @@ var options = {
 }
 
 if (process.env.INTEGRATION_TESTS == 'true') {
-  console.log('*** Running integration tests ***');
   describe('createPatron v0.1 route', () => {
     // TODO: Mocking the Kinesis stream as seen here: https://github.com/NYPL-discovery/node-nypl-streams-client/blob/pb/mocked-sdk-in-test-suite/test/encoding.test.js
     it('sends the patron data to Card Creator', (done) => {

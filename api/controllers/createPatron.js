@@ -1,5 +1,5 @@
 const axios = require('axios');
-const _isEmpty = require('underscore').isEmpty;
+const isEmpty = require('underscore').isEmpty;
 const config = require('./../../config/config.js');
 const awsDecrypt = require('./../../config/awsDecrypt.js');
 const modelRequestBody = require('./../model/modelRequestBody.js');
@@ -66,7 +66,7 @@ function createPatron(req, res) {
     { name: 'pin', value: simplePatron.pin },
   ];
 
-  if (!simplePatron || _isEmpty(simplePatron)) {
+  if (!simplePatron || isEmpty(simplePatron)) {
     res
       .status(400)
       .header('Content-Type', 'application/json')
@@ -76,8 +76,8 @@ function createPatron(req, res) {
           'invalid-request',
           'Missing required patron information.',
           null,
-          { form: ['Can not find the object "simplePatron".'] }
-        )
+          { form: ['Can not find the object "simplePatron".'] },
+        ),
       ));
 
     return;
@@ -98,18 +98,21 @@ function createPatron(req, res) {
           'invalid-request',
           'Missing required patron information.',
           null,
-          debugMessage
-        )
+          debugMessage,
+        ),
       ));
 
     return;
   }
 
-  cardCreatorUsername = cardCreatorUsername || awsDecrypt.decryptKMS(process.env.CARD_CREATOR_USERNAME);
-  cardCreatorPassword = cardCreatorPassword || awsDecrypt.decryptKMS(process.env.CARD_CREATOR_PASSWORD);
 
-  Promise.all([cardCreatorUsername, cardCreatorPassword]).then(function(values) {
-    [cardCreatorUsername, cardCreatorPassword] = values
+  cardCreatorUsername = cardCreatorUsername ||
+    awsDecrypt.decryptKMS(process.env.CARD_CREATOR_USERNAME);
+  cardCreatorPassword = cardCreatorPassword ||
+    awsDecrypt.decryptKMS(process.env.CARD_CREATOR_PASSWORD);
+
+  Promise.all([cardCreatorUsername, cardCreatorPassword]).then((values) => {
+    [cardCreatorUsername, cardCreatorPassword] = values;
 
     axios({
       method: 'post',
@@ -121,33 +124,31 @@ function createPatron(req, res) {
       withCredentials: true,
       auth: { username: cardCreatorUsername, password: cardCreatorPassword },
     })
-      .then(response => {
-        var modeledResponse = modelResponse.patronCreator(response.data, response.status);
+      .then((response) => {
+        const modeledResponse = modelResponse.patronCreator(response.data, response.status);
         modelStreamPatron.transformSimplePatronRequest(
-          req.body, modeledResponse
+          req.body, modeledResponse,
         )
-          .then(function (streamPatron) {
-            return streamPublish.streamPublish(
-              config.patronSchemaName,
-              process.env.PATRON_STREAM_NAME,
-              streamPatron
-            );
-          })
-          .then(function () {
+          .then(streamPatron => streamPublish.streamPublish(
+            config.patronSchemaName,
+            process.env.PATRON_STREAM_NAME,
+            streamPatron,
+          ))
+          .then(() => {
             renderResponse(req, res, 201, modeledResponse);
             console.log('Published to stream successfully!');
           })
-          .catch(error => {
+          .catch((error) => {
             renderResponse(req, res, 201, modeledResponse);
-            console.error('Error publishing to stream: ' + error);
-          })
+            console.error(`"Error publishing to stream: ${error}"`);
+          });
       })
-      .catch(response => {
+      .catch((response) => {
         console.error(
-          `status_code: ${response.response.status}, ` +
+          `st(response)e)e)e: ${response.response.status}, ` +
           `type: "invalid-request", ` +
           `message: "${response.message} from NYPL Simplified Card Creator.", ` +
-          `response: ${JSON.stringify(response.response.data)}`
+          `response: ${JSON.stringify(response.response.data)}`,
         );
 
         if (response.response && response.response.data) {
@@ -156,7 +157,7 @@ function createPatron(req, res) {
             response.response.data.type,
             response.response.data.detail,
             response.response.data.title,
-            response.response.data.debug_message
+            response.response.data.debug_message,
           );
 
           const statusCode = (responseObject.status) ? responseObject.status : 500;
@@ -165,11 +166,11 @@ function createPatron(req, res) {
             req,
             res,
             statusCode,
-            modelResponse.errorResponseData(responseObject)
+            modelResponse.errorResponseData(responseObject),
           );
         } else {
           renderResponse(req, res, 500, modelResponse.errorResponseData(
-            collectErrorResponseData(null, '', '', '', '')
+            collectErrorResponseData(null, '', '', '', ''),
           ));
         }
       });

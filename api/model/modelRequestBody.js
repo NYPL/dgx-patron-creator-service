@@ -88,10 +88,10 @@ function modelSimplePatron(obj) {
       convertEcommunicationsValue(
         addMissingPolicyType(
           updateDateOfBirthToBirthdate(
-            extractSimplePatron(obj)
-          )
-        )
-      )
+            extractSimplePatron(obj),
+          ),
+        ),
+      ),
     );
 
   return modeledSimplePatron;

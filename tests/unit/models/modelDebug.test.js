@@ -1,6 +1,7 @@
 const modelDebug = require('../../../api/model/modelDebug');
+
 const filledFields = [
-  { name: 'val1', value: 'Name' }
+  { name: 'val1', value: 'Name' },
 ];
 const blankFields = [
   { name: 'val2', value: null },

@@ -2,7 +2,7 @@
 
 This is the repository of the New York Public Library's patron creator microservice. The microservice offers the API endpoint to create a new patron with the information from the "Get a Library Card" form.
 
-The Link to the repository from [here](https://bitbucket.org/NYPL/dgx-patron-creator-service).
+The Link to the repository from [here](https://github.com/NYPL/dgx-patron-creator-service).
 
 The form on NYPL's website will fire a POST request to the service after it has been submitted. The service will then take the information and fire another POST request to NYPL Simplified's Card Creator API. Finally, it will reply the results based on the responses from the Card Creator API.
 
@@ -27,12 +27,6 @@ v0.1.1
 Clone the repo. Open your terminal and in the folder you just downloaded, run
 ```sh
 $ npm install
-```
-
-And then we need to install swagger globally, please run
-
-```sh
-$ npm install swagger -g
 ```
 
 ### Configuration
@@ -130,7 +124,7 @@ Visit _http://localhost:3001/docs/patron-creator_ for the JSON version of the se
 
 ### Visit and Edit the Swagger Documentation
 
-Visit _http://localhost:3001/docs_ to see your API service's documentation if executing the service locally(Be sure you have swagger installed globally already).
+Visit _http://localhost:3001/docs_ to see your API service's documentation if executing the service locally.
 
 To edit the documentation with interactive UI, run this command below in your terminal.
 
@@ -160,12 +154,6 @@ Use `npm start` to run the app in one window.  This is required to get the integ
 Use `INTEGRATION_TESTS=true npm test` in a second window to run all the tests or just `npm test` to run the unit tests.  Check the server to ensure that you see the message "Published to stream successfully!" to verify that the integration test exercised the Kinesis stream.
 
 ## Deployment
-
-To deploy the service as an AWS Lambda instance, we need the npm module [node-lambda](https://www.npmjs.com/package/node-lambda). Please go to the URL and install it globally by running
-
-```sh
-$ npm install -g node-lambda
-```
 
 Sensitive environment variables for AWS Lambda are encrypted in source control, and decrypted by AWS as part of deployment.  To deploy to QA, run the following command:
 ```sh
