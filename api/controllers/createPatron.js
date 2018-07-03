@@ -1,6 +1,5 @@
 const axios = require('axios');
 const isEmpty = require('underscore').isEmpty;
-const config = require('./../../config/config.js');
 const awsDecrypt = require('./../../config/awsDecrypt.js');
 const modelRequestBody = require('./../model/modelRequestBody.js');
 const modelResponse = require('./../model/modelResponse.js');
@@ -116,7 +115,7 @@ function createPatron(req, res) {
 
     axios({
       method: 'post',
-      url: config.ccBase + config.ccCreatePatron,
+      url: process.env.CARD_CREATOR_BASE_URL + process.env.CARD_CREATOR_PATH,
       data: simplePatron,
       headers: {
         'Content-Type': 'application/json',
@@ -130,7 +129,7 @@ function createPatron(req, res) {
           req.body, modeledResponse,
         )
           .then(streamPatron => streamPublish.streamPublish(
-            config.patronSchemaName,
+            process.env.PATRON_SCHEMA_NAME,
             process.env.PATRON_STREAM_NAME,
             streamPatron,
           ))
@@ -140,13 +139,13 @@ function createPatron(req, res) {
           })
           .catch((error) => {
             renderResponse(req, res, 201, modeledResponse);
-            console.error(`"Error publishing to stream: ${error}"`);
+            console.error(`Error publishing to stream: ${error}`);
           });
       })
       .catch((response) => {
         console.error(
-          `st(response)e)e)e: ${response.response.status}, ` +
-          `type: "invalid-request", ` +
+          `status_code: ${response.response.status}, ` +
+          'type: "invalid-request", ' +
           `message: "${response.message} from NYPL Simplified Card Creator.", ` +
           `response: ${JSON.stringify(response.response.data)}`,
         );

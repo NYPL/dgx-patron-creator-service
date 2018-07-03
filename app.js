@@ -1,18 +1,17 @@
 const SwaggerExpress = require('swagger-express-mw');
 const express = require('express');
 const bodyParser = require('body-parser');
-const app = express();
-const pathName = process.cwd() + '/config/deploy_' + app.get('env') + '.env';
-require('dotenv').config({ path: pathName });
-
 // The module for generating the swagger document
 const SwaggerUi = require('swagger-tools/middleware/swagger-ui');
 // Import controllers
 const createPatron = require('./api/controllers/createPatron.js');
 const apiDoc = require('./api/controllers/apiDoc.js');
 
-// Below are the middlewares for response headers
+const app = express();
+const pathName = `${process.cwd()}/config/deploy_${app.get('env')}.env`;
+require('dotenv').config({ path: pathName });
 
+// Below are the middlewares for response headers
 /**
  * allowCrossDomain(req, res, next)
  * Set up the middleware to support CORS. It will be used in every response.
