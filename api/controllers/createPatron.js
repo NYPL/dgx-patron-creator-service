@@ -135,14 +135,15 @@ function createPatron(req, res) {
           ))
           .then(() => {
             renderResponse(req, res, 201, modeledResponse);
-            console.log('Published to stream successfully!');
+            console.log('Published to stream successfully!'); // eslint-disable-line no-console
           })
           .catch((error) => {
             renderResponse(req, res, 201, modeledResponse);
-            console.error(`Error publishing to stream: ${error}`);
+            console.error(`Error publishing to stream: ${error}`); // eslint-disable-line no-console
           });
       })
       .catch((response) => {
+        // eslint-disable-next-line no-console
         console.error(
           `status_code: ${response.response.status}, ` +
           'type: "invalid-request", ' +
