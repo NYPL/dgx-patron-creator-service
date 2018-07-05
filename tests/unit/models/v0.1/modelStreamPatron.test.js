@@ -1,4 +1,4 @@
-const modelStreamPatron = require('../../../api/model/modelStreamPatron');
+const modelStreamPatron = require('../../../../api/models/v0.1/modelStreamPatron');
 
 const data = { simplePatron: {} };
 const modeledResponse = { data };

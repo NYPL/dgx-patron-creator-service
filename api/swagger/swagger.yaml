@@ -20,133 +20,434 @@ paths:
       # used to help categorize API groups
       tags:
         - patrons
-      summary: Create a Patron
+      summary: Create a Patron via Card Creator
       description: Create a new patron account against NYPL's Simplified Card Creator.
       # used as the method name of the controller
       operationId: patrons_creator
       parameters:
         - name: patron_data
           in: body
-          description: The information of the new patron
+          description: The information about the new patron
           required: true
           schema:
-            $ref: '#/definitions/PatronsCreatorData'
+            $ref: '#/definitions/V0_1/PatronsCreatorData'
       responses:
         '201':
           description: Successful operation
           schema:
             # a pointer to a definition
-            $ref: '#/definitions/PatronsCreatorResponse'
+            $ref: '#/definitions/V0_1/PatronsCreatorResponse'
         # responses may fall through to errors
         '400':
           description: Bad request
           schema:
-            $ref: '#/definitions/400ErrorResponse'
+            $ref: '#/definitions/V0_1/400ErrorResponse'
         '500':
           description: Generic server error
           schema:
-            $ref: '#/definitions/500ErrorResponse'
+            $ref: '#/definitions/V0_1/500ErrorResponse'
+      security:
+        - api_auth:
+          - openid offline_access api
+  /v0.2/patrons:
+    x-swagger-router-controller: patrons # LJC: needs to be unique?
+    post:
+      # used to help categorize API groups
+      tags:
+        - patrons
+      summary: Create a Patron via ILS
+      description: Create a new patron account via ILS.
+      # used as the method name of the controller
+      operationId: patrons_creator # LJC: needs to be unique?
+      parameters:
+        - name: patron_data # LJC: needs to be unique?
+          in: body
+          description: The information about the new patron
+          required: true
+          schema:
+            $ref: '#/definitions/V0_2/PatronsCreatorData'
+      responses:
+        '201':
+          description: Successful operation
+          schema:
+            # a pointer to a definition
+            $ref: '#/definitions/V0_2/PatronsCreatorResponse'
+        # responses may fall through to errors
+        '400':
+          description: Bad request
+          schema:
+            $ref: '#/definitions/V0_2/400ErrorResponse'
+        '500':
+          description: Generic server error
+          schema:
+            $ref: '#/definitions/V0_2/500ErrorResponse'
       security:
         - api_auth:
           - openid offline_access api
 # complex objects have schema definitions
 definitions:
-  PatronsCreatorData:
-    required:
-      - simplePatron
-    properties:
-      simplePatron:
-        $ref: '#/definitions/SimplePatron'
-  SimplePatron:
-    required:
-      - name
-      - dateOfBirth
-      - address
-      - username
-      - pin
-    properties:
-      name:
-        type: string
-        example: Mikey Olson, Jr.
-      dateOfBirth:
-        type: string
-        example: 11/11/1987
-      email:
-        type: string
-        example: mjolson@example.com
-      address:
-        $ref: '#/definitions/AddressModel'
-      username:
-        type: string
-        example: mjolson54321
-      pin:
-        type: string
-        example: '1234'
-      # the field for subscribing newsletters
-      ecommunications_pref:
-        type: boolean
-        example: true
-      policy_type:
-        type: string
-        example: web_applicant
-      patron_agency:
-        type: string
-        example: "198"
-  PatronsCreatorResponse:
-    type: object
-    required:
-      - data
-      - count
-    properties:
-      data:
-        $ref: '#/definitions/PatronsCreatorResponseModel'
-      count:
-        type: number
-        example: 1
-  PatronsCreatorResponseModel:
-    required:
-      - simplePatron
-    properties:
-      simplePatron:
-        $ref: '#/definitions/SimplePatronModel'
-      patron:
-        type: object
-        example: {}
-  SimplePatronModel:
-    required:
-      - status_code_from_card_creator
-      - type
-      - username
-      - temporary
-      - patron_id
-      - barcode
-      - message
-      - detail
-    properties:
-      status_code_from_card_creator:
-        type: number
-        example: 200
-      type:
-        type: string
-        example: card-granted
-      username:
-        type: string
-        example: mikeolson54321
-      temporary:
-        type: boolean
-        example: true
-      patron_id:
-        type: string
-        example: "6367028"
-      barcode:
-        type: string
-        example: "6367028"
-      message:
-        type: string
-        example: Your library card is temporary because your address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.
-      detail:
-        type: object
-        example: {}
+  V0_1:
+    PatronsCreatorData:
+      required:
+        - simplePatron
+      properties:
+        simplePatron:
+          $ref: '#/definitions/V0_1/SimplePatron'
+    SimplePatron:
+      required:
+        - name
+        - dateOfBirth
+        - address
+        - username
+        - pin
+      properties:
+        name:
+          type: string
+          example: Mikey Olson, Jr.
+        dateOfBirth:
+          type: string
+          example: 11/11/1987
+        email:
+          type: string
+          example: mjolson@example.com
+        address:
+          $ref: '#/definitions/AddressModel'
+        username:
+          type: string
+          example: mjolson54321
+        pin:
+          type: string
+          example: '1234'
+        # the field for subscribing newsletters
+        ecommunications_pref:
+          type: boolean
+          example: true
+        policy_type:
+          type: string
+          example: web_applicant
+        patron_agency:
+          type: string
+          example: "198"
+    PatronsCreatorResponse:
+      type: object
+      required:
+        - data
+        - count
+      properties:
+        data:
+          $ref: '#/definitions/V0_1/PatronsCreatorResponseModel'
+        count:
+          type: number
+          example: 1
+    PatronsCreatorResponseModel:
+      required:
+        - simplePatron
+      properties:
+        simplePatron:
+          $ref: '#/definitions/V0_1/SimplePatronModel'
+        patron:
+          type: object
+          example: {}
+    SimplePatronModel:
+      required:
+        - status_code_from_card_creator
+        - type
+        - username
+        - temporary
+        - patron_id
+        - barcode
+        - message
+        - detail
+      properties:
+        status_code_from_card_creator:
+          type: number
+          example: 200
+        type:
+          type: string
+          example: card-granted
+        username:
+          type: string
+          example: mikeolson54321
+        temporary:
+          type: boolean
+          example: true
+        patron_id:
+          type: string
+          example: "6367028"
+        barcode:
+          type: string
+          example: "6367028"
+        message:
+          type: string
+          example: Your library card is temporary because your address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.
+        detail:
+          type: object
+          example: {}
+    400ErrorResponse:
+      required:
+        - data
+        - count
+      properties:
+        data:
+          $ref: '#/definitions/V0_1/400ErrorResponseContent'
+        count:
+          type: number
+          example: 0
+    400ErrorResponseContent:
+      allOf:
+        - $ref: '#/definitions/V0_1/400ErrorStatusSimplePatron'
+        - $ref: '#/definitions/V0_1/ErrorModel'
+    500ErrorResponse:
+      required:
+        - data
+        - count
+      properties:
+        data:
+          $ref: '#/definitions/V0_1/500ErrorResponseContent'
+        count:
+          type: number
+          example: 0
+    500ErrorResponseContent:
+      allOf:
+        - $ref: '#/definitions/V0_1/500ErrorStatusSimplePatron'
+        - $ref: '#/definitions/V0_1/ErrorModel'
+    400ErrorStatusSimplePatron:
+      required:
+        - simplePatron
+      properties:
+        simplePatron:
+          $ref: '#/definitions/V0_1/400ErrorStatusModel'
+    400ErrorStatusModel:
+      required:
+        - status_code_from_card_creator
+        - type
+        - message
+        - detail
+      properties:
+        status_code_from_card_creator:
+          type: number
+          example: 400
+        type:
+          type: string
+          example: invalid-request
+        message:
+          type: string
+          example: No data
+        detail:
+          type: object
+          example: {}
+    500ErrorStatusSimplePatron:
+      required:
+        - simplePatron
+      properties:
+        simplePatron:
+          $ref: '#/definitions/V0_1/500ErrorStatusModel'
+    500ErrorStatusModel:
+      required:
+        - status_code_from_card_creator
+        - type
+        - message
+        - detail
+      properties:
+        status_code_from_card_creator:
+          type: number
+          example: 500
+        type:
+          type: string
+          example: internal-server-error
+        message:
+          type: string
+          example: Internal server error
+        detail:
+          type: object
+          example: {}
+    ErrorModel:
+      required:
+        - patron
+      properties:
+        patron:
+          type: object
+  V0_2:
+    PatronsCreatorData:
+      required:
+        - generalPatron
+      properties:
+        generalPatron:
+          $ref: '#/definitions/V0_2/GeneralPatron'
+    GeneralPatron:
+      required:
+        - name
+        - dateOfBirth
+        - address
+        - username
+        - pin
+      properties:
+        name:
+          type: string
+          example: Mikey Olson, Jr.
+        dateOfBirth:
+          type: string
+          example: 11/11/1987
+        email:
+          type: string
+          example: mjolson@example.com
+        address:
+          $ref: '#/definitions/AddressModel'
+        username:
+          type: string
+          example: mjolson54321
+        pin:
+          type: string
+          example: '1234'
+        # the field for subscribing newsletters
+        ecommunications_pref:
+          type: boolean
+          example: true
+        policy_type:
+          type: string
+          example: web_applicant
+        patron_agency:
+          type: string
+          example: "198"
+    PatronsCreatorResponse:
+      type: object
+      required:
+        - data
+        - count
+      properties:
+        data:
+          $ref: '#/definitions/V0_2/PatronsCreatorResponseModel'
+        count:
+          type: number
+          example: 1
+    PatronsCreatorResponseModel:
+      required:
+        - generalPatron
+      properties:
+        generalPatron:
+          $ref: '#/definitions/V0_2/GeneralPatronModel'
+        patron:
+          type: object
+          example: {}
+    GeneralPatronModel:
+      required:
+        - status_code_from_ils
+        - type
+        - username
+        - temporary
+        - patron_id
+        - barcode
+        - message
+        - detail
+      properties:
+        status_code_from_ils:
+          type: number
+          example: 200
+        type:
+          type: string
+          example: card-granted
+        username:
+          type: string
+          example: mikeolson54321
+        temporary:
+          type: boolean
+          example: true
+        patron_id:
+          type: string
+          example: "6367028"
+        barcode:
+          type: string
+          example: "6367028"
+        message:
+          type: string
+          example: Your library card is temporary because your address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.
+        detail:
+          type: object
+          example: {}
+    400ErrorResponse:
+      required:
+        - data
+        - count
+      properties:
+        data:
+          $ref: '#/definitions/V0_2/400ErrorResponseContent'
+        count:
+          type: number
+          example: 0
+    400ErrorResponseContent:
+      allOf:
+        - $ref: '#/definitions/V0_2/400ErrorStatusGeneralPatron'
+        - $ref: '#/definitions/V0_2/ErrorModel'
+    500ErrorResponse:
+      required:
+        - data
+        - count
+      properties:
+        data:
+          $ref: '#/definitions/V0_2/500ErrorResponseContent'
+        count:
+          type: number
+          example: 0
+    500ErrorResponseContent:
+      allOf:
+        - $ref: '#/definitions/V0_2/500ErrorStatusGeneralPatron'
+        - $ref: '#/definitions/V0_2/ErrorModel'
+    400ErrorStatusGeneralPatron:
+      required:
+        - generalPatron
+      properties:
+        generalPatron:
+          $ref: '#/definitions/V0_2/400ErrorStatusModel'
+    400ErrorStatusModel:
+      required:
+        - status_code_from_ils
+        - type
+        - message
+        - detail
+      properties:
+        status_code_from_ils:
+          type: number
+          example: 400
+        type:
+          type: string
+          example: invalid-request
+        message:
+          type: string
+          example: No data
+        detail:
+          type: object
+          example: {}
+    500ErrorStatusGeneralPatron:
+      required:
+        - generalPatron
+      properties:
+        generalPatron:
+          $ref: '#/definitions/V0_2/500ErrorStatusModel'
+    500ErrorStatusModel:
+      required:
+        - status_code_from_ils
+        - type
+        - message
+        - detail
+      properties:
+        status_code_from_ils:
+          type: number
+          example: 500
+        type:
+          type: string
+          example: internal-server-error
+        message:
+          type: string
+          example: Internal server error
+        detail:
+          type: object
+          example: {}
+    ErrorModel:
+      required:
+        - patron
+      properties:
+        patron:
+          type: object
   AddressModel:
       type: object
       required:
@@ -170,90 +471,6 @@ definitions:
         zip:
           type: string
           example: "10018"
-  400ErrorResponse:
-    required:
-      - data
-      - count
-    properties:
-      data:
-        $ref: '#/definitions/400ErrorResponseContent'
-      count:
-        type: number
-        example: 0
-  400ErrorResponseContent:
-    allOf:
-      - $ref: '#/definitions/400ErrorStatusSimplePatron'
-      - $ref: '#/definitions/ErrorModel'
-  500ErrorResponse:
-    required:
-      - data
-      - count
-    properties:
-      data:
-        $ref: '#/definitions/500ErrorResponseContent'
-      count:
-        type: number
-        example: 0
-  500ErrorResponseContent:
-    allOf:
-      - $ref: '#/definitions/500ErrorStatusSimplePatron'
-      - $ref: '#/definitions/ErrorModel'
-  400ErrorStatusSimplePatron:
-    required:
-      - simplePatron
-    properties:
-      simplePatron:
-        $ref: '#/definitions/400ErrorStatusModel'
-  400ErrorStatusModel:
-    required:
-      - status_code_from_card_creator
-      - type
-      - message
-      - detail
-    properties:
-      status_code_from_card_creator:
-        type: number
-        example: 400
-      type:
-        type: string
-        example: invalid-request
-      message:
-        type: string
-        example: No data
-      detail:
-        type: object
-        example: {}
-  500ErrorStatusSimplePatron:
-    required:
-      - simplePatron
-    properties:
-      simplePatron:
-        $ref: '#/definitions/500ErrorStatusModel'
-  500ErrorStatusModel:
-    required:
-      - status_code_from_card_creator
-      - type
-      - message
-      - detail
-    properties:
-      status_code_from_card_creator:
-        type: number
-        example: 500
-      type:
-        type: string
-        example: internal-server-error
-      message:
-        type: string
-        example: Internal server error
-      detail:
-        type: object
-        example: {}
-  ErrorModel:
-    required:
-      - patron
-    properties:
-      patron:
-        type: object
 tags:
   - name: patrons
     description: Patron API

@@ -1,11 +1,11 @@
 const axios = require('axios');
 const isEmpty = require('underscore').isEmpty;
-const awsDecrypt = require('./../../config/awsDecrypt.js');
-const modelRequestBody = require('./../model/modelRequestBody.js');
-const modelResponse = require('./../model/modelResponse.js');
-const modelDebug = require('./../model/modelDebug.js');
-const modelStreamPatron = require('./../model/modelStreamPatron.js').modelStreamPatron;
-const streamPublish = require('./../helpers/streamPublish');
+const awsDecrypt = require('./../../../config/awsDecrypt.js');
+const modelRequestBody = require('./../../models/v0.1/modelRequestBody.js');
+const modelResponse = require('./../../models/v0.1/modelResponse.js');
+const modelDebug = require('./../../models/v0.1/modelDebug.js');
+const modelStreamPatron = require('./../../models/v0.1/modelStreamPatron.js').modelStreamPatron;
+const streamPublish = require('./../../helpers/streamPublish');
 
 let cardCreatorUsername;
 let cardCreatorPassword;
