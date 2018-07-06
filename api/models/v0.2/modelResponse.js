@@ -13,7 +13,7 @@ function modelPatronCreatorResponse(data, status) {
 
   return {
     data: {
-      generalPatron: {
+      simplePatron: {
         status_code_from_ils: status || null,
         type: data.type || null,
         username: data.username || '',
@@ -73,7 +73,7 @@ function parseTypeURL(str) {
 function modelErrorResponseData(obj) {
   return {
     data: {
-      generalPatron: {
+      simplePatron: {
         status_code_from_ils: obj.status || null,
         type: (obj && obj.type) ? parseTypeURL(obj.type) : '',
         message: obj.message,

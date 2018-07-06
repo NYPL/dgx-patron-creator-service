@@ -91,10 +91,10 @@ function modelSimplePatron(obj) {
       convertEcommunicationsValue(
         addMissingPolicyType(
           updateDateOfBirthToBirthdate(
-            extractSimplePatron(obj),
-          ),
-        ),
-      ),
+            extractSimplePatron(obj) // eslint-disable-line comma-dangle
+          ) // eslint-disable-line comma-dangle
+        ) // eslint-disable-line comma-dangle
+      ) // eslint-disable-line comma-dangle
     );
 
   return modeledSimplePatron;

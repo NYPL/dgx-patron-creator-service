@@ -1,13 +1,13 @@
 /**
- * extractGeneralPatron(obj)
- * Gets the item "generalPatron" out of the original request body from the client.
+ * extractSimplePatron(obj)
+ * Gets the item "simplePatron" out of the original request body from the client.
  *
  * @param {object} obj
  * @return {object}
  */
-function extractGeneralPatron(obj) {
-  if (obj && obj.generalPatron) {
-    return obj.generalPatron;
+function extractSimplePatron(obj) {
+  if (obj && obj.simplePatron) {
+    return obj.simplePatron;
   }
 
   return {};
@@ -79,27 +79,27 @@ function addMissingPatronAgency(obj) {
 }
 
 /**
- * modelGeneralPatron(obj)
+ * modelSimplePatron(obj)
  * Takes the original request.body from the client and models it for the Card Creartor.
  *
  * @param {object} obj
  * @return {object}
  */
-function modelGeneralPatron(obj) {
-  const modeledGeneralPatron =
+function modelSimplePatron(obj) {
+  const modeledSimplePatron =
     addMissingPatronAgency(
       convertEcommunicationsValue(
         addMissingPolicyType(
           updateDateOfBirthToBirthdate(
-            extractGeneralPatron(obj),
+            extractSimplePatron(obj),
           ),
         ),
       ),
     );
 
-  return modeledGeneralPatron;
+  return modeledSimplePatron;
 }
 
 module.exports = {
-  modelGeneralPatron,
+  modelSimplePatron,
 };

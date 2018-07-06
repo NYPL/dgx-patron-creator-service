@@ -7,6 +7,40 @@ const modelDebug = require('./../../models/v0.2/modelDebug.js');
 const modelStreamPatron = require('./../../models/v0.2/modelStreamPatron.js').modelStreamPatron;
 const streamPublish = require('./../../helpers/streamPublish');
 
+const tempData = {
+    names: [
+        "USER, TEST"
+    ],
+    barcodes: [
+        "ABCD"
+    ],
+    expirationDate: "2019-01-01",
+    birthDate: "1978-01-01",
+    emails: [
+        "test@test.com"
+    ],
+    patronType: 10,
+    patronCodes: {
+        pcode1: "s",
+        pcode2: "f",
+        pcode3: 5
+    },
+    blockInfo: {
+        code: "-"
+    },
+    addresses: [{
+        lines: [
+            ADDRESS LINE 1,
+            ADDRESS LINE 2
+        ],
+        type: "a"
+    }],
+    phones: [{
+        number: "917-123-4567",
+        type: "t"
+    }]
+}
+
 let clientKey;
 let clientPassword;
 
@@ -56,16 +90,16 @@ function renderResponse(req, res, status, message) {
  * @param {HTTP response} res
  */
 function createPatron(req, res) {
-  const generalPatron = modelRequestBody.modelGeneralPatron(req.body);
+  const simplePatron = modelRequestBody.modelSimplePatron(req.body);
   const requiredFields = [
-    { name: 'name', value: generalPatron.name },
-    { name: 'birthdate', value: generalPatron.birthdate },
-    { name: 'address', value: generalPatron.address },
-    { name: 'username', value: generalPatron.username },
-    { name: 'pin', value: generalPatron.pin },
+    { name: 'name', value: simplePatron.name },
+    { name: 'birthdate', value: simplePatron.birthdate },
+    { name: 'address', value: simplePatron.address },
+    { name: 'username', value: simplePatron.username },
+    { name: 'pin', value: simplePatron.pin },
   ];
 
-  if (!generalPatron || isEmpty(generalPatron)) {
+  if (!simplePatron || isEmpty(simplePatron)) {
     res
       .status(400)
       .header('Content-Type', 'application/json')
@@ -75,7 +109,7 @@ function createPatron(req, res) {
           'invalid-request',
           'Missing required patron information.',
           null,
-          { form: ['Can not find the object "generalPatron".'] },
+          { form: ['Can not find the object "simplePatron".'] },
         ),
       ));
 
@@ -116,7 +150,7 @@ function createPatron(req, res) {
     axios({
       method: 'post',
       url: process.env.ILS_CREATE_PATRON_URL,
-      data: generalPatron,
+      data: tempData, //generalPatron,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -125,7 +159,7 @@ function createPatron(req, res) {
     })
       .then((response) => {
         const modeledResponse = modelResponse.patronCreator(response.data, response.status);
-        modelStreamPatron.transformGeneralPatronRequest(
+        modelStreamPatron.transformSimplePatronRequest(
           req.body, modeledResponse,
         )
           .then(streamPatron => streamPublish.streamPublish(

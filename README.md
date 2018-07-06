@@ -1,15 +1,19 @@
+[![Build Status](https://travis-ci.org/NYPL/dgx-patron-creator-service.svg?branch=development)](https://travis-ci.org/NYPL/dgx-patron-creator-service)
+
 # dgx-patron-creator-service
 
 This is the repository of the New York Public Library's patron creator microservice. The microservice offers the API endpoint to create a new patron with the information from the "Get a Library Card" form.
 
 The Link to the repository from [here](https://github.com/NYPL/dgx-patron-creator-service).
 
-The form on NYPL's website will fire a POST request to the service after it has been submitted. The service will then take the information and fire another POST request to NYPL Simplified's Card Creator API. Finally, it will reply the results based on the responses from the Card Creator API.
+## /v0.1/patrons
+The form on NYPL's website will fire a POST request to the service after it has been submitted. The service will then take the information and fire another POST request to NYPL Simplified's Card Creator API. Finally, it will reply with the results based on the responses from the [Card Creator API](https://github.com/NYPL-Simplified/card-creator).
 
-The Card Creator's documentation can be found [here](https://github.com/NYPL-Simplified/card-creator).
+## /v0.2/patrons
+Any NYPL service may send a post request to this path in order to create a patron on the ILS.
 
 ## Version
-v0.1.1
+v0.2
 
 ## Technologies
 

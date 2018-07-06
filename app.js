@@ -50,13 +50,12 @@ app.use(bodyParser.urlencoded({
  * @param {HTTP response} res
  * @param {next}
  */
-function errorHandler(err, req, res, next) {
+function errorHandler(err, req, res, next) { // eslint-disable-line no-unused-vars
   // eslint-disable-next-line no-console
   console.error(
     `status_code: ${err.status}, ` +
     'type: "invalid-request", ' +
-    `message: "error request with ${err.body}"`,
-  );
+    `message: "error request with ${err.body}"`);
 
   res
     .status(err.status)

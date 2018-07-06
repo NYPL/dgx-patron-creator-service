@@ -6,7 +6,7 @@ const defaultPatronCreatorResponseOut = {
   count: 1,
   data: {
     patron: {},
-    generalPatron: {
+    simplePatron: {
       barcode: '',
       detail: {},
       message: '',
@@ -31,7 +31,7 @@ const examplePatronCreatorResponseOut = {
   count: 1,
   data: {
     patron: {},
-    generalPatron: {
+    simplePatron: {
       barcode: 'example barcode',
       detail: {
         example: 'example message',
@@ -53,7 +53,7 @@ const defaultErrorResponseDataOut = {
   count: 0,
   data: {
     patron: null,
-    generalPatron: {
+    simplePatron: {
       detail: {
         debug: {
           example: 'example message',
@@ -77,7 +77,7 @@ const exampleErrorResponseDataOut = {
   count: 0,
   data: {
     patron: null,
-    generalPatron: {
+    simplePatron: {
       detail: {
         debug: {
           example: 'example message',

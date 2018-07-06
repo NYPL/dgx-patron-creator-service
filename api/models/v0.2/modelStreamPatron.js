@@ -1,6 +1,6 @@
 const modelStreamPatron = {
   data: {
-    generalPatron: {
+    simplePatron: {
       patron_id: '',
       barcode: '',
       name: '',
@@ -27,22 +27,22 @@ const modelStreamPatron = {
    * @param {object} modeledResponse
    * @return {Promise}
    */
-  transformGeneralPatronRequest(data, modeledResponse) {
+  transformSimplePatronRequest(data, modeledResponse) {
     return new Promise((resolve, reject) => {
-      if (!data.generalPatron) {
-        reject(new Error('generalPatron object was not found'));
+      if (!data.simplePatron) {
+        reject(new Error('simplePatron object was not found'));
       }
 
-      if (!modeledResponse.data.generalPatron) {
-        reject(new Error('modeledResponse generalPatron object was not found'));
+      if (!modeledResponse.data.simplePatron) {
+        reject(new Error('modeledResponse simplePatron object was not found'));
       }
 
-      const generalPatron = Object.assign(
-        {}, data.generalPatron, modeledResponse.data.generalPatron);
+      const simplePatron = Object.assign(
+        {}, data.simplePatron, modeledResponse.data.simplePatron);
 
-      for (const key in generalPatron) {
-        if (modelStreamPatron.data.generalPatron.hasOwnProperty(key)) {
-          modelStreamPatron.data.generalPatron[key] = generalPatron[key];
+      for (const key in simplePatron) {
+        if (modelStreamPatron.data.simplePatron.hasOwnProperty(key)) {
+          modelStreamPatron.data.simplePatron[key] = simplePatron[key];
         }
       }
 
