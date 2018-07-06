@@ -16,7 +16,7 @@ function renderApiDoc(req, res) {
     if (err) {
       // eslint-disable-next-line no-console
       console.log(
-        'status_code: 500, message: Can not load the documentation file.',
+        'status_code: 500, message: Can not load the documentation file.' // eslint-disable-line comma-dangle
       );
 
       res.status(500)
