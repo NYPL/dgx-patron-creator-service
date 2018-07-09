@@ -7,42 +7,46 @@ const modelDebug = require('./../../models/v0.2/modelDebug.js');
 const modelStreamPatron = require('./../../models/v0.2/modelStreamPatron.js').modelStreamPatron;
 const streamPublish = require('./../../helpers/streamPublish');
 
-const tempData = {
-    names: [
-        "USER, TEST"
-    ],
-    barcodes: [
-        "ABCD"
-    ],
-    expirationDate: "2019-01-01",
-    birthDate: "1978-01-01",
-    emails: [
-        "test@test.com"
-    ],
-    patronType: 10,
-    patronCodes: {
-        pcode1: "s",
-        pcode2: "f",
-        pcode3: 5
-    },
-    blockInfo: {
-        code: "-"
-    },
-    addresses: [{
-        lines: [
-            ADDRESS LINE 1,
-            ADDRESS LINE 2
-        ],
-        type: "a"
-    }],
-    phones: [{
-        number: "917-123-4567",
-        type: "t"
-    }]
+function base64(string) {
+  return Buffer.from(string).toString('base64');
 }
 
 let clientKey;
 let clientPassword;
+
+const tempData = {
+  names: [
+    'USER, TEST',
+  ],
+  barcodes: [
+    'ABCD',
+  ],
+  expirationDate: '2019-01-01',
+  birthDate: '1978-01-01',
+  emails: [
+    'test@test.com',
+  ],
+  patronType: 10,
+  patronCodes: {
+    pcode1: 's',
+    pcode2: 'f',
+    pcode3: 5,
+  },
+  blockInfo: {
+    code: '-',
+  },
+  addresses: [{
+    lines: [
+      'ADDRESS LINE 1',
+      'ADDRESS LINE 2',
+    ],
+    type: 'a',
+  }],
+  phones: [{
+    number: '917-123-4567',
+    type: 't',
+  }],
+};
 
 /**
  * collectErrorResponseData(status, type, message, title, debugMessage)
@@ -109,8 +113,8 @@ function createPatron(req, res) {
           'invalid-request',
           'Missing required patron information.',
           null,
-          { form: ['Can not find the object "simplePatron".'] },
-        ),
+          { form: ['Can not find the object "simplePatron".'] } // eslint-disable-line comma-dangle
+        ) // eslint-disable-line comma-dangle
       ));
 
     return;
@@ -131,82 +135,89 @@ function createPatron(req, res) {
           'invalid-request',
           'Missing required patron information.',
           null,
-          debugMessage,
-        ),
+          debugMessage // eslint-disable-line comma-dangle
+        ) // eslint-disable-line comma-dangle
       ));
 
     return;
   }
 
-
-  clientKey = clientKey ||
+  clientKey = process.env.CLIENT_KEY ||
     awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
-  clientPassword = clientPassword ||
+  clientPassword = process.env.CLIENT_PASSWORD ||
     awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
 
   Promise.all([clientKey, clientPassword]).then((values) => {
-    [clientKey, clientPassword] = values;
+    [process.env.CLIENT_KEY, process.env.CLIENT_PASSWORD] = values;
 
-    axios({
-      method: 'post',
-      url: process.env.ILS_CREATE_PATRON_URL,
-      data: tempData, //generalPatron,
+    const username = process.env.CLIENT_KEY;
+    const password = process.env.CLIENT_PASSWORD;
+    const basicAuth = `Basic ${base64(`${username}:${password}`)}`;
+
+    axios.post(process.env.ILS_CREATE_TOKEN_URL, {}, {
       headers: {
         'Content-Type': 'application/json',
+        Authorization: basicAuth,
       },
-      withCredentials: true,
-      auth: { client_key: clientKey, client_secret: clientPassword },
     })
-      .then((response) => {
-        const modeledResponse = modelResponse.patronCreator(response.data, response.status);
-        modelStreamPatron.transformSimplePatronRequest(
-          req.body, modeledResponse,
-        )
-          .then(streamPatron => streamPublish.streamPublish(
-            process.env.PATRON_SCHEMA_NAME,
-            process.env.PATRON_STREAM_NAME,
-            streamPatron,
-          ))
-          .then(() => {
-            renderResponse(req, res, 201, modeledResponse);
-            console.log('Published to stream successfully!'); // eslint-disable-line no-console
+      .then((tokenResponse) => {
+        axios.post(process.env.ILS_CREATE_PATRON_URL, tempData, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${tokenResponse.data.access_token}`,
+          },
+        })
+          .then((response) => {
+            const modeledResponse = modelResponse.patronCreator(response.data, response.status);
+            modelStreamPatron.transformSimplePatronRequest(
+              req.body, modeledResponse // eslint-disable-line comma-dangle
+            )
+              .then(streamPatron => streamPublish.streamPublish(
+                process.env.PATRON_SCHEMA_NAME,
+                process.env.PATRON_STREAM_NAME,
+                streamPatron // eslint-disable-line comma-dangle
+              ))
+              .then(() => {
+                renderResponse(req, res, 201, modeledResponse);
+                console.log('Published to stream successfully!'); // eslint-disable-line no-console
+              })
+              .catch((error) => {
+                renderResponse(req, res, 201, modeledResponse);
+                console.error(`Error publishing to stream: ${error}`); // eslint-disable-line no-console
+              });
           })
-          .catch((error) => {
-            renderResponse(req, res, 201, modeledResponse);
-            console.error(`Error publishing to stream: ${error}`); // eslint-disable-line no-console
+          .catch((response) => {
+            // eslint-disable-next-line no-console
+            console.error(
+              `status_code: ${response.response.status}, ` +
+              'type: "invalid-request", ' +
+              `message: "${response.message} from ILS.", ` +
+              `response: ${JSON.stringify(response.response.data)}` // eslint-disable-line comma-dangle
+            );
+
+            if (response.response && response.response.data) {
+              const responseObject = collectErrorResponseData(
+                response.response.status,
+                response.response.data.type,
+                response.response.data.detail,
+                response.response.data.title,
+                response.response.data.debug_message // eslint-disable-line comma-dangle
+              );
+
+              const statusCode = (responseObject.status) ? responseObject.status : 500;
+
+              renderResponse(
+                req,
+                res,
+                statusCode,
+                modelResponse.errorResponseData(responseObject) // eslint-disable-line comma-dangle
+              );
+            } else {
+              renderResponse(req, res, 500, modelResponse.errorResponseData(
+                collectErrorResponseData(null, '', '', '', '') // eslint-disable-line comma-dangle
+              ));
+            }
           });
-      })
-      .catch((response) => {
-        // eslint-disable-next-line no-console
-        console.error(
-          `status_code: ${response.response.status}, ` +
-          'type: "invalid-request", ' +
-          `message: "${response.message} from ILS.", ` +
-          `response: ${JSON.stringify(response.response.data)}`,
-        );
-
-        if (response.response && response.response.data) {
-          const responseObject = collectErrorResponseData(
-            response.response.status,
-            response.response.data.type,
-            response.response.data.detail,
-            response.response.data.title,
-            response.response.data.debug_message,
-          );
-
-          const statusCode = (responseObject.status) ? responseObject.status : 500;
-
-          renderResponse(
-            req,
-            res,
-            statusCode,
-            modelResponse.errorResponseData(responseObject),
-          );
-        } else {
-          renderResponse(req, res, 500, modelResponse.errorResponseData(
-            collectErrorResponseData(null, '', '', '', ''),
-          ));
-        }
       });
   });
 }

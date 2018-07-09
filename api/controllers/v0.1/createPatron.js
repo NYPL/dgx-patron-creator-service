@@ -75,8 +75,8 @@ function createPatron(req, res) {
           'invalid-request',
           'Missing required patron information.',
           null,
-          { form: ['Can not find the object "simplePatron".'] },
-        ),
+          { form: ['Can not find the object "simplePatron".'] } // eslint-disable-line comma-dangle
+        ) // eslint-disable-line comma-dangle
       ));
 
     return;
@@ -97,8 +97,8 @@ function createPatron(req, res) {
           'invalid-request',
           'Missing required patron information.',
           null,
-          debugMessage,
-        ),
+          debugMessage // eslint-disable-line comma-dangle
+        ) // eslint-disable-line comma-dangle
       ));
 
     return;
@@ -126,12 +126,12 @@ function createPatron(req, res) {
       .then((response) => {
         const modeledResponse = modelResponse.patronCreator(response.data, response.status);
         modelStreamPatron.transformSimplePatronRequest(
-          req.body, modeledResponse,
+          req.body, modeledResponse // eslint-disable-line comma-dangle
         )
           .then(streamPatron => streamPublish.streamPublish(
             process.env.PATRON_SCHEMA_NAME,
             process.env.PATRON_STREAM_NAME,
-            streamPatron,
+            streamPatron // eslint-disable-line comma-dangle
           ))
           .then(() => {
             renderResponse(req, res, 201, modeledResponse);
@@ -148,7 +148,7 @@ function createPatron(req, res) {
           `status_code: ${response.response.status}, ` +
           'type: "invalid-request", ' +
           `message: "${response.message} from NYPL Simplified Card Creator.", ` +
-          `response: ${JSON.stringify(response.response.data)}`,
+          `response: ${JSON.stringify(response.response.data)}` // eslint-disable-line comma-dangle
         );
 
         if (response.response && response.response.data) {
@@ -157,7 +157,7 @@ function createPatron(req, res) {
             response.response.data.type,
             response.response.data.detail,
             response.response.data.title,
-            response.response.data.debug_message,
+            response.response.data.debug_message // eslint-disable-line comma-dangle
           );
 
           const statusCode = (responseObject.status) ? responseObject.status : 500;
@@ -166,11 +166,11 @@ function createPatron(req, res) {
             req,
             res,
             statusCode,
-            modelResponse.errorResponseData(responseObject),
+            modelResponse.errorResponseData(responseObject) // eslint-disable-line comma-dangle
           );
         } else {
           renderResponse(req, res, 500, modelResponse.errorResponseData(
-            collectErrorResponseData(null, '', '', '', ''),
+            collectErrorResponseData(null, '', '', '', '') // eslint-disable-line comma-dangle
           ));
         }
       });

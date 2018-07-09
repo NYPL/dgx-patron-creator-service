@@ -10,7 +10,6 @@
   "scripts": {
     "start": "./node_modules/.bin/swagger project start",
     "swagger-edit": "./node_modules/.bin/swagger project edit",
-    "build-swagger-doc": "./node_modules/.bin/yaml2json ./api/swagger/swagger.yaml > ./api/swagger/swaggerDoc.json",
     "deploy-development": "./node_modules/.bin/node-lambda deploy -e development -f ./config/deploy_development.env -S ./config/event_sources_development.json -o arn:aws:iam::224280085904:role/lambda_basic_execution -a $AWS_ACCESS_KEY_ID_DEVELOPMENT -s $AWS_SECRET_ACCESS_KEY_DEVELOPMENT",
     "deploy-development-from-local": "./node_modules/.bin/node-lambda deploy -e development -f ./config/deploy_development.env -S ./config/event_sources_development.json -o arn:aws:iam::224280085904:role/lambda_basic_execution -p nypl-sandbox",
     "deploy-qa": "TBD",

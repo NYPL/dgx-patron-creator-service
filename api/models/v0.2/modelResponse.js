@@ -9,6 +9,9 @@ const url = require('url');
  * @return {object}
  */
 function modelPatronCreatorResponse(data, status) {
+  console.log('************* modelPatronCreatorResponse ***************');
+  console.log(status);
+  console.log(data);
   const detail = (data && data.debug_info) ? JSON.parse(data.debug_info) : {};
 
   return {
