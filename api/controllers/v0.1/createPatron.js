@@ -105,13 +105,13 @@ function createPatron(req, res) {
   }
 
 
-  cardCreatorUsername = cardCreatorUsername ||
+  cardCreatorUsername = process.env.CACHED_CARD_CREATOR_USERNAME ||
     awsDecrypt.decryptKMS(process.env.CARD_CREATOR_USERNAME);
-  cardCreatorPassword = cardCreatorPassword ||
+  cardCreatorPassword = process.env.CACHED_CARD_CREATOR_PASSWORD ||
     awsDecrypt.decryptKMS(process.env.CARD_CREATOR_PASSWORD);
 
   Promise.all([cardCreatorUsername, cardCreatorPassword]).then((values) => {
-    [cardCreatorUsername, cardCreatorPassword] = values;
+    [process.env.CACHED_CARD_CREATOR_USERNAME, process.env.CACHED_CARD_CREATOR_PASSWORD] = values;
 
     axios({
       method: 'post',
@@ -129,7 +129,7 @@ function createPatron(req, res) {
           req.body, modeledResponse // eslint-disable-line comma-dangle
         )
           .then(streamPatron => streamPublish.streamPublish(
-            process.env.PATRON_SCHEMA_NAME,
+            process.env.PATRON_SCHEMA_NAME_V01,
             process.env.PATRON_STREAM_NAME,
             streamPatron // eslint-disable-line comma-dangle
           ))

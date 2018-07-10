@@ -14,40 +14,6 @@ function base64(string) {
 let clientKey;
 let clientPassword;
 
-const tempData = {
-  names: [
-    'USER, TEST',
-  ],
-  barcodes: [
-    'ABCD',
-  ],
-  expirationDate: '2019-01-01',
-  birthDate: '1978-01-01',
-  emails: [
-    'test@test.com',
-  ],
-  patronType: 10,
-  patronCodes: {
-    pcode1: 's',
-    pcode2: 'f',
-    pcode3: 5,
-  },
-  blockInfo: {
-    code: '-',
-  },
-  addresses: [{
-    lines: [
-      'ADDRESS LINE 1',
-      'ADDRESS LINE 2',
-    ],
-    type: 'a',
-  }],
-  phones: [{
-    number: '917-123-4567',
-    type: 't',
-  }],
-};
-
 /**
  * collectErrorResponseData(status, type, message, title, debugMessage)
  * Model the response from a failed request.
@@ -94,13 +60,19 @@ function renderResponse(req, res, status, message) {
  * @param {HTTP response} res
  */
 function createPatron(req, res) {
-  const simplePatron = modelRequestBody.modelSimplePatron(req.body);
+  // const simplePatron = modelRequestBody.modelSimplePatron(req.body);
+  const simplePatron = req.body;
   const requiredFields = [
-    { name: 'name', value: simplePatron.name },
-    { name: 'birthdate', value: simplePatron.birthdate },
-    { name: 'address', value: simplePatron.address },
-    { name: 'username', value: simplePatron.username },
-    { name: 'pin', value: simplePatron.pin },
+    // { name: 'name', value: simplePatron.name },
+    // { name: 'birthdate', value: simplePatron.birthdate },
+    // { name: 'address', value: simplePatron.address },
+    // { name: 'username', value: simplePatron.username },
+    // { name: 'pin', value: simplePatron.pin },
+    { name: 'name', value: simplePatron.names[0] },
+    { name: 'birthdate', value: simplePatron.birthDate },
+    { name: 'address', value: simplePatron.addresses[0] },
+    { name: 'username', value: simplePatron.emails[0] },
+    // { name: 'pin', value: simplePatron.pin },
   ];
 
   if (!simplePatron || isEmpty(simplePatron)) {
@@ -142,16 +114,16 @@ function createPatron(req, res) {
     return;
   }
 
-  clientKey = process.env.CLIENT_KEY ||
+  clientKey = process.env.CACHED_CLIENT_KEY ||
     awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
-  clientPassword = process.env.CLIENT_PASSWORD ||
+  clientPassword = process.env.CACHED_CLIENT_PASSWORD ||
     awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
 
   Promise.all([clientKey, clientPassword]).then((values) => {
-    [process.env.CLIENT_KEY, process.env.CLIENT_PASSWORD] = values;
+    [process.env.CACHED_CLIENT_KEY, process.env.CACHED_CLIENT_PASSWORD] = values;
 
-    const username = process.env.CLIENT_KEY;
-    const password = process.env.CLIENT_PASSWORD;
+    const username = process.env.CACHED_CLIENT_KEY;
+    const password = process.env.CACHED_CLIENT_PASSWORD;
     const basicAuth = `Basic ${base64(`${username}:${password}`)}`;
 
     axios.post(process.env.ILS_CREATE_TOKEN_URL, {}, {
@@ -161,7 +133,7 @@ function createPatron(req, res) {
       },
     })
       .then((tokenResponse) => {
-        axios.post(process.env.ILS_CREATE_PATRON_URL, tempData, {
+        axios.post(process.env.ILS_CREATE_PATRON_URL, simplePatron, {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${tokenResponse.data.access_token}`,
@@ -173,7 +145,7 @@ function createPatron(req, res) {
               req.body, modeledResponse // eslint-disable-line comma-dangle
             )
               .then(streamPatron => streamPublish.streamPublish(
-                process.env.PATRON_SCHEMA_NAME,
+                process.env.PATRON_SCHEMA_NAME_V02,
                 process.env.PATRON_STREAM_NAME,
                 streamPatron // eslint-disable-line comma-dangle
               ))
