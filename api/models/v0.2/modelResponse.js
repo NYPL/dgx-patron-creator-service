@@ -9,21 +9,13 @@ const url = require('url');
  * @return {object}
  */
 function modelPatronCreatorResponse(data, status) {
-  console.log('************* modelPatronCreatorResponse ***************');
-  console.log(status);
-  console.log(data);
   const detail = (data && data.debug_info) ? JSON.parse(data.debug_info) : {};
 
   return {
     data: {
       simplePatron: {
         status_code_from_ils: status || null,
-        type: data.type || null,
-        username: data.username || '',
-        temporary: data.temporary || false,
-        patron_id: data.patron_id || '',
-        barcode: data.barcode || '',
-        message: data.message || '',
+        link: data.link || null,
         detail,
       },
       patron: {},

@@ -130,7 +130,7 @@ function createPatron(req, res) {
         )
           .then(streamPatron => streamPublish.streamPublish(
             process.env.PATRON_SCHEMA_NAME_V01,
-            process.env.PATRON_STREAM_NAME,
+            process.env.PATRON_STREAM_NAME_V01,
             streamPatron // eslint-disable-line comma-dangle
           ))
           .then(() => {

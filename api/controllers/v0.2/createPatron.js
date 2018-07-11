@@ -60,20 +60,9 @@ function renderResponse(req, res, status, message) {
  * @param {HTTP response} res
  */
 function createPatron(req, res) {
-  // const simplePatron = modelRequestBody.modelSimplePatron(req.body);
+  req.body.patronType = parseInt(req.body.patronType);
   const simplePatron = req.body;
-  const requiredFields = [
-    // { name: 'name', value: simplePatron.name },
-    // { name: 'birthdate', value: simplePatron.birthdate },
-    // { name: 'address', value: simplePatron.address },
-    // { name: 'username', value: simplePatron.username },
-    // { name: 'pin', value: simplePatron.pin },
-    { name: 'name', value: simplePatron.names[0] },
-    { name: 'birthdate', value: simplePatron.birthDate },
-    { name: 'address', value: simplePatron.addresses[0] },
-    { name: 'username', value: simplePatron.emails[0] },
-    // { name: 'pin', value: simplePatron.pin },
-  ];
+  const requiredFields = [];
 
   if (!simplePatron || isEmpty(simplePatron)) {
     res
@@ -144,11 +133,14 @@ function createPatron(req, res) {
             modelStreamPatron.transformSimplePatronRequest(
               req.body, modeledResponse // eslint-disable-line comma-dangle
             )
-              .then(streamPatron => streamPublish.streamPublish(
-                process.env.PATRON_SCHEMA_NAME_V02,
-                process.env.PATRON_STREAM_NAME,
-                streamPatron // eslint-disable-line comma-dangle
-              ))
+              .then((streamPatron) =>
+              {
+                streamPublish.streamPublish(
+                  process.env.PATRON_SCHEMA_NAME_V02,
+                  process.env.PATRON_STREAM_NAME_V02,
+                  streamPatron // eslint-disable-line comma-dangle
+                )
+              })
               .then(() => {
                 renderResponse(req, res, 201, modeledResponse);
                 console.log('Published to stream successfully!'); // eslint-disable-line no-console

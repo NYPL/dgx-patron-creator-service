@@ -52,7 +52,6 @@ function createAvroSchemaObject(schema) {
 function encodeToAvroData(avroSchema, data) {
   return new Promise((resolve, reject) => {
     const avroData = avroSchema.toBuffer(data);
-
     if (avroData) {
       resolve(avroData);
     }
@@ -79,7 +78,6 @@ function publishStream(streamName, avroData) {
       if (err) {
         reject(err);
       }
-
       resolve(data);
     });
   });
@@ -93,21 +91,33 @@ function publishStream(streamName, avroData) {
  * @return {*|Promise}
  */
 function streamPublish(schemaName, streamName, streamData) {
+  console.log(`schemaName: ${schemaName}`);
+  console.log(`streamName: ${streamName}`);
+  console.log(`streamData: ${streamData}`);
   return new Promise((resolve, reject) => {
     if (!streamName) reject(new Error('streamName is missing'));
     if (!streamData) reject(new Error('data is missing'));
 
     getSchema(schemaName)
-      .then(schema => createAvroSchemaObject(schema))
-      .then(avroSchema => encodeToAvroData(avroSchema, streamData))
-      .then(avroData => resolve(publishStream(streamName, avroData)))
+      .then((schema) => {
+        console.log(`schema: ${schema}`);
+        return createAvroSchemaObject(schema);
+      })
+      .then((avroSchema) => {
+        // console.log(`avroSchema: ${JSON.stringify(avroSchema, null, 2)}`);
+        return encodeToAvroData(avroSchema, streamData);
+      })
+      .then((avroData) => {
+        console.log(`avroData: ${avroData}`);
+        return resolve(publishStream(streamName, avroData));
+      })
       .catch((response) => {
         console.error(response); // eslint-disable-line no-console
-        reject(response);
+        return reject(response);
       });
   });
 }
 
 module.exports = {
-  streamPublish
+  streamPublish,
 };

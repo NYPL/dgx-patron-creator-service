@@ -7,7 +7,6 @@ const defaultPatronCreatorResponseOut = {
   data: {
     patron: {},
     simplePatron: {
-      barcode: '',
       detail: {},
       message: '',
       patron_id: '',

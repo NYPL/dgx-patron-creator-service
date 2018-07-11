@@ -29,23 +29,18 @@ const modelStreamPatron = {
    */
   transformSimplePatronRequest(data, modeledResponse) {
     return new Promise((resolve, reject) => {
-      if (!data.simplePatron) {
-        reject(new Error('simplePatron object was not found'));
-      }
-
       if (!modeledResponse.data.simplePatron) {
         reject(new Error('modeledResponse simplePatron object was not found'));
       }
 
       const simplePatron = Object.assign(
-        {}, data.simplePatron, modeledResponse.data.simplePatron);
+        {}, modeledResponse.data.simplePatron);
 
       for (const key in simplePatron) {
         if (modelStreamPatron.data.simplePatron.hasOwnProperty(key)) {
           modelStreamPatron.data.simplePatron[key] = simplePatron[key];
         }
       }
-
       resolve(modelStreamPatron.data);
     });
   },
