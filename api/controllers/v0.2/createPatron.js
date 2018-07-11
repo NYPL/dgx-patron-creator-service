@@ -1,7 +1,6 @@
 const axios = require('axios');
 const isEmpty = require('underscore').isEmpty;
 const awsDecrypt = require('./../../../config/awsDecrypt.js');
-const modelRequestBody = require('./../../models/v0.2/modelRequestBody.js');
 const modelResponse = require('./../../models/v0.2/modelResponse.js');
 const modelDebug = require('./../../models/v0.2/modelDebug.js');
 const modelStreamPatron = require('./../../models/v0.2/modelStreamPatron.js').modelStreamPatron;
@@ -60,7 +59,6 @@ function renderResponse(req, res, status, message) {
  * @param {HTTP response} res
  */
 function createPatron(req, res) {
-  req.body.patronType = parseInt(req.body.patronType);
   const simplePatron = req.body;
   const requiredFields = [];
 
@@ -135,6 +133,7 @@ function createPatron(req, res) {
             )
               .then((streamPatron) =>
               {
+                return; // TODO: streaming is not yet working; covered in next PR
                 streamPublish.streamPublish(
                   process.env.PATRON_SCHEMA_NAME_V02,
                   process.env.PATRON_STREAM_NAME_V02,

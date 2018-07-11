@@ -8,12 +8,8 @@ const defaultPatronCreatorResponseOut = {
     patron: {},
     simplePatron: {
       detail: {},
-      message: '',
-      patron_id: '',
+      link: null,
       status_code_from_ils: exampleStatus,
-      temporary: false,
-      type: null,
-      username: '',
     },
   },
 };
@@ -31,16 +27,11 @@ const examplePatronCreatorResponseOut = {
   data: {
     patron: {},
     simplePatron: {
-      barcode: 'example barcode',
       detail: {
         example: 'example message',
       },
-      message: 'example message',
-      patron_id: 'example patron_id',
       status_code_from_ils: null,
-      temporary: 'example temporary',
-      type: 'example type',
-      username: 'example username',
+      link: null,
     },
   },
 };
