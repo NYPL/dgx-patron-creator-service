@@ -6,12 +6,14 @@ This is the repository of the New York Public Library's patron creator microserv
 
 The Link to the repository from [here](https://github.com/NYPL/dgx-patron-creator-service).
 
-The form on NYPL's website will fire a POST request to the service after it has been submitted. The service will then take the information and fire another POST request to NYPL Simplified's Card Creator API. Finally, it will reply the results based on the responses from the Card Creator API.
+## /v0.1/patrons
+The form on NYPL's website will fire a POST request to the service after it has been submitted. The service will then take the information and fire another POST request to NYPL Simplified's Card Creator API. Finally, it will reply with the results based on the responses from the [Card Creator API](https://github.com/NYPL-Simplified/card-creator).
 
-The Card Creator's documentation can be found [here](https://github.com/NYPL-Simplified/card-creator).
+## /v0.2/patrons
+Any NYPL service may send a post request to this path in order to create a patron on the ILS.
 
 ## Version
-v0.1.1
+v0.2
 
 ## Technologies
 
@@ -64,7 +66,7 @@ CARD_CREATOR_PASSWORD=password
 
 With a valid credential, now you can make a POST request to _localhost:3001/api/v0.1/patrons_ to create a new patron.
 
-The request data format should be in JSON with at least "name", "dateOfBirth", "address", "username", and "pin". For instance,
+The request data format should be in JSON with at least "name", "dateOfBirth", "address", "username", and "pin".  Username must be unique. Example for API v0.1:
 
 ```javascript
 {
@@ -91,7 +93,7 @@ The request data format should be in JSON with at least "name", "dateOfBirth", "
 
 *Notice: `patron_agency` is for telling the Card Creator which patron type is going to be created. While `198` is default and for NYC residents, `199` is for NYS residents but not live in NYC.*
 
-A successful JSON response example will be as below,
+Example of a successful JSON response from API v0.1:
 
 ```javascript
 {
@@ -179,6 +181,10 @@ It will convert the swagger YAML documentation to JSON documentation before depl
 *To get your AWS Lambda service credentials, please visit [AWS Lambda's website](https://aws.amazon.com/lambda/).*
 
 ## Development Change Log
+### v0.3.0
+#### Add
+  - add a v0.2 create-patron API endpoint
+
 ### v0.2.0
 #### Add
   - add unit tests for models and an integration test for createPatron

@@ -43,6 +43,7 @@ if (process.env.INTEGRATION_TESTS === 'true') {
   console.log('*** Run integration tests with this command: `INTEGRATION_TESTS=true npm test` ***'); // eslint-disable-line no-console
   describe('example test', () => {
     it('always passes', () => {
+      // at least one test is required or else the test suite will not run
     });
   });
 }

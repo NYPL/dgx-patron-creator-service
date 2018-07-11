@@ -1,4 +1,4 @@
-const modelDebug = require('../../../api/model/modelDebug');
+const modelDebug = require('../../../../api/models/v0.1/modelDebug');
 
 const filledFields = [
   { name: 'val1', value: 'Name' },
