@@ -17,7 +17,7 @@ const options = {
         state: 'NY',
         zip: '10018',
       },
-      username: faker.name.firstName() + Math.floor(Math.random() * 10),
+      username: faker.name.firstName() + Math.floor(Math.random() * 100000),
       pin: '1234',
       ecommunications_pref: true,
       policy_type: 'web_applicant',
@@ -27,13 +27,14 @@ const options = {
 };
 
 if (process.env.INTEGRATION_TESTS === 'true') {
+  console.log('*** Running integration tests ***'); // eslint-disable-line no-console
   describe('createPatron v0.1 route', () => {
     // TODO: Mocking the Kinesis stream as seen here: https://github.com/NYPL-discovery/node-nypl-streams-client/blob/pb/mocked-sdk-in-test-suite/test/encoding.test.js
     it('sends the patron data to Card Creator', (done) => {
       request.post(options, (err, res, body) => {
         expect(res.statusCode).to.equal(201);
-        expect(res.body.data.simplePatron.status_code_from_card_creator).to.equal(200);
-        expect(res.body.data.simplePatron.temporary).to.equal(true);
+        expect(res.body.data.simplePatron.status_code_from_card_creator).equal(200);
+        expect(res.body.data.simplePatron.temporary).equal(true);
         done();
       });
     });
@@ -43,6 +44,7 @@ if (process.env.INTEGRATION_TESTS === 'true') {
   console.log('*** Run integration tests with this command: `INTEGRATION_TESTS=true npm test` ***'); // eslint-disable-line no-console
   describe('example test', () => {
     it('always passes', () => {
+      // at least one test is required or else the test suite will not run
     });
   });
 }

@@ -1,4 +1,4 @@
-const modelRequestBody = require('../../../api/model/modelRequestBody');
+const modelRequestBody = require('../../../../api/models/v0.1/modelRequestBody');
 
 const emptyPatronObject = null;
 const fullPatronObject = { simplePatron: { dateOfBirth: 'date of birth', policy_type: 'example policy_type', patron_agency: 'example patron_agency' } };

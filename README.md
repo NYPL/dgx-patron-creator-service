@@ -64,7 +64,7 @@ CARD_CREATOR_PASSWORD=password
 
 With a valid credential, now you can make a POST request to _localhost:3001/api/v0.1/patrons_ to create a new patron.
 
-The request data format should be in JSON with at least "name", "dateOfBirth", "address", "username", and "pin". For instance,
+The request data format should be in JSON with at least "name", "dateOfBirth", "address", "username", and "pin".  Username must be unique. Example for API v0.1:
 
 ```javascript
 {
@@ -89,9 +89,9 @@ The request data format should be in JSON with at least "name", "dateOfBirth", "
 ```
 *Notice: `ecommunications_pref` takes a boolean type of value from "Get a Library Card" form, but it will output a string as `s` or `-` based on `true` or `false`. The reason is that the Card Creator API takes `s` or `-`.*
 
-*Notice: `patron_agency` is for telling the Card Creator which patron type is going to be created. While `198` is default and for NYC residents, `199` is for NYS residents but not live in NYC.*
+*Notice: `patron_agency` is for telling the Card Creator which patron type is going to be created. While `198` is default and for NYC residents, `199` is for NYS residents who do not live in NYC. Other patron types are also available. See your ILS for details.*
 
-A successful JSON response example will be as below,
+Example of a successful JSON response from API v0.1:
 
 ```javascript
 {
@@ -179,6 +179,10 @@ It will convert the swagger YAML documentation to JSON documentation before depl
 *To get your AWS Lambda service credentials, please visit [AWS Lambda's website](https://aws.amazon.com/lambda/).*
 
 ## Development Change Log
+### v0.3.0
+#### Add
+  - add a v0.2 create-patron API endpoint
+
 ### v0.2.0
 #### Add
   - add unit tests for models and an integration test for createPatron

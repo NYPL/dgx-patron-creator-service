@@ -1,4 +1,4 @@
-const modelDebug = require('../../../api/model/modelDebug');
+const modelDebug = require('../../../../api/models/v0.2/modelDebug');
 
 const filledFields = [
   { name: 'val1', value: 'Name' },
@@ -22,10 +22,10 @@ describe('checkMissingRequiredField', () => {
 });
 
 describe('renderMissingFieldDebugMessage', () => {
-  it('creates a debug message if a field is missing', () => {
+  it('does not create a debug message if there are no missing fields', () => {
     expect(modelDebug.renderMissingFieldDebugMessage()).toEqual({});
   });
-  it('does not create a debug message if there are no missing fields', () => {
+  it('creates a debug message if a field is missing', () => {
     const errorMessage = {
       val2: ['Missing val2.'],
       val3: ['Missing val3.'],

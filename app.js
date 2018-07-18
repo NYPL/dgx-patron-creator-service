@@ -1,10 +1,12 @@
 const SwaggerExpress = require('swagger-express-mw');
 const express = require('express');
 const bodyParser = require('body-parser');
+
 // The module for generating the swagger document
 const SwaggerUi = require('swagger-tools/middleware/swagger-ui');
 // Import controllers
-const createPatron = require('./api/controllers/createPatron.js');
+const createPatronV0_1 = require('./api/controllers/v0.1/createPatron.js'); // eslint-disable-line camelcase
+const createPatronV0_2 = require('./api/controllers/v0.2/createPatron.js'); // eslint-disable-line camelcase
 const apiDoc = require('./api/controllers/apiDoc.js');
 
 const app = express();
@@ -54,7 +56,8 @@ function errorHandler(err, req, res, next) { // eslint-disable-line no-unused-va
   console.error(
     `status_code: ${err.status}, ` +
     'type: "invalid-request", ' +
-    `message: "error request with ${err.body}"`);
+    `message: "error request with ${err.body}"` // eslint-disable-line comma-dangle
+  );
 
   res
     .status(err.status)
@@ -62,6 +65,7 @@ function errorHandler(err, req, res, next) { // eslint-disable-line no-unused-va
       data: {
         simplePatron: {
           status_code_from_card_creator: null,
+          status_code_from_card_ils: null,
           type: 'invalid-request',
           message: `Error request with request body ${err.body}`,
           detail: {},
@@ -82,10 +86,12 @@ app.get('/docs/patron-creator', apiDoc.renderApiDoc);
 // Below are routes
 const router = express.Router();
 
-app.use('/api/v0.1/patrons', router);
+app.use('/api', router);
 
-router.route('/')
-  .post(createPatron.createPatron);
+router.route('/v0.1/patrons/')
+  .post(createPatronV0_1.createPatron);
+router.route('/v0.2/patrons/')
+  .post(createPatronV0_2.createPatron);
 
 // required config
 const config = {
