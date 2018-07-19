@@ -3,7 +3,7 @@ const modelResponse = require('../../../../api/models/v0.2/modelResponse');
 const exampleStatus = 999;
 const requestData = {
   names: [
-    'TestFirstName, TestLastName',
+    'TestLastName, TestFirstName',
   ],
   barcodes: [
     'barcode_2018_06_14_328pm',
@@ -47,7 +47,7 @@ const patronCreatorResult = {
     {
       id: 7129988,
       names: [
-        'TestFirstName, TestLastName',
+        'TestLastName, TestFirstName',
       ],
       barcodes: [
         'barcode_2018_06_14_328pm',

@@ -46,7 +46,7 @@ To execute the service locally, run
 ```sh
 $ npm start
 ```
-The server will be executed on _localhost:3001_. As the help from swagger, you don't need to restart the server to see the changes you made to the code.
+The server will be executed on _localhost:3001_.
 
 ### Call the APIs
 
@@ -124,32 +124,6 @@ Three kinds of error messages could be returned from the Card Creator API.
 
 Visit _http://localhost:3001/docs/patron-creator_ for the JSON version of the service swagger documentation.
 
-### Visit and Edit the Swagger Documentation
-
-Visit _http://localhost:3001/docs_ to see your API service's documentation if executing the service locally.
-
-To edit the documentation with interactive UI, run this command below in your terminal.
-
-```sh
-$ npm run swagger-edit
-```
-
-It will automatically open the web page for you to edit.
-
-After finishing the update, we need the npm module [yamljs](https://www.npmjs.com/package/yamljs) to convert our YAML swagger documentation to JSON format or vice versa. The JSON file is for NYPL's API Gateway documentation. Run
-
-```sh
-$ npm install -g yamljs
-```
-
-After it, you can run
-
-```sh
-$ npm run build-swagger-doc
-```
-
-This script will generate _swaggerDoc.json_ based on the YAML documentation.
-
 ## Testing
 Use `npm start` to run the app in one window.  This is required to get the integration test to pass. The integration tests uses a local server the QA instance of Card Creator and the Patron Kinesis stream in the Sandbox environment.
 
@@ -165,16 +139,6 @@ To deploy to Production, run the following command:
 ```sh
 $ npm run deploy-package-production
 ```
-
-You can also run
-```sh
-$ npm run build-doc-deploy-package-qa
-```
-or
-```sh
-$ npm build-doc-deploy-package-production
-```
-It will convert the swagger YAML documentation to JSON documentation before deployment thus to make sure the instance has the latest documentation.
 
 *To get your AWS Lambda service credentials, please visit [AWS Lambda's website](https://aws.amazon.com/lambda/).*
 

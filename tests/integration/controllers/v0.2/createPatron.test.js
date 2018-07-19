@@ -6,7 +6,7 @@ const options = {
   method: 'POST',
   json: {
     names: [
-      'TestFirstName, TestLastName',
+      'TestLastName, TestFirstName',
     ],
     barcodes: [
       'barcode_2018_06_14_328pm',
