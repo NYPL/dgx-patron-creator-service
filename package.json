@@ -46,10 +46,12 @@
     "promise": "7.1.1",
     "swagger-express-mw": "0.6.0",
     "swagger-tools": "0.10.1",
-    "underscore": "1.9.1"
+    "underscore": "1.9.1",
+    "winston": "^2.4.0"
   },
   "devDependencies": {
     "chai": "4.1.2",
+    "chai-as-promised": "^7.1.1",
     "eslint": "4.19.1",
     "eslint-config-airbnb-base": "13.0.0",
     "eslint-plugin-import": "2.13.0",

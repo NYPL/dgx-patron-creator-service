@@ -5,6 +5,8 @@ const modelResponse = require('./../../models/v0.2/modelResponse.js');
 const modelDebug = require('./../../models/v0.2/modelDebug.js');
 const modelStreamPatron = require('./../../models/v0.2/modelStreamPatron.js').modelStreamPatron;
 const streamPublish = require('./../../helpers/streamPublish');
+const Logger = require('../../helpers/Logger')
+
 
 function base64(string) {
   return Buffer.from(string).toString('base64');
@@ -180,6 +182,8 @@ function createPatron(req, res) {
                 ).then((streamResponse) => { // eslint-disable-line no-unused-vars
                   renderResponse(req, res, 201, modeledResponse);
                   console.log('Published to stream successfully!'); // eslint-disable-line no-console
+                  Logger.error('ERROR LOG');
+                  console.log('Logged successfully!'); // eslint-disable-line no-console
                 }).catch((streamError) => {
                   renderResponse(req, res, 201, streamError);
                   console.error(`Error publishing to stream: ${streamError}`); // eslint-disable-line no-console
