@@ -7,6 +7,7 @@ const modelStreamPatron = require('./../../models/v0.2/modelStreamPatron.js').mo
 const streamPublish = require('./../../helpers/streamPublish');
 const Logger = require('../../helpers/Logger')
 
+logger.error('hello world');
 
 function base64(string) {
   return Buffer.from(string).toString('base64');
