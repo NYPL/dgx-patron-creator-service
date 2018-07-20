@@ -5,9 +5,11 @@ const modelResponse = require('./../../models/v0.2/modelResponse.js');
 const modelDebug = require('./../../models/v0.2/modelDebug.js');
 const modelStreamPatron = require('./../../models/v0.2/modelStreamPatron.js').modelStreamPatron;
 const streamPublish = require('./../../helpers/streamPublish');
-const Logger = require('../../helpers/Logger')
+const logger = require('../../helpers/Logger')
 
-logger.error('hello world');
+const ROUTE_TAG = "CREATE_PATRON_20";
+
+logger.error('hello world', {routeTag: ROUTE_TAG});
 
 function base64(string) {
   return Buffer.from(string).toString('base64');
