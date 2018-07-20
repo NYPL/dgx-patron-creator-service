@@ -59,7 +59,7 @@
         "security": [
           {
             "api_auth": [
-              "openid offline_access api"
+              "openid write:patron"
             ]
           }
         ]
@@ -108,7 +108,7 @@
         "security": [
           {
             "api_auth": [
-              "openid offline_access api"
+              "openid write:patron"
             ]
           }
         ]
@@ -386,57 +386,134 @@
     },
     "PatronsCreatorDataV02": {
       "required": [
-        "simplePatron"
+        "names",
+        "patronType"
       ],
       "properties": {
-        "simplePatron": {
-          "$ref": "#/definitions/SimplePatronV02"
-        }
-      }
-    },
-    "SimplePatronV02": {
-      "required": [
-        "name",
-        "dateOfBirth",
-        "address",
-        "username",
-        "pin"
-      ],
-      "properties": {
-        "name": {
-          "type": "string",
-          "example": "Mikey Olson, Jr."
+        "names": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": [ "TestLastName, TestFirstName" ]
         },
-        "dateOfBirth": {
-          "type": "string",
-          "example": "11/11/1987"
-        },
-        "email": {
-          "type": "string",
-          "example": "mjolson@example.com"
-        },
-        "address": {
-          "$ref": "#/definitions/AddressModel"
-        },
-        "username": {
-          "type": "string",
-          "example": "mjolson54321"
+        "barcodes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": "barcode_2018_07_19_328pm"
         },
         "pin": {
           "type": "string",
           "example": "1234"
         },
-        "ecommunications_pref": {
-          "type": "boolean",
-          "example": true
-        },
-        "policy_type": {
+        "expirationDate": {
           "type": "string",
-          "example": "web_applicant"
+          "example": "2019-01-01"
         },
-        "patron_agency": {
+        "birthDate": {
           "type": "string",
-          "example": "198"
+          "example": "1978-01-01"
+        },
+        "emails": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": [
+            "test_email_2018_07_19_238_a@test.com",
+            "test_email_2018_07_19_238_b@test.com"
+          ]
+        },
+        "patronType": {
+          "type": "number",
+          "example": 151
+        },
+        "patronCodes": {
+          "type": "object",
+          "required": [
+            "pcode1",
+            "pcode2",
+            "pcode3",
+            "pcode4"
+          ],
+          "properties": {
+            "pcode1": {
+              "type": "string",
+              "example": "s"
+            },
+            "pcode2": {
+              "type": "string",
+              "example": "f"
+            },
+            "pcode3": {
+              "type": "number",
+              "example": 5
+            },
+            "pcode4": {
+              "type": "number",
+              "example": 100
+            }
+          }
+        },
+        "blockInfo": {
+          "type": "object",
+          "required": [
+            "code"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "example": "-"
+            }
+          }
+        },
+        "addresses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "lines",
+              "type"
+            ],
+            "properties": {
+              "lines": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "example": [
+                  "ADDRESS LINE 1",
+                  "ADDRESS LINE 2"
+                ]
+              },
+              "type": {
+                "type": "string",
+                "example": "a"
+              }
+            }
+          }
+        },
+        "phones": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "number",
+              "type"
+            ],
+            "properties": {
+              "number": {
+                "type": "string",
+                "example": "917-123-4567"
+              },
+              "type": {
+                "type": "string",
+                "example": "t"
+              }
+            }
+          }
         }
       }
     },
@@ -458,63 +535,100 @@
     },
     "PatronsCreatorResponseModelV02": {
       "required": [
-        "simplePatron"
+        "patron"
       ],
       "properties": {
-        "simplePatron": {
-          "$ref": "#/definitions/SimplePatronModelV02"
-        },
         "patron": {
-          "type": "object",
-          "example": {
-          }
+          "$ref": "#/definitions/PatronModelV02"
         }
       }
     },
-    "SimplePatronModelV02": {
+    "PatronModelV02": {
       "required": [
-        "status_code_from_ils",
-        "type",
-        "username",
-        "temporary",
-        "patron_id",
-        "barcode",
-        "message",
-        "detail"
+        "names",
+        "patronType"
       ],
       "properties": {
-        "status_code_from_ils": {
+        "names": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": [ "TestLastName, TestFirstName" ]
+        },
+        "barcodes": {
+          "type": "string",
+          "example": "barcode_2018_07_19_328pm"
+        },
+        "pin": {
+          "type": "string",
+          "example": "1111"
+        },
+        "expirationDate": {
+          "type": "string",
+          "example": "2019-01-01"
+        },
+        "birthDate": {
+          "type": "string",
+          "example": "1978-01-01"
+        },
+        "emails": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": [
+            "test_email_2018_07_19_238_a@test.com",
+            "test_email_2018_07_19_238_b@test.com"
+          ]
+        },
+        "patronType": {
           "type": "number",
-          "example": 200
+          "example": 151
+        },
+        "patronCodes": {
+          "type": "object",
+          "example": {
+            "pcode1": "s",
+            "pcode2": "f",
+            "pcode3": 5,
+            "pcode4": 100
+          }
+        },
+        "blockInfo": {
+          "type": "string",
+          "example": {
+            "code": "-"
+          }
+        },
+        "addresses": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "example": [{
+            "lines": [
+              "ADDRESS LINE 1",
+              "ADDRESS LINE 2"
+            ],
+            "type": "a"
+          }]
         },
         "type": {
           "type": "string",
-          "example": "card-granted"
-        },
-        "username": {
-          "type": "string",
-          "example": "mikeolson54321"
-        },
-        "temporary": {
-          "type": "boolean",
-          "example": true
-        },
-        "patron_id": {
-          "type": "string",
-          "example": "6367028"
-        },
-        "barcode": {
-          "type": "string",
-          "example": "6367028"
-        },
-        "message": {
-          "type": "string",
-          "example": "Your library card is temporary because your address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card."
-        },
-        "detail": {
-          "type": "object",
           "example": {
+            "code": "a"
           }
+        },
+        "phones": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "example": [{
+            "number": "917-123-4567",
+            "type": "t"
+          }]
         }
       }
     },
@@ -536,7 +650,7 @@
     "400ErrorResponseContentV02": {
       "allOf": [
         {
-          "$ref": "#/definitions/400ErrorStatusSimplePatronV02"
+          "$ref": "#/definitions/400ErrorStatusPatronV02"
         },
         {
           "$ref": "#/definitions/ErrorModelV01"
@@ -561,19 +675,19 @@
     "500ErrorResponseContentV02": {
       "allOf": [
         {
-          "$ref": "#/definitions/500ErrorStatusSimplePatronV02"
+          "$ref": "#/definitions/500ErrorStatusPatronV02"
         },
         {
           "$ref": "#/definitions/ErrorModelV02"
         }
       ]
     },
-    "400ErrorStatusSimplePatronV02": {
+    "400ErrorStatusPatronV02": {
       "required": [
-        "simplePatron"
+        "patron"
       ],
       "properties": {
-        "simplePatron": {
+        "patron": {
           "$ref": "#/definitions/400ErrorStatusModelV02"
         }
       }
@@ -605,12 +719,12 @@
         }
       }
     },
-    "500ErrorStatusSimplePatronV02": {
+    "500ErrorStatusPatronV02": {
       "required": [
-        "simplePatron"
+        "patron"
       ],
       "properties": {
-        "simplePatron": {
+        "patron": {
           "$ref": "#/definitions/500ErrorStatusModelV02"
         }
       }
@@ -697,7 +811,7 @@
       "authorizationUrl": "https://isso.nypl.org/oauth/authorize",
       "tokenUrl": "https://isso.nypl.org/oauth/token",
       "scopes": {
-        "openid offline_access api": "General API access"
+        "openid write:patron": "Creating Patron access"
       }
     }
   }
