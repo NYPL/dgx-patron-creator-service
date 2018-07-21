@@ -9,7 +9,6 @@ const logger = require('../../helpers/Logger')
 
 const ROUTE_TAG = "CREATE_PATRON_20";
 
-logger.error('hello world', {routeTag: ROUTE_TAG});
 
 function base64(string) {
   return Buffer.from(string).toString('base64');
@@ -184,26 +183,24 @@ function createPatron(req, res) {
                   streamPatron // eslint-disable-line comma-dangle
                 ).then((streamResponse) => { // eslint-disable-line no-unused-vars
                   renderResponse(req, res, 201, modeledResponse);
-                  console.log('Published to stream successfully!'); // eslint-disable-line no-console
-                  Logger.error('ERROR LOG');
-                  console.log('Logged successfully!'); // eslint-disable-line no-console
+                  logger.debug('Published to stream successfully!', {routeTag: ROUTE_TAG});
                 }).catch((streamError) => {
                   renderResponse(req, res, 201, streamError);
-                  console.error(`Error publishing to stream: ${streamError}`); // eslint-disable-line no-console
+                  logger.error(`Error publishing to stream: ${streamError}`, {routeTag: ROUTE_TAG});
                 });
               })
               .catch((error) => {
                 renderResponse(req, res, 201, modeledResponse);
-                console.error(`Error creating patron: ${error}`); // eslint-disable-line no-console
+                logger.error(`Error creating patron: ${error}`, {routeTag: ROUTE_TAG});
               });
           })
           .catch((response) => {
-            // eslint-disable-next-line no-console
-            console.error(
+            logger.error(
               `status_code: ${response.response.status}, ` +
               'type: "invalid-request", ' +
               `message: "${response.message} from ILS.", ` +
-              `response: ${JSON.stringify(response.response.data)}` // eslint-disable-line comma-dangle
+              `response: ${JSON.stringify(response.response.data)}`,
+              {routeTag: ROUTE_TAG} // eslint-disable-line comma-dangle
             );
 
             if (response.response && response.response.data) {
