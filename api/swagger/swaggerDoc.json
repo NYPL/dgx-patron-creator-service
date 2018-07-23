@@ -5,9 +5,9 @@
     "title": "dgx-patron-creator-service"
   },
   "host": "localhost:3001",
-  "basePath": "/",
+  "basePath": "/api",
   "schemes": [
-    "https"
+    "http"
   ],
   "consumes": [
     "application/json"
@@ -402,7 +402,7 @@
           "items": {
             "type": "string"
           },
-          "example": "barcode_2018_07_19_328pm"
+          "example": [ "barcode_2018_07_19_328pm" ]
         },
         "pin": {
           "type": "string",
@@ -535,20 +535,14 @@
     },
     "PatronsCreatorResponseModelV02": {
       "required": [
-        "patron"
-      ],
-      "properties": {
-        "patron": {
-          "$ref": "#/definitions/PatronModelV02"
-        }
-      }
-    },
-    "PatronModelV02": {
-      "required": [
         "names",
         "patronType"
       ],
       "properties": {
+        "id": {
+          "type": "integer",
+          "example": 7212911
+        },
         "names": {
           "type": "array",
           "items": {
@@ -557,8 +551,11 @@
           "example": [ "TestLastName, TestFirstName" ]
         },
         "barcodes": {
-          "type": "string",
-          "example": "barcode_2018_07_19_328pm"
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": [ "barcode_2018_07_19_328pm" ]
         },
         "pin": {
           "type": "string",
@@ -634,66 +631,6 @@
     },
     "400ErrorResponseV02": {
       "required": [
-        "data",
-        "count"
-      ],
-      "properties": {
-        "data": {
-          "$ref": "#/definitions/400ErrorResponseContentV02"
-        },
-        "count": {
-          "type": "number",
-          "example": 0
-        }
-      }
-    },
-    "400ErrorResponseContentV02": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/400ErrorStatusPatronV02"
-        },
-        {
-          "$ref": "#/definitions/ErrorModelV01"
-        }
-      ]
-    },
-    "500ErrorResponseV02": {
-      "required": [
-        "data",
-        "count"
-      ],
-      "properties": {
-        "data": {
-          "$ref": "#/definitions/500ErrorResponseContentV02"
-        },
-        "count": {
-          "type": "number",
-          "example": 0
-        }
-      }
-    },
-    "500ErrorResponseContentV02": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/500ErrorStatusPatronV02"
-        },
-        {
-          "$ref": "#/definitions/ErrorModelV02"
-        }
-      ]
-    },
-    "400ErrorStatusPatronV02": {
-      "required": [
-        "patron"
-      ],
-      "properties": {
-        "patron": {
-          "$ref": "#/definitions/400ErrorStatusModelV02"
-        }
-      }
-    },
-    "400ErrorStatusModelV02": {
-      "required": [
         "status_code_from_ils",
         "type",
         "message",
@@ -719,17 +656,7 @@
         }
       }
     },
-    "500ErrorStatusPatronV02": {
-      "required": [
-        "patron"
-      ],
-      "properties": {
-        "patron": {
-          "$ref": "#/definitions/500ErrorStatusModelV02"
-        }
-      }
-    },
-    "500ErrorStatusModelV02": {
+    "500ErrorResponseV02": {
       "required": [
         "status_code_from_ils",
         "type",
@@ -753,16 +680,6 @@
           "type": "object",
           "example": {
           }
-        }
-      }
-    },
-    "ErrorModelV02": {
-      "required": [
-        "patron"
-      ],
-      "properties": {
-        "patron": {
-          "type": "object"
         }
       }
     },
