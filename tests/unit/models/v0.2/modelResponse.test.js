@@ -39,57 +39,35 @@ const requestData = {
 };
 
 const ilsResponse = {
-  link: 'https://nypl-sierra-test.iii.com/iii/sierra-api/v4/patrons/7129988',
+  link: 'https://nypl-sierra-test.iii.com/iii/sierra-api/v4/patrons/11111111',
 };
 
 const patronCreatorResult = {
-  data: [
-    {
-      id: 7129988,
-      names: [
-        'TestLastName, TestFirstName',
-      ],
-      barcodes: [
-        'barcode_2018_06_14_328pm',
-      ],
-      expirationDate: '',
-      birthDate: '1978-01-01',
-      emails: [
-        'test_email_2018_07_10_0951_a1@test.com',
-        'test_email_2018_07_10_0951_b2@test.com',
-      ],
-      patronType: 151,
-      pin: '4316',
-      addresses: [
-        {
-          lines: [
-            'ADDRESS LINE 1',
-            'ADDRESS LINE 2',
-          ],
-          type: 'a',
-        },
-      ],
-      blockInfo: {
-        code: '-',
-      },
-      patronCodes: {
-        pcode1: 's',
-        pcode2: 'f',
-        pcode3: 5,
-        pcode4: 0,
-      },
-      phones: [
-        {
-          number: '917-123-4567',
-          type: 't',
-        },
-      ],
-    },
-  ],
-  count: 1,
-  totalCount: 0,
-  statusCode: exampleStatus,
-  debugInfo: [],
+  addresses: [{
+    lines: ['ADDRESS LINE 1', 'ADDRESS LINE 2'],
+    type: 'a',
+  }],
+  barcodes: ['barcode_2018_06_14_328pm'],
+  birthDate: '1978-01-01',
+  blockInfo: {
+    code: '-',
+  },
+  emails: ['test_email_2018_07_10_0951_a1@test.com', 'test_email_2018_07_10_0951_b2@test.com'],
+  expirationDate: '2019-01-01',
+  id: 11111111,
+  names: ['TestLastName, TestFirstName'],
+  patronCodes: {
+    pcode1: 's',
+    pcode2: 'f',
+    pcode3: 5,
+    pcode4: 0,
+  },
+  patronType: 151,
+  phones: [{
+    number: '917-123-4567',
+    type: 't',
+  }],
+  pin: '4316',
 };
 
 describe('modelPatronCreatorResponse', () => {

@@ -60,14 +60,11 @@ function errorHandler(err, req, res, next) { // eslint-disable-line no-unused-va
     .status(err.status)
     .json({
       data: {
-        simplePatron: {
-          status_code_from_card_creator: null,
-          status_code_from_card_ils: null,
-          type: 'invalid-request',
-          message: `Error request with request body ${err.body}`,
-          detail: {},
-        },
-        patron: null,
+        status_code_from_card_creator: null,
+        status_code_from_card_ils: null,
+        type: 'invalid-request',
+        message: `Error with this request body: ${err.body}`,
+        detail: {},
       },
       count: 0,
     });

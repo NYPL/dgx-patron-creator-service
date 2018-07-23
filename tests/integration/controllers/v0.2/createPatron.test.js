@@ -44,12 +44,15 @@ const options = {
 
 if (process.env.INTEGRATION_TESTS === 'true') {
   describe('createPatron v0.2 route', () => {
+    console.log('*** Running integration tests ***'); // eslint-disable-line no-console
     // TODO: Mocking the Kinesis stream as seen here: https://github.com/NYPL-discovery/node-nypl-streams-client/blob/pb/mocked-sdk-in-test-suite/test/encoding.test.js
     it('sends the patron data to the ILS', (done) => {
       request.post(options, (err, res, body) => {
+        if (!res) {
+          console.log("*** Note: You aren't receiving a response from the Patron Creator Service.  Make sure the server is running in another tab. ***"); // eslint-disable-line no-console
+        }
         expect(res.statusCode).equal(201);
-        expect(res.body.statusCode).equal(200);
-        expect(res.body.data[0].id).to.be.a('Number'); // eslint-disable-line jest/valid-expect
+        expect(res.body.id).to.be.a('Number'); // eslint-disable-line jest/valid-expect
         done();
       });
     });

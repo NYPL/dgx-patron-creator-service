@@ -32,6 +32,9 @@ if (process.env.INTEGRATION_TESTS === 'true') {
     // TODO: Mocking the Kinesis stream as seen here: https://github.com/NYPL-discovery/node-nypl-streams-client/blob/pb/mocked-sdk-in-test-suite/test/encoding.test.js
     it('sends the patron data to Card Creator', (done) => {
       request.post(options, (err, res, body) => {
+        if (!res) {
+          console.log("*** Note: You aren't receiving a response.  Make sure the server is running in another tab. ***"); // eslint-disable-line no-console
+        }
         expect(res.statusCode).to.equal(201);
         expect(res.body.data.simplePatron.status_code_from_card_creator).equal(200);
         expect(res.body.data.simplePatron.temporary).equal(true);
