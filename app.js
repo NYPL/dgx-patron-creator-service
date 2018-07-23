@@ -1,4 +1,3 @@
-const SwaggerExpress = require('swagger-express-mw');
 const express = require('express');
 const bodyParser = require('body-parser');
 
