@@ -2,8 +2,6 @@ const SwaggerExpress = require('swagger-express-mw');
 const express = require('express');
 const bodyParser = require('body-parser');
 
-// The module for generating the swagger document
-const SwaggerUi = require('swagger-tools/middleware/swagger-ui');
 // Import controllers
 const createPatronV0_1 = require('./api/controllers/v0.1/createPatron.js'); // eslint-disable-line camelcase
 const createPatronV0_2 = require('./api/controllers/v0.2/createPatron.js'); // eslint-disable-line camelcase
@@ -80,7 +78,6 @@ function errorHandler(err, req, res, next) { // eslint-disable-line no-unused-va
 app.use(errorHandler);
 
 // This route will make a request for swaggerDoc.json
-// If you don't have it yet, check README.md for how to generate one based on swagger.yaml
 app.get('/docs/patron-creator', apiDoc.renderApiDoc);
 
 // Below are routes
@@ -98,22 +95,13 @@ const config = {
   appRoot: __dirname,
 };
 
-SwaggerExpress.create(config, (err, swaggerExpress) => {
-  if (err) { throw err; }
-
-  // To generate a swagger doc page
-  // After running the server, go to http://localhost:3001/docs
-  app.use(SwaggerUi(swaggerExpress.runner.swagger));
-
-  // install middleware
-  swaggerExpress.register(app);
-});
-
 // Do not listen to connections in Lambda environment
 if (!process.env.AWS_LAMBDA_FUNCTION_NAME) {
   const port = process.env.PORT || 3001;
 
-  app.listen(port);
+  app.listen(port, function () {
+    console.info('Server started on port ' + port)
+  })
 }
 
 module.exports = app;
