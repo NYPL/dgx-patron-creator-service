@@ -9,6 +9,7 @@ const logger = require('../../helpers/Logger')
 
 const ROUTE_TAG = "CREATE_PATRON_20";
 
+logger.debug('AaAAAAAAAAAAAA\n\n\n', {routeTag: ROUTE_TAG});
 
 function base64(string) {
   return Buffer.from(string).toString('base64');
