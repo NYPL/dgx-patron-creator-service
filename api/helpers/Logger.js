@@ -76,4 +76,7 @@ const logger = new (winston.Logger)({
   exitOnError: false
 })
 
+// set the logger output level to one specified in the environment config
+logger.level = process.env.LOG_LEVEL
+
 module.exports = logger
