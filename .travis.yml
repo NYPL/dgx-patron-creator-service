@@ -14,7 +14,7 @@ deploy:
   skip_cleanup: true
   script: npm run deploy-qa
   on:
-    branch: qa
+    branch: lc_set_up_qa
 - provider: script
   skip_cleanup: true
   script: npm run deploy-production
