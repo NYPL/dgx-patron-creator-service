@@ -1,10 +1,10 @@
 const axios = require('axios');
 const Promise = require('promise');
-const avsc = require('avsc')
+const avsc = require('avsc');
 const crypto = require('crypto');
+const AWS = require('aws-sdk');
 
-var AWS = require('aws-sdk');
-var kinesisClient = new AWS.Kinesis({region: 'us-east-1'});
+const kinesisClient = new AWS.Kinesis({ region: 'us-east-1' });
 
 /**
  * Retreive the Schema from the Schema API
@@ -12,16 +12,16 @@ var kinesisClient = new AWS.Kinesis({region: 'us-east-1'});
  * @return {*|Promise}
  */
 function getSchema(schemaName) {
-  return new Promise(function(resolve, reject) {
+  return new Promise((resolve, reject) => {
     axios({
       method: 'get',
-      url: process.env.SCHEMA_API_BASE_URL + '/' + schemaName
+      url: `${process.env.SCHEMA_API_BASE_URL}/${schemaName}`,
     })
-      .then(response => {
+      .then((response) => {
         resolve(response.data.data.schemaObject);
       })
-      .catch(response => {
-        reject('Error retreiving schema: ' + response);
+      .catch((response) => {
+        reject(new Error(`Error retreiving schema: ${response}`));
       });
   });
 }
@@ -32,14 +32,14 @@ function getSchema(schemaName) {
  * @return {*|Promise}
  */
 function createAvroSchemaObject(schema) {
-  return new Promise(function(resolve, reject) {
-    var avroSchema = avsc.Type.forSchema(schema);
+  return new Promise((resolve, reject) => {
+    const avroSchema = avsc.Type.forSchema(schema);
 
     if (avroSchema) {
       resolve(avroSchema);
     }
 
-    reject('Unable to parse Avro schema');
+    reject(new Error('Unable to parse Avro schema'));
   });
 }
 
@@ -50,14 +50,13 @@ function createAvroSchemaObject(schema) {
  * @return {*|Promise}
  */
 function encodeToAvroData(avroSchema, data) {
-  return new Promise(function(resolve, reject) {
-    var avroData = avroSchema.toBuffer(data);
-
+  return new Promise((resolve, reject) => {
+    const avroData = avroSchema.toBuffer(data);
     if (avroData) {
       resolve(avroData);
     }
 
-    reject('Unable to get Avro data');
+    reject(new Error('Unable to get Avro data'));
   });
 }
 
@@ -68,18 +67,17 @@ function encodeToAvroData(avroSchema, data) {
  * @return {*|Promise}
  */
 function publishStream(streamName, avroData) {
-  return new Promise(function(resolve, reject) {
-    var params = {
+  return new Promise((resolve, reject) => {
+    const params = {
       Data: avroData,
       PartitionKey: crypto.randomBytes(20).toString('hex').toString(),
-      StreamName: streamName
+      StreamName: streamName,
     };
 
-    kinesisClient.putRecord(params, function(err, data) {
+    kinesisClient.putRecord(params, (err, data) => {
       if (err) {
         reject(err);
       }
-
       resolve(data);
     });
   });
@@ -93,27 +91,21 @@ function publishStream(streamName, avroData) {
  * @return {*|Promise}
  */
 function streamPublish(schemaName, streamName, streamData) {
-  return new Promise(function(resolve, reject) {
-    if (!streamName) reject('streamName is missing')
-    if (!streamData) reject('data is missing')
+  return new Promise((resolve, reject) => {
+    if (!streamName) reject(new Error('streamName is missing'));
+    if (!streamData) reject(new Error('data is missing'));
 
     getSchema(schemaName)
-      .then(function (schema) {
-        return createAvroSchemaObject(schema);
-      })
-      .then(function (avroSchema) {
-        return encodeToAvroData(avroSchema, streamData);
-      })
-      .then(function (avroData) {
-        resolve(publishStream(streamName, avroData));
-      })
-      .catch(response => {
-        console.error(response);
-        reject(response);
+      .then(schema => createAvroSchemaObject(schema))
+      .then(avroSchema => encodeToAvroData(avroSchema, streamData))
+      .then(avroData => resolve(publishStream(streamName, avroData)))
+      .catch((response) => {
+        console.error(response); // eslint-disable-line no-console
+        return reject(response);
       });
-  })
+  });
 }
 
 module.exports = {
-  streamPublish: streamPublish
+  streamPublish,
 };
