@@ -13,7 +13,8 @@
     "deploy-development-from-local": "./node_modules/.bin/node-lambda deploy -e development -f ./config/deploy_development.env -S ./config/event_sources_development.json -o arn:aws:iam::224280085904:role/lambda_basic_execution -p nypl-sandbox",
     "deploy-qa": "TBD",
     "deploy-production": "TBD",
-    "test": "jest"
+    "test": "jest",
+    "test-request-docs": "./node_modules/.bin/node-lambda run -j tests/events/request-docs.json"
   },
   "repository": {
     "type": "git",
