@@ -6,6 +6,9 @@ const modelResponse = require('./../../models/v0.1/modelResponse.js');
 const modelDebug = require('./../../models/v0.1/modelDebug.js');
 const modelStreamPatron = require('./../../models/v0.1/modelStreamPatron.js').modelStreamPatron;
 const streamPublish = require('./../../helpers/streamPublish');
+const logger = require('../../helpers/Logger');
+
+const ROUTE_TAG = 'CREATE_PATRON_0.1';
 
 let cardCreatorUsername;
 let cardCreatorPassword;
@@ -134,7 +137,7 @@ function createPatron(req, res) {
           ))
           .then(() => {
             renderResponse(req, res, 201, modeledResponse);
-            console.log('Published to stream successfully!'); // eslint-disable-line no-console
+            logger.debug('Published to stream successfully!', { routeTag: ROUTE_TAG });
           })
           .catch((error) => {
             renderResponse(req, res, 201, modeledResponse);
@@ -159,12 +162,10 @@ function createPatron(req, res) {
             response.response.data.debug_message // eslint-disable-line comma-dangle
           );
 
-          const statusCode = (responseObject.status) ? responseObject.status : 500;
-
           renderResponse(
             req,
             res,
-            statusCode,
+            (responseObject.status || 500),
             modelResponse.errorResponseData(responseObject) // eslint-disable-line comma-dangle
           );
         } else {

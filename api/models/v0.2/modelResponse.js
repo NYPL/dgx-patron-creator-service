@@ -1,4 +1,7 @@
 const url = require('url');
+const logger = require('../../helpers/Logger');
+
+const ROUTE_TAG = 'CREATE_PATRON_0.2';
 
 /**
  * modelPatronCreatorResponse(data, status)
@@ -9,27 +12,33 @@ const url = require('url');
  * @return {object}
  */
 function modelPatronCreatorResponse(responseData, status, requestData) {
+  let idFromResponse;
+  try {
+    idFromResponse = parseInt(responseData.link.split('/').pop(), 10);
+  } catch (error) {
+    idFromResponse = null;
+    const message = 'The ILS response is missing an ID.';
+    logger.error(
+      "status_code: '', " +
+      'type: ils_error, ' +
+      `message: ${message}, ` +
+      `response: ${responseData.link}`,
+      { routeTag: ROUTE_TAG } // eslint-disable-line comma-dangle
+    );
+  }
   return {
-    data: [
-      {
-        id: parseInt(responseData.link.split('/').pop(), 10),
-        names: requestData.names,
-        barcodes: requestData.barcodes,
-        expirationDate: '',
-        birthDate: requestData.birthDate,
-        emails: requestData.emails,
-        pin: requestData.pin,
-        patronType: parseInt(requestData.patronType, 10),
-        patronCodes: requestData.patronCodes,
-        blockInfo: requestData.blockInfo,
-        addresses: requestData.addresses,
-        phones: requestData.phones,
-      },
-    ],
-    count: 1,
-    totalCount: 0,
-    statusCode: status,
-    debugInfo: [],
+    id: idFromResponse,
+    names: requestData.names || [],
+    barcodes: requestData.barcodes || [],
+    expirationDate: requestData.expirationDate || '',
+    birthDate: requestData.birthDate || '',
+    emails: requestData.emails || [],
+    pin: requestData.pin || '',
+    patronType: requestData.patronType || '',
+    patronCodes: requestData.patronCodes || {},
+    blockInfo: requestData.blockInfo || {},
+    addresses: requestData.addresses || [],
+    phones: requestData.phones || [],
   };
 }
 
@@ -76,14 +85,12 @@ function parseTypeURL(str) {
  */
 function modelErrorResponseData(obj) {
   return {
-    data: {
-      status_code_from_ils: obj.status || null,
-      type: (obj && obj.type) ? parseTypeURL(obj.type) : '',
-      message: obj.message,
-      detail: {
-        title: obj.title || '',
-        debug: (obj.debug_message) ? parseJSON(obj.debug_message) : {},
-      },
+    status_code_from_ils: obj.status || null,
+    type: (obj && obj.type) ? parseTypeURL(obj.type) : '',
+    message: obj.message,
+    detail: {
+      title: obj.title || '',
+      debug: (obj.debug_message) ? parseJSON(obj.debug_message) : {},
     }
   };
 }

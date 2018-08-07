@@ -8,20 +8,20 @@ const requestBody = {
 const modeledResponse = { data: requestBody };
 const defaultStreamedObject = {
   data: {
+    addresses: null,
+    barcodes: [],
+    birthDate: '',
+    blockInfo: null,
+    emails: [],
+    expirationDate: '',
     id: '',
     names: [],
-    barcodes: [],
-    expirationDate: '',
-    birthDate: '',
-    emails: [],
-    pin: null,
-    patronType: null,
     patronCodes: {
-      pcode4: -1,
+      pcode4: 0,
     },
-    blockInfo: null,
-    addresses: null,
+    patronType: null,
     phones: null,
+    pin: null,
   },
 };
 

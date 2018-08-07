@@ -22,13 +22,13 @@ const modelStreamPatron = {
    */
   transformPatronRequest(requestBody, modeledResponse) {
     return new Promise((resolve, reject) => {
-      const mergedPatronData = Object.assign({}, requestBody, modeledResponse.data[0]);
+      const mergedPatronData = Object.assign({}, requestBody, modeledResponse);
       for (var key in mergedPatronData) {
         if (modelStreamPatron.data.hasOwnProperty(key)) {
           modelStreamPatron.data[key] = mergedPatronData[key];
         }
       }
-      modelStreamPatron.data.patronCodes.pcode4 = -1; // TODO: remove once pcode4 is not deleted in v0.2 of createPatron
+      modelStreamPatron.data.patronCodes.pcode4 = 0; // TODO: remove once pcode4 is not deleted in v0.2 of createPatron
       resolve(modelStreamPatron.data);
     });
   },
