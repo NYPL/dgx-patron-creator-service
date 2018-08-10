@@ -25,6 +25,14 @@ let cardCreatorPassword;
  * @return {object}
  */
 function collectErrorResponseData(status, type, message, title, debugMessage) {
+  logger.error(
+    `status_code: ${status}, ` +
+    `type: ${type}, ` +
+    `message: ${message}, ` +
+    `response: ${debugMessage}`,
+    { routeTag: ROUTE_TAG } // eslint-disable-line comma-dangle
+  );
+
   return {
     status: status || null,
     type: type || '',
@@ -141,7 +149,10 @@ function createPatron(req, res) {
           })
           .catch((error) => {
             renderResponse(req, res, 201, modeledResponse);
-            console.error(`Error publishing to stream: ${error}`); // eslint-disable-line no-console
+            logger.error(
+              `Error publishing to stream.\n modeledResponse: ${JSON.stringify(modeledResponse)}\n ${JSON.stringify(error)}\n`,
+              { routeTag: ROUTE_TAG } // eslint-disable-line comma-dangle
+            );
           });
       })
       .catch((response) => {

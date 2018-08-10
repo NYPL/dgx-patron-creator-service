@@ -153,7 +153,12 @@ function streamPatron(req, res, streamPatronData, modeledResponse) {
     logger.debug('Published to stream successfully!', { routeTag: ROUTE_TAG });
   }).catch((streamError) => {
     renderResponse(req, res, 201, modeledResponse);
-    logger.error(`Error publishing to stream: ${streamError}`, { routeTag: ROUTE_TAG });
+    logger.error(
+      'Error publishing to stream.\n' +
+      `streamPatronData: ${JSON.stringify(streamPatronData)}\n` +
+      `${JSON.stringify(streamError)}\n`,
+      { routeTag: ROUTE_TAG } // eslint-disable-line comma-dangle
+    );
   });
 }
 
