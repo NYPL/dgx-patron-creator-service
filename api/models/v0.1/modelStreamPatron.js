@@ -1,4 +1,4 @@
-var modelStreamPatron = {
+const modelStreamPatron = {
   data: {
     simplePatron: {
       patron_id: '',
@@ -11,14 +11,14 @@ var modelStreamPatron = {
         line_2: '',
         city: '',
         state: '',
-        zip: ''
+        zip: '',
       },
       username: '',
       pin: '',
       policy_type: '',
       ecommunications_pref: '',
-      patron_agency: ''
-    }
+      patron_agency: '',
+    },
   },
 
   /**
@@ -27,17 +27,17 @@ var modelStreamPatron = {
    * @param {object} modeledResponse
    * @return {Promise}
    */
-  transformSimplePatronRequest: function(data, modeledResponse) {
-    return new Promise(function(resolve, reject) {
+  transformSimplePatronRequest(data, modeledResponse) {
+    return new Promise((resolve, reject) => {
       if (!data.simplePatron) {
-        reject('simplePatron object was not found');
+        reject(new Error('simplePatron object was not found'));
       }
 
       if (!modeledResponse.data.simplePatron) {
-        reject('modeledResponse simplePatron object was not found');
+        reject(new Error('modeledResponse simplePatron object was not found'));
       }
 
-      var simplePatron = Object.assign({}, data.simplePatron, modeledResponse.data.simplePatron);
+      const simplePatron = Object.assign({}, data.simplePatron, modeledResponse.data.simplePatron);
 
       for (var key in simplePatron) {
         if (modelStreamPatron.data.simplePatron.hasOwnProperty(key)) {
@@ -47,9 +47,9 @@ var modelStreamPatron = {
 
       resolve(modelStreamPatron.data);
     });
-  }
+  },
 };
 
 module.exports = {
-  modelStreamPatron
+  modelStreamPatron,
 };
