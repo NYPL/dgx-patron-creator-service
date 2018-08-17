@@ -264,12 +264,6 @@ function createPatron(req, res) {
   ilsClientKey = ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
   ilsClientPassword = ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
 
-  // eslint-disable-next-line max-len
-  // Delete pcode4 data to prevent an error on Sierra TODO: remove this line once pcode4 is accepted; also remove related line in v0.2 modelStreamPatron.js
-  if (req.body && req.body.patronCodes) {
-    delete req.body.patronCodes.pcode4;
-  }
-
   Promise.all([ilsClientKey, ilsClientPassword])
     .then((decryptedValues) => {
       [ilsClientKey, ilsClientPassword] = decryptedValues;

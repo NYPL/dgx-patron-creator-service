@@ -9,7 +9,12 @@ const modelStreamPatron = {
     emails: [],
     pin: null,
     patronType: null,
-    patronCodes: null,
+    patronCodes: {
+      pcode1: null,
+      pcode2: null,
+      pcode3: null,
+      pcode4: null,
+    },
     blockInfo: null,
     addresses: null,
     phones: null,
@@ -28,7 +33,6 @@ const modelStreamPatron = {
           modelStreamPatron.data[key] = mergedPatronData[key];
         }
       }
-      modelStreamPatron.data.patronCodes.pcode4 = 0; // TODO: remove once pcode4 is not deleted in v0.2 of createPatron
       resolve(modelStreamPatron.data);
     });
   },
