@@ -35,8 +35,13 @@ function modelPatronCreatorResponse(responseData, status, requestData) {
     emails: requestData.emails || [],
     pin: requestData.pin || '',
     patronType: requestData.patronType || '',
-    patronCodes: requestData.patronCodes || {},
-    blockInfo: requestData.blockInfo || {},
+    patronCodes: requestData.patronCodes || {
+      pcode1: null,
+      pcode2: null,
+      pcode3: null,
+      pcode4: null,
+    },
+    blockInfo: requestData.blockInfo || null,
     addresses: requestData.addresses || [],
     phones: requestData.phones || [],
   };

@@ -1,10 +1,6 @@
 const modelStreamPatron = require('../../../../api/models/v0.2/modelStreamPatron');
 
-const requestBody = {
-  patronCodes: {
-    pcode4: null, // necessary until we are no longer hard coding it in modelStreamPatron.js
-  },
-};
+const requestBody = {};
 const modeledResponse = { data: requestBody };
 const defaultStreamedObject = {
   data: {
@@ -17,7 +13,10 @@ const defaultStreamedObject = {
     id: '',
     names: [],
     patronCodes: {
-      pcode4: 0,
+      pcode1: null,
+      pcode2: null,
+      pcode3: null,
+      pcode4: null,
     },
     patronType: null,
     phones: null,

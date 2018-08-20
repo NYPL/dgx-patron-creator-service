@@ -8,6 +8,7 @@ const streamPublish = require('./../../helpers/streamPublish');
 const logger = require('../../helpers/Logger');
 const encode = require('../../helpers/encode');
 const customErrors = require('../../helpers/errors');
+const util = require('util');
 
 const ROUTE_TAG = 'CREATE_PATRON_0.2';
 let ilsClientKey;
@@ -181,6 +182,7 @@ function callAxiosToCreatePatron(req, res) {
       });
     return;
   }
+
   axios.post(process.env.ILS_CREATE_PATRON_URL, req.body, {
     headers: {
       'Content-Type': 'application/json',
@@ -198,17 +200,17 @@ function callAxiosToCreatePatron(req, res) {
           renderResponse(req, res, 201, modeledResponse); // respond with 201 even if streaming fails
         });
     })
-    .catch((axiosErrorResponse) => {
+    .catch((axiosError) => {
       try {
         const errorResponseData = modelResponse.errorResponseData(
-          collectErrorResponseData(axiosErrorResponse.status, '', axiosErrorResponse, '', '') // eslint-disable-line comma-dangle
+          collectErrorResponseData(axiosError.response.status, '', axiosError.response.data, '', '') // eslint-disable-line comma-dangle
         );
         renderResponse(req, res, 500, errorResponseData);
       } catch (error) {
         const errorResponseData = modelResponse.errorResponseData(
-          collectErrorResponseData(503, '', 'The ILS is currently unavailable.', '', '') // eslint-disable-line comma-dangle
+          collectErrorResponseData(500, '', `Error related to ${process.env.ILS_CREATE_PATRON_URL} or publishing to the NewPatron stream.`, '', '') // eslint-disable-line comma-dangle
         );
-        renderResponse(req, res, 503, errorResponseData);
+        renderResponse(req, res, 500, errorResponseData);
       }
     });
 }
@@ -261,12 +263,6 @@ function createPatron(req, res) {
 
   ilsClientKey = ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
   ilsClientPassword = ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
-
-  // eslint-disable-next-line max-len
-  // Delete pcode4 data to prevent an error on Sierra TODO: remove this line once pcode4 is accepted; also remove related line in v0.2 modelStreamPatron.js
-  if (req.body && req.body.patronCodes) {
-    delete req.body.patronCodes.pcode4;
-  }
 
   Promise.all([ilsClientKey, ilsClientPassword])
     .then((decryptedValues) => {
