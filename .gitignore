@@ -30,11 +30,13 @@ node_modules
 # Runtime configuration for swagger app
 config/runtime.yaml
 
-# Environment files
-*.env
+# Local environment (doesn't affect deploy_development.env, deploy_qa.env, etc)
 
 # Built files
 dist
+
+# Any files related to deploying to the Lambda from your local environment
+.lambda
 
 # Other files to be ignored
 npm-debug.log
