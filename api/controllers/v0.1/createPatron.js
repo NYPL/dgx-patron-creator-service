@@ -138,11 +138,14 @@ function createPatron(req, res) {
         modelStreamPatron.transformSimplePatronRequest(
           req.body, modeledResponse // eslint-disable-line comma-dangle
         )
-          .then(streamPatron => streamPublish.streamPublish(
-            process.env.PATRON_SCHEMA_NAME_V01,
-            process.env.PATRON_STREAM_NAME_V01,
-            streamPatron // eslint-disable-line comma-dangle
-          ))
+          .then((streamPatron) => { // eslint-disable-line arrow-body-style
+            // `return` is necessary below, to wait for streamPublish to complete
+            return streamPublish.streamPublish(
+              process.env.PATRON_SCHEMA_NAME_V01,
+              process.env.PATRON_STREAM_NAME_V01,
+              streamPatron // eslint-disable-line comma-dangle
+            );
+          })
           .then(() => {
             renderResponse(req, res, 201, modeledResponse);
             logger.debug('Published to stream successfully!', { routeTag: ROUTE_TAG });
@@ -180,8 +183,8 @@ function createPatron(req, res) {
             modelResponse.errorResponseData(responseObject) // eslint-disable-line comma-dangle
           );
         } else {
-          renderResponse(req, res, 500, modelResponse.errorResponseData(
-            collectErrorResponseData(null, '', '', '', '') // eslint-disable-line comma-dangle
+          renderResponse(req, res, response.response.status, modelResponse.errorResponseData(
+            collectErrorResponseData(response.response.status, '', '', '', `${response.message} from NYPL Simplified Card Creator.`) // eslint-disable-line comma-dangle
           ));
         }
       });
