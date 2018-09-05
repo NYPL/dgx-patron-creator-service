@@ -39,6 +39,43 @@ app.use(bodyParser.urlencoded({
 // Below are the middlewares for response body
 
 /**
+ * v1Error(err, req)
+ * Format the response for errors on v0.1 routes
+ *
+ * @param {error object} err
+ * @param {HTTP request} req
+ */
+function v1Error(err, req) { // eslint-disable-line no-unused-vars
+  return {
+    data: {
+      status_code_from_card_creator: null,
+      status: err.status,
+      type: 'invalid-request',
+      message: `Request body: ${err.body}`,
+      detail: 'The patron creator did not forward the request to Card Creator.',
+    },
+    count: 0,
+  };
+}
+
+/**
+ * v2Error(err, req)
+ * Format the response for errors on v0.2 routes
+ *
+ * @param {error object} err
+ * @param {HTTP request} req
+ */
+function v2Error(err, req) { // eslint-disable-line no-unused-vars
+  return {
+    status_code_from_card_ils: null,
+    status: err.status,
+    type: 'invalid-request',
+    message: `Request body: ${err.body}`,
+    detail: 'The patron creator did not forward the request to the ILS.',
+  };
+}
+
+/**
  * errorHandler(err, req, res, next)
  * Rendering the error response if the request to this service fails.
  * We need "next" here as the forth argument following the Express's convention
@@ -53,21 +90,18 @@ function errorHandler(err, req, res, next) { // eslint-disable-line no-unused-va
   console.error(
     `status_code: ${err.status}, ` +
     'type: "invalid-request", ' +
-    `message: "error request with ${err.body}"` // eslint-disable-line comma-dangle
+    `message: "Request body: ${err.body}"` // eslint-disable-line comma-dangle
   );
 
-  res
-    .status(err.status)
-    .json({
-      data: {
-        status_code_from_card_creator: null,
-        status_code_from_card_ils: null,
-        type: 'invalid-request',
-        message: `Error with this request body: ${err.body}`,
-        detail: {},
-      },
-      count: 0,
-    });
+  if (req.url.includes('v0.1')) {
+    res
+      .status(err.status)
+      .json(v1Error(err, req));
+  } else if (req.url.includes('v0.2')) {
+    res
+      .status(err.status)
+      .json(v2Error(err, req));
+  }
 }
 
 // Error handling
@@ -95,9 +129,9 @@ const config = {
 if (!process.env.AWS_LAMBDA_FUNCTION_NAME) {
   const port = process.env.PORT || 3001;
 
-  app.listen(port, function () {
-    console.info('Server started on port ' + port)
-  })
+  app.listen(port, () => {
+    console.info(`Server started on port ${port}`); // eslint-disable-line no-console
+  });
 }
 
 module.exports = app;
