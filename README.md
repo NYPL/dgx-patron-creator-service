@@ -143,6 +143,10 @@ $ npm run deploy-package-production
 *To get your AWS Lambda service credentials, please visit [AWS Lambda's website](https://aws.amazon.com/lambda/).*
 
 ## Development Change Log
+### v0.3.1
+#### Update
+  - update error handling and log messages
+
 ### v0.3.0
 #### Add
   - add a v0.2 create-patron API endpoint

@@ -96,7 +96,7 @@ function modelErrorResponseData(obj) {
     detail: {
       title: obj.title || '',
       debug: (obj.debug_message) ? parseJSON(obj.debug_message) : {},
-    }
+    },
   };
 }
 
