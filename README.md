@@ -10,6 +10,13 @@ The form on NYPL's website will fire a POST request to the service after it has 
 
 The Card Creator's documentation can be found [here](https://github.com/NYPL-Simplified/card-creator).
 
+This app serves the following endpoints:
+ - `POST /api/v0.1/patrons`
+ - `POST /api/v0.2/patrons`
+ - `GET /docs/patron-creator`
+
+See also [PatronService](https://github.com/NYPL-discovery/patron-service), [PatronEligibilityService](https://github.com/NYPL-discovery/patron-eligibility-service), [BarcodeService](https://github.com/NYPL/barcode-service) for other patron endpoints.
+
 ## Version
 v0.1.1
 
