@@ -5,6 +5,7 @@
 #### Update
 
 - Updated npm packages and added Prettier for code formatting.
+- Updated the README and removed deprecated npm scripts for deploying the Lambda to AWS.
 
 ### v0.3.0
 
