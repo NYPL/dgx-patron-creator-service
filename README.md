@@ -2,11 +2,11 @@
 
 # dgx-patron-creator-service
 
-This is the repository of the New York Public Library's patron creator microservice. The microservice offers the API endpoint to create a new patron with the information from the "Get a Library Card" form.
+This is the repository of the New York Public Library's Patron Creator microservice. The microservice offers the API endpoint to create a new patron with the information from the "Get a Library Card" form.
 
-The Link to the repository from [here](https://github.com/NYPL/dgx-patron-creator-service).
+[Github link to the repository](https://github.com/NYPL/dgx-patron-creator-service).
 
-The form on NYPL's website will fire a POST request to the service after it has been submitted. The service will then take the information and fire another POST request to NYPL Simplified's Card Creator API. Finally, it will reply the results based on the responses from the Card Creator API.
+The Library Card app form on NYPL's website will fire a POST request to the service after it has been submitted. The service will then take the information and fire another POST request to NYPL Simplified's Card Creator API. Finally, it will return the results based on the response from the Card Creator API.
 
 The Card Creator's documentation can be found [here](https://github.com/NYPL-Simplified/card-creator).
 
@@ -57,11 +57,11 @@ To execute the service locally, run
 $ npm start
 ```
 
-The server will be executed on _localhost:3001_.
+The server will run on _localhost:3001_.
 
-### Call the APIs
+### Credentials
 
-You need credentials for making a successful API call to NYPL's Simplified Card Creator. You should set this credentials in the `.env` file. For example,
+You need credentials for making a successful API call to NYPL's Simplified Card Creator. You should set the credentials in the `.env` file. For example,
 
 ```javascript
 CARD_CREATOR_USERNAME = username;
@@ -74,9 +74,9 @@ _Please contact [NYPL's Simplified Card Creator team](https://github.com/NYPL-Si
 
 #### 1. Create a Patron
 
-With a valid credential, now you can make a POST request to _localhost:3001/api/v0.1/patrons_ to create a new patron.
+With valid credentials, now you can make a POST request to _localhost:3001/api/v0.1/patrons_ to create a new patron.
 
-The request data format should be in JSON with at least "name", "dateOfBirth", "address", "username", and "pin". Username must be unique. Example for API v0.1:
+The request data format should be in JSON with required fields of "name", "dateOfBirth", "address", "username", and "pin". The username must be unique. Example data for API v0.1:
 
 ```javascript
 {
@@ -133,15 +133,21 @@ Three kinds of error messages could be returned from the Card Creator API.
 | 'invalid-request'            |  400   | 'Invalid request.'            | 'Valid request parameters are required.'                                                | Varies        |
 | 'no-available-barcodes'      |  422   | 'No available barcodes.'      | 'There are no barcodes currently available.'                                            | -             |
 
-#### 2. JSON Documentation
+### JSON Documentation
 
 Visit _http://localhost:3001/docs/patron-creator_ for the JSON version of the service swagger documentation.
 
 ## Testing
 
-Use `npm start` to run the app in one window. This is required to get the integration test to pass. The integration tests uses a local server the QA instance of Card Creator and the Patron Kinesis stream in the Sandbox environment.
+### Unit tests
 
-Use `INTEGRATION_TESTS=true npm test` in a second window to run all the tests or just `npm test` to run the unit tests. Check the server to ensure that you see the message "Published to stream successfully!" to verify that the integration test exercised the Kinesis stream.
+Run `npm test` to run the unit tests.
+
+### Integration tests
+
+Use `npm start` to run the app in one window. This is required to run the integration tests. The integration tests uses a local server the QA instance of Card Creator and the Patron Kinesis stream in the NYPL AWS Sandbox environment.
+
+Use `INTEGRATION_TESTS=true npm test` in a second window to run all the tests. Check the server to ensure that you see the message "Published to stream successfully!" to verify that the integration test exercised the Kinesis stream.
 
 ## Deployment
 
@@ -157,4 +163,17 @@ To deploy to Production, run the following command:
 $ npm run deploy-package-production
 ```
 
+TODO: Check the status with Travis CI/CD.
+
 _To get your AWS Lambda service credentials, please visit [AWS Lambda's website](https://aws.amazon.com/lambda/)._
+
+## Contributing
+
+There are currently three branches that correspond to the environment they deploy to on NYPL AWS's account. The `development` branch deploys to the AWS Sandbox development account. Both the `qa` and `master` branches deploy to the AWS nypl-digital-dev account.
+
+Because of the different environments, the following git branch workflow is used:
+
+- Branch off `development` for your feature branch.
+- Create a PR pointing to `development`.
+- Once `development` is updated, merge `development` into `qa`.
+- Finally, after testing the QA server and endpoints, merge `qa` into `master`.
