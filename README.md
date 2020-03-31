@@ -47,7 +47,7 @@ To setup the app configuration. copy the `.env.example` file to `.env` and updat
 You need credentials for making a successful API call to NYPL's Simplified Card Creator and AWS credentials to connect to Kinesis.
 
 _Please contact [NYPL's Simplified Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials._
-_To get your AWS Kinesis service credentials, please visit [AWS Kinesis's website](https://aws.amazon.com/kinesis/)._
+_Please contact an NYPL engineer to get AWS credentials for NYPL's accounts._
 
 ### Start the service
 
@@ -151,21 +151,11 @@ Use `INTEGRATION_TESTS=true npm test` in a second window to run all the tests. C
 
 ## Deployment
 
-Sensitive environment variables for AWS Lambda are encrypted in source control, and decrypted by AWS as part of deployment. To deploy to QA, run the following command:
+Travis CI/CD is used to deploy the Lambda to AWS. Sensitive environment variables for AWS Lambda are encrypted in source control and decrypted by AWS as part of deployment.
 
-```sh
-$ npm run deploy-package-qa
-```
+The Travis configuration sets up automatic deployment to NYPl's development and production AWS accounts on the `development`, `qa`, and `master` branches. When new code is merged into each branch, and the tests pass, Travis will deploy to the appropriate environment.
 
-To deploy to Production, run the following command:
-
-```sh
-$ npm run deploy-package-production
-```
-
-TODO: Check the status with Travis CI/CD.
-
-_To get your AWS Lambda service credentials, please visit [AWS Lambda's website](https://aws.amazon.com/lambda/)._
+If any endpoints were added or updated, make sure to make the corresponding update in the AWS API Gateway.
 
 ## Contributing
 
