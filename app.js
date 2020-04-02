@@ -1,4 +1,3 @@
-/* eslint no-unused-vars: "off" */
 const express = require('express');
 const bodyParser = require('body-parser');
 
@@ -52,8 +51,8 @@ app.use(
  * @param {error object} err
  * @param {HTTP request} req
  */
+// eslint-disable-next-line no-unused-vars
 function v1Error(err, req) {
-  // eslint-disable-line no-unused-vars
   return {
     data: {
       status_code_from_card_creator: null,
@@ -73,8 +72,8 @@ function v1Error(err, req) {
  * @param {error object} err
  * @param {HTTP request} req
  */
+// eslint-disable-next-line no-unused-vars
 function v2Error(err, req) {
-  // eslint-disable-line no-unused-vars
   return {
     status_code_from_card_ils: null,
     status: err.status,
@@ -94,8 +93,8 @@ function v2Error(err, req) {
  * @param {HTTP response} res
  * @param {next}
  */
+// eslint-disable-next-line no-unused-vars
 function errorHandler(err, req, res, next) {
-  // eslint-disable-line no-unused-vars
   // eslint-disable-next-line no-console
   console.error(
     `status_code: ${err.status}, `
