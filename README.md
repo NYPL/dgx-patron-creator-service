@@ -20,7 +20,7 @@ See also [PatronService](https://github.com/NYPL-discovery/patron-service), [Pat
 
 ## Version
 
-v0.3.1
+v0.4.0
 
 ## Technologies
 
@@ -132,6 +132,82 @@ Three kinds of error messages could be returned from the Card Creator API.
 | 'remote-integration-failure' |  502   | 'Third-party service failed.' | 'The library could not complete your request because a third-party service has failed.' | -             |
 | 'invalid-request'            |  400   | 'Invalid request.'            | 'Valid request parameters are required.'                                                | Varies        |
 | 'no-available-barcodes'      |  422   | 'No available barcodes.'      | 'There are no barcodes currently available.'                                            | -             |
+
+#### 2. User Name Validation
+
+With a valid credential, now you can make a POST request to _localhost:3001/api/v0.1/validations/username_ for user name validation.
+
+The request data format should be in JSON with the key "username". For instance,
+
+```javascript
+{"username": "mikeolson"}
+```
+
+A successful JSON response example will be as below,
+
+```javascript
+{
+  "data": {
+    "status_code_from_card_creator": 200,
+    "valid": true,
+    "type": "available-username",
+    "card_type": "standard",
+    "message": "This username is available.",
+    "detail": {}
+  }
+}
+```
+
+#### 3. Address Validation
+
+Make a POST request to _localhost:3001/api/v0.1/validations/address_ for address validation.
+
+The request data format should be in JSON with the key "address". For instance,
+
+```javascript
+{
+  "address" : {
+    "line_1" : "1123 fake Street",
+    "city" : "New York",
+    "state" : "NY",
+    "zip" : "05150"
+  },
+  "is_work_or_school_address" : true
+}
+```
+
+A successful JSON response example will be as below,
+
+```javascript
+{
+  "data": {
+    "status_code_from_card_creator": 200,
+    "valid": true,
+    "type": "valid-address",
+    "card_type": "standard",
+    "message": "This valid address will result in a standard library card.",
+    "detail": {},
+    "address": {
+      "line_1": "1123 fake St",
+      "line_2": "",
+      "city": "New York",
+      "county": "New York",
+      "state": "NY",
+      "zip": "05150-2600",
+      "is_residential": false
+    },
+    "original_address": {
+      "line_1": "1123 fake Street",
+      "line_2": "",
+      "city": "New York",
+      "county": "",
+      "state": "NY",
+      "zip": "05150",
+      "is_residential": null
+    }
+  }
+}
+```
 
 ### JSON Documentation
 
