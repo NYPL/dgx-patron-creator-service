@@ -1,5 +1,11 @@
 ## Change Log
 
+### v0.4.0
+
+#### Add
+
+- Moved the dxg-validations-service endpoints to this service but kept them at the v0.1 version to be backwards compatible. The endpoints still hit the card-creator API but this will change later for v0.2.
+
 ### v0.3.1
 
 #### Update

@@ -41,3 +41,4 @@ dist
 # Other files to be ignored
 npm-debug.log
 .DS_Store
+.eslintcache
