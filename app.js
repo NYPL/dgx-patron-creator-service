@@ -126,15 +126,11 @@ function errorHandler(err, req, res, next) {
 // Error handling
 app.use(errorHandler);
 
-// This route will make a request for swaggerDoc.json
-app.get('/docs/patron-creator', apiDoc.renderApiDoc);
-
 // Below are the routes
 const router = express.Router();
 
 // This route will make a request for swaggerDoc.json
-// If you don't have it yet, check README.md for how to generate one based on swagger.yaml
-app.get('/docs/patron-validator', apiDoc.renderApiDoc);
+app.get('/docs/patrons-validations', apiDoc.renderApiDoc);
 
 app.use('/api', router);
 

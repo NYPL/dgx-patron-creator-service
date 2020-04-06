@@ -211,7 +211,9 @@ A successful JSON response example will be as below,
 
 ### JSON Documentation
 
-Visit _http://localhost:3001/docs/patron-creator_ for the JSON version of the service swagger documentation.
+Visit _http://localhost:3001/docs/patrons-validations_ for the JSON version of the service swagger documentation.
+
+The JSON and yaml for all the endpoints are found in the `/api/swagger` directory. Visit a service like [Swagger Editor](http://editor.swagger.io/) to run and update the yaml in real time, and download a JSON equivalent file. Or, you can input the JSON and get the equivalent yaml. Both files should be updated whenever changes are made.
 
 ## Testing
 
