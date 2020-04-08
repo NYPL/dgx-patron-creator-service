@@ -6,6 +6,7 @@
 
 - Moved the dxg-validations-service endpoints to this service but kept them at the v0.1 version to be backwards compatible. The endpoints still hit the card-creator API but this will change later for v0.2.
 - Added unit and integration tests for the validation endpoints for valid responses from the Card Creator.
+- Updated the Swagger documentation to include the Validations service's endpoints as both yaml and JSON.
 
 ### v0.3.1
 
