@@ -13,6 +13,8 @@ The Card Creator's documentation can be found [here](https://github.com/NYPL-Sim
 This app serves the following endpoints:
 
 - `POST /api/v0.1/patrons`
+- `POST /api/v0.1/validations/username`
+- `POST /api/v0.1/validations/address`
 - `POST /api/v0.2/patrons`
 - `GET /docs/patron-creator`
 
