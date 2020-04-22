@@ -1,3 +1,7 @@
+/**
+ * A class that uses Service Objects to validate addresses.
+ * TODO: Finish the implementation.
+ */
 const AddressValidationApi = () => {
   this.ALTERNATE_ADDRESSES_TYPE = 'alternate-addresses';
   this.UNRECOGNIZED_ADDRESS_TYPE = 'unrecognized-address';

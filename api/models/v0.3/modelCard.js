@@ -3,7 +3,10 @@ import AddressValidationApi from "../../controllers/v0.3/AddressValidationAPI";
 import UsernameValidationApi from "../../controllers/v0.3/UsernameValidationAPI";
 // import NameValidationApi from "../../controllers/v0.3/NameValidationAPI";
 
-// Doesn't directly talk to an API so in this same file as a simple class.
+/**
+ * A validator class to verify a card's address and birthdate. Doesn't
+ * directly talk to an API so in this same file as a simple class.
+ */
 export class CardValidator {
   validate(card) {
     if (card.work_address) {
@@ -89,6 +92,10 @@ CardValidator.UNVALIDATED_ADDRESS_ERROR = `Address has not been validated.
 
 const cardValidator = new CardValidator();
 
+/**
+ * A card class to create proper Card data structure and validations
+ * on that data.
+ */
 class Card {
   constructor(args) {
     this.name = args["name"];

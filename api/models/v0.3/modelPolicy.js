@@ -3,6 +3,9 @@ import IlsHelper from "../../controllers/v0.3/ILSHelper";
 
 const lowerCase = (arr) => arr.map((item) => item.toLowerCase());
 
+/**
+ * Creates a policy object to find out what type of card is allowed.
+ */
 class Policy {
   constructor(args = {}) {
     this.policy_type = args.policy_type || Policy.DEFAULT_POLICY_TYPE;

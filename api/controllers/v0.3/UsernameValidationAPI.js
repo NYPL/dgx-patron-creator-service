@@ -2,6 +2,9 @@
 import Card from "../../models/v0.3/modelCard";
 import IlsHelper from "./ILSHelper";
 
+/**
+ * A class that validates usernames against the ILS.
+ */
 const UsernameValidationAPI = () => {
   // class IntegrationError < StandardError; end
   const USERNAME_PATTERN = /\A[a-zA-Z0-9]{5,25}\z/;

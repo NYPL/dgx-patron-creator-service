@@ -1,4 +1,8 @@
 /* eslint-disable */
+
+/**
+ * Creates Barcode objects.
+ */
 class Barcode {
   constructor() {
     // validate uniqueness of barcodes

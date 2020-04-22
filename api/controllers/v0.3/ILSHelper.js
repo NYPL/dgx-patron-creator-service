@@ -1,8 +1,15 @@
 /* eslint-disable */
+
+/**
+ * Client that connects to the ILS.
+ */
 class ILSAPIClient {}
 
+/**
+ * Helper class to setup API calls to the ILS.
+ */
 class IlsHelper {
-  // ILS server error classes and codes
+  // TODO: Implement the error classes and codes
   // const StandardError = (err = "Standard error") => { throw new Error(err) };
   // const IlsError = () => StandardError("ILS Error");
   // const NotFoundError = () => IlsError();

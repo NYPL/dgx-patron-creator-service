@@ -1,6 +1,10 @@
 /* eslint-disable */
 import AddressValidationApi from "../../controllers/v0.3/AddressValidationAPI";
 
+/**
+ * Creates objects with proper address structure and validates
+ * the data against the AddressValidationApi.
+ */
 class Address {
   constructor(address = {}, is_valid = false) {
     this.address = {
