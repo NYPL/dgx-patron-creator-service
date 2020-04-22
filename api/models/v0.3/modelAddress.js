@@ -1,132 +1,141 @@
-const addressValidator = (props) => {
-  this.validate = (address) => {
-    const fullAddressLength = (address.line_1 + address.line_2).length;
-    if (fullAddressLength > 100) {
-      address.errors.push("Address lines must be less than 100 characters combined");
-    }
-    return true;
-  };
-};
+/* eslint-disable */
+import AddressValidationApi from "../../controllers/v0.3/AddressValidationAPI";
 
-const address = (props) => {
-  this.line_1 = props.line_1 || "";
-  this.line_2 = props.line_2 || "";
-  this.city = props.city || "";
-  this.county = props.county || "";
-  this.state = props.state || "";
-  this.zip = props.zip || "";
-  this.is_residential = str_to_bool(props.is_residential);
-  // Only set in the API call
-  this.has_been_validated = props.has_been_validated || false;
-  
-  const str_to_bool = (str) => {
-    if (!str.length) {
+class Address {
+  constructor(address = {}, is_valid = false) {
+    this.address = {
+      line_1: address.line_1 || "",
+      line_2: address.line_2 || "",
+      city: address.city || "",
+      county: address.county || "",
+      state: address.state || "",
+      zip: address.zip || "",
+      is_residential: this.str_to_bool(address.is_residential),
+      errors: {},
+      // Only set in the API call
+      has_been_validated: address.has_been_validated || false,
+    };
+    this.is_valid = is_valid;
+  }
+
+  validate() {
+    const fullAddressLength = (this.address.line_1 + this.address.line_2)
+      .length;
+    if (fullAddressLength > 100) {
+      this.address.errors["line_1"] =
+        "Address lines must be less than 100 characters combined";
+      return false;
+    }
+    this.is_valid = true;
+    return true;
+  }
+
+  str_to_bool(str) {
+    if (!str) {
       return undefined; // Is this right? prev was nil
     }
     // TODO: this was in there before but should it be copied over?
     const vals = ["true", "false"];
-    const valsHash = { "true": true, "false": false };
-    let found = false;
-    vals.forEach(val => {
-      if (str.includes(val)) {
-        found = true;
+    const valsHash = { true: true, false: false };
+    let found = "";
+    // First check if the boolean string is in the passed in string.
+    vals.forEach((val) => {
+      if (str.toLowerCase().includes(val)) {
+        found = val;
       }
     });
-    if (found) {
-      return str;
-    }
+    // Otherwise, just use the passed in string.
+    return valsHash[found || str.toLowerCase()];
+  }
 
-    return valsHash[str.toLowerCase()];
-  };
+  in_state(policy) {
+    this.state.toLowerCase() in policy.service_area[this.state];
+  }
+  in_city(policy) {
+    return (
+      this.city.toLowerCase() in policy.service_area[this.city] ||
+      this.county.toLowerCase() in policy.service_area[this.county]
+    );
+  }
 
-  const in_state = (policy) =>
-    (this.state.toLowerCase() in policy.service_area[this.state]);
+  toString() {
+    const address = this.address;
+    const street_info = `${address.line_1}${
+      address.line_2.length > 0 ? `, ${address.line_2}` : address.line_2
+    }`;
+    const city_info = `${address.city}, ${address.state} ${address.zip}`;
+    return `${street_info}\n${city_info}`;
+  }
 
-  const in_city = (policy) => (
-    (this.city.toLowerCase() in policy.service_area[this.city]) ||
-    (this.county.toLowerCase() in policy.service_area[this.county])
-  );
+  residential_work_address(is_work_address) {
+    return is_work_address && this.address.is_residential;
+  }
 
-  const to_hash = () => ({
-    line_1: this.line_1,
-    line_2: this.line_2,
-    city: this.city,
-    county: this.county,
-    state: this.state,
-    zip: this.zip,
-    is_residential: this.is_residential,
-  });
+  non_residential_home_address(is_work_address) {
+    return !is_work_address && !this.address.is_residential;
+  }
 
-  const to_string = () => {
-    const street_info = `${this.line_1}${this.line_2.length > 0 ? `, ${this.line_2}`: this.line_2}`;
-    const city_info = `${this.city}, ${this.state} ${this.zip}`;
-    return `${this.street_info}\n${this.city_info}`;
-  };
-
-  const residential_work_address = (is_work_address) =>
-    (is_work_address && this.is_residential);
-
-  const non_residential_home_address = (is_work_address) =>
-    (!is_work_address && !this.is_residential);
-
-  const address_for_temporary_card = (is_work_address) => {
+  address_for_temporary_card(is_work_address) {
     if (this.residential_work_address(is_work_address)) {
       return true;
     } else if (this.non_residential_home_address(is_work_address)) {
       return true;
     }
     return false;
-  };
+  }
 
-  // Need to call validation API to validate the address
-  const validation_response = (is_work_address = undefined) => {
-    // const api = AddresValidationApi.new(is_work_address);
+  // TODO: Need to call validation API to validate the address
+  validation_response(is_work_address = undefined) {
+    // const api = AddressValidationApi.new(is_work_address);
     // api.validate(this);
-  };
+    // this.is_valid = true;
+    return this;
+    // if false return null; and is_valid = false;
+  }
 
   // Public: Creates new address with updated attributes from
   // the validation process.
-  this.validated_version = (policy, is_work_address = undefined) => {
+  validated_version(is_work_address = undefined) {
     // return the current address since it's already validated;
-    if (this.has_been_validated) {
+    if (this.address.has_been_validated) {
       return this;
     }
-    // if the address is not valid, return;
+    // if the address is not already valid, return;
     if (!this.is_valid) {
       return;
     }
 
-    const validation = await validation_response(is_work_address);
-    // if validation error return; integration error
+    // Check to see if address is valid
+    const validation = this.validation_response(is_work_address);
+    // TODO if validation error return; integration error
 
-    if (validation.address) {
-      validation.address['has_been_validated'] = true;
-      const updated_address = new address(validation.address);
+    if (validation && validation.address) {
+      validation.address["has_been_validated"] = true;
+      const is_valid = true;
+      const updated_address = new Address(validation.address, is_valid);
       return updated_address;
     }
 
     return;
-  };
+  }
 
   // Public: Returns an address updated with its API-formalized version
   // without incorporating about the card policy.
   // Returns a new address or null.
-  this.normalized_version = () => {
-    if (this.has_been_validated) {
+  normalized_version() {
+    if (this.address.has_been_validated) {
       return this;
     }
 
-    const validation = await validation_response(is_work_address);
-    // if error do something integration error
+    const validation = this.validation_response(is_work_address);
+    // TODO: if error do something integration error
 
-    if (validation.type == AddressValidationApi.VALID_ADDRESS_TYPE) {
-      validation.address['has_been_validated'] = true;
-      const updated_address = new address(validation.address);
+    if (validation.type === AddressValidationApi.VALID_ADDRESS_TYPE) {
+      validation.address["has_been_validated"] = true;
+      const updated_address = new Address(validation.address);
       return updated_address;
     }
-  };
+  }
 }
 
-module.exports = {
-  address,
-};
+export default Address;
