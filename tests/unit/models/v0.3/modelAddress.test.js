@@ -101,7 +101,7 @@ describe("Address", () => {
     // TODO
     describe("in_state", () => {
       it("should determine if the address is in NY state", () => {
-        // const policy = new Policy();
+        // const policy = Policy();
         // const address = new Address();
         // expect(address.in_state(policy))...; //true
         // const non_nys_address = new Address(...);

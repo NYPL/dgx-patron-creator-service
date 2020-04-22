@@ -6,6 +6,7 @@ const createPatronV0_1 = require('./api/controllers/v0.1/createPatron.js'); // e
 const validations = require('./api/controllers/v0.1/validations.js');
 const createPatronV0_2 = require('./api/controllers/v0.2/createPatron.js'); // eslint-disable-line camelcase
 const apiDoc = require('./api/controllers/apiDoc.js');
+const createPatronV0_3 = require('./api/controllers/v0.3/createPatron.js'); // eslint-disable-line camelcase
 
 const app = express();
 const pathName = `${process.cwd()}/config/deploy_${app.get('env')}.env`;
@@ -141,6 +142,8 @@ router.route('/v0.1/validations/address').post(validations.checkAddress);
 
 // New validation will be part of the `patrons` endpoint.
 router.route('/v0.2/patrons/').post(createPatronV0_2.createPatron);
+
+router.route('/v0.3/patrons/').post(createPatronV0_3.createPatron);
 
 // Do not listen to connections in Lambda environment
 if (!process.env.AWS_LAMBDA_FUNCTION_NAME) {

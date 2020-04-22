@@ -112,7 +112,8 @@ class IlsHelper {
     const result = search(
       `//${IlsHelper.BARCODE_FIELDTAG}//${barcodeOrUsername}`
     );
-    return !!(result === "NotFoundError");
+    // Can return an error;
+    return result;
   }
 
   // Format a patron's address as ILS expects it.

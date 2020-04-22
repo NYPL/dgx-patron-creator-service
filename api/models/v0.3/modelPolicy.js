@@ -1,140 +1,133 @@
 /* eslint-disable */
 import IlsHelper from "../../controllers/v0.3/ILSHelper";
 
-const lowerCase = (arr) => arr.map((item) => item.toLowerCase());
-
 /**
  * Creates a policy object to find out what type of card is allowed.
  */
-class Policy {
-  constructor(args = {}) {
-    this.policy_type = args.policy_type || Policy.DEFAULT_POLICY_TYPE;
-    this.policy = Policy.ils_policy[this.policy_type];
-  }
-
-  // attr_accessor :agency, :ptype, :card_type, :required_fields
+const Policy = (args) => {
+  const lowerCase = (arr) => arr.map((item) => item.toLowerCase());
+  const DEFAULT_POLICY_TYPE = "simplye";
+  const ALLOWED_STATES = lowerCase(["NY", "New York"]);
+  const ALLOWED_COUNTIES = lowerCase([
+    "Richmond",
+    "Queens",
+    "New York",
+    "Kings",
+    "Bronx",
+  ]);
+  const ALLOWED_CITIES = lowerCase(["New York"]);
+  const ilsPolicy = {
+    simplye: {
+      agency: IlsHelper.DEFAULT_PATRON_AGENCY,
+      ptype: {
+        metro: {
+          id: IlsHelper.NO_PRINT_ADULT_METRO_PTYPE,
+          desc: IlsHelper.PTYPE_TO_TEXT["NO_PRINT_ADULT_METRO_PTYPE"],
+        },
+        default: {
+          id: IlsHelper.NO_PRINT_ADULT_NYS_PTYPE,
+          desc: IlsHelper.PTYPE_TO_TEXT["NO_PRINT_ADULT_NYS_PTYPE"],
+        },
+      },
+      cardType: {
+        standard: IlsHelper.STANDARD_EXPIRATION_TIME,
+        temporary: IlsHelper.TEMPORARY_EXPIRATION_TIME,
+      },
+      requiredFields: ["email", "barcode"],
+      serviceArea: {
+        city: ALLOWED_CITIES,
+        county: ALLOWED_COUNTIES,
+        state: ALLOWED_STATES,
+      },
+    },
+    webApplicant: {
+      agency: IlsHelper.WEB_APPLICANT_AGENCY,
+      ptype: {
+        default: {
+          id: IlsHelper.WEB_APPLICANT_PTYPE,
+          desc: IlsHelper.PTYPE_TO_TEXT["WEB_APPLICANT_PTYPE"],
+        },
+      },
+      cardType: {
+        standard: IlsHelper.WEB_APPLICANT_EXPIRATION_TIME,
+        temporary: IlsHelper.WEB_APPLICANT_EXPIRATION_TIME,
+      },
+      requiredFields: ["birthdate"],
+      minimumAge: 13,
+    },
+  };
+  const policyType =
+    args && args.policyType ? args.policyType : DEFAULT_POLICY_TYPE;
+  const policy = ilsPolicy[policyType];
 
   // Return an array of named, approved patron policy schemes
-  valid_types() {
-    return Object.keys(Policy.ils_policy);
-  }
+  const validTypes = Object.keys(ilsPolicy);
+  const isDefault = policyType === DEFAULT_POLICY_TYPE;
+  const isWebApplicant = policyType === "webApplicant";
 
-  // Return the agency string associated with the given patron policy
-  agency() {
-    return this.policy["agency"];
-  }
-  // Return the ptype hash associated with the given patron policy
-  ptype() {
-    return this.policy["ptype"];
-  }
-  // Return the card expiration hash associated with the given patron policy
-  card_type() {
-    return this.policy["card_type"];
-  }
-  required_fields() {
-    return this.policy["required_fields"];
-  }
-  minimum_age() {
-    return this.policy["minimum_age"];
-  }
-  service_area() {
-    return this.policy["service_area"];
-  }
-  return_policy_field(field) {
-    return this.policy[field];
-  }
-  is_default() {
-    return this.policy_type === DEFAULT_POLICY_TYPE;
-  }
-  is_required(field) {
-    return this.required_fields().includes(field);
-  }
-  determine_ptype(patron) {
-    if (this.service_area() && this.ptype.has_key("metro")) {
+  const policyField = (field) => policy[field];
+  const isRequiredField = (field) =>
+    policyField("requiredFields").includes(field);
+
+  const determinePtype = (patron) => {
+    const ptype = policy.policyField("ptype");
+    if (policy.policyField("serviceArea").length && ptype.has_key("metro")) {
       if (patron.lives_or_works_in_city) {
-        return this.ptype["metro"]["id"];
+        return ptype["metro"]["id"];
       } else if (patron.lives_in_state) {
-        return this.ptype["default"]["id"];
+        return ptype["default"]["id"];
       }
     }
-    return this.ptype["default"]["id"];
-  }
-  is_web_applicant() {
-    return this.policy_type === "web_applicant";
-  }
-  determine_agency(patron_params) {
-    if (is_web_applicant) {
+    return ptype["default"]["id"];
+  };
+  const determineAgency = (patronParams = {}) => {
+    if (isWebApplicant) {
       if (
-        patron_params["patron_agency"] &&
-        parseInt(patron_params["patron_agency"], 10) === 199
+        patronParams &&
+        patronParams["patronAgency"] &&
+        parseInt(patronParams["patronAgency"], 10) === 199
       ) {
-        this.policy["agency"] = IlsHelper.WEB_APPLICANT_NYS_AGENCY;
+        policy["agency"] = IlsHelper.WEB_APPLICANT_NYS_AGENCY;
       } else {
-        this.policy["agency"] = IlsHelper.WEB_APPLICANT_AGENCY;
+        policy["agency"] = IlsHelper.WEB_APPLICANT_AGENCY;
       }
     } else {
-      this.policy["agency"] = IlsHelper.DEFAULT_PATRON_AGENCY;
+      policy["agency"] = IlsHelper.DEFAULT_PATRON_AGENCY;
     }
-  }
+
+    return policy["agency"];
+  };
 
   // Validations
-  uses_an_approved_policy() {
-    const keys = Object.keys(Policy.ils_policy);
-    if (!keys.include(this.policy_type)) {
-      this.errors.push(`${policy_type} is invalid, must be ${keys.join(", ")}`);
+  const usesAnApprovedPolicy = () => {
+    const keys = Object.keys(ilsPolicy);
+    if (!keys.includes(policyType)) {
+      console.log(
+        `${policyType} policy type is invalid, must be of type ${keys.join(
+          ", "
+        )}`
+      );
+      return false;
     }
-  }
-}
+    return true;
+  };
 
-Policy.DEFAULT_POLICY_TYPE = "simplye";
-Policy.ALLOWED_STATES = lowerCase(["NY", "New York"]);
-Policy.ALLOWED_COUNTIES = lowerCase([
-  "Richmond",
-  "Queens",
-  "New York",
-  "Kings",
-  "Bronx",
-]);
-Policy.ALLOWED_CITIES = lowerCase(["New York"]);
-Policy.ils_policy = {
-  simplye: {
-    agency: IlsHelper.DEFAULT_PATRON_AGENCY,
-    ptype: {
-      metro: {
-        id: IlsHelper.NO_PRINT_ADULT_METRO_PTYPE,
-        desc: IlsHelper.PTYPE_TO_TEXT["NO_PRINT_ADULT_METRO_PTYPE"],
-      },
-      default: {
-        id: IlsHelper.NO_PRINT_ADULT_NYS_PTYPE,
-        desc: IlsHelper.PTYPE_TO_TEXT["NO_PRINT_ADULT_NYS_PTYPE"],
-      },
-    },
-    card_type: {
-      standard: IlsHelper.STANDARD_EXPIRATION_TIME,
-      temporary: IlsHelper.TEMPORARY_EXPIRATION_TIME,
-    },
-    required_fields: ["email", "barcode"],
-    service_area: {
-      city: Policy.ALLOWED_CITIES,
-      county: Policy.ALLOWED_COUNTIES,
-      state: Policy.ALLOWED_STATES,
-    },
-  },
-  web_applicant: {
-    agency: IlsHelper.WEB_APPLICANT_AGENCY,
-    ptype: {
-      default: {
-        id: IlsHelper.WEB_APPLICANT_PTYPE,
-        desc: IlsHelper.PTYPE_TO_TEXT["WEB_APPLICANT_PTYPE"],
-      },
-    },
-    card_type: {
-      standard: IlsHelper.WEB_APPLICANT_EXPIRATION_TIME,
-      temporary: IlsHelper.WEB_APPLICANT_EXPIRATION_TIME,
-    },
-    required_fields: ["birthdate"],
-    minimum_age: 13,
-  },
+  return {
+    // object
+    ilsPolicy,
+    // variables
+    policyType,
+    policy,
+    validTypes,
+    isDefault,
+    isWebApplicant,
+    // functions
+    policyField,
+    isRequiredField,
+    determinePtype,
+    determineAgency,
+    usesAnApprovedPolicy,
+  };
 };
 
 export default Policy;

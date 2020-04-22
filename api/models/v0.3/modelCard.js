@@ -69,7 +69,7 @@ export class CardValidator {
 
   validate_birthdate(card) {
     if (card.required_by_policy("birthdate")) {
-      const min_age = card.policy.minimum_age(); //.year.ago;
+      const min_age = card.policy.policyField("minimumAge"); //.year.ago;
 
       const today = new Date();
       const birthDate = new Date(card.birthdate);
@@ -183,7 +183,7 @@ class Card {
   }
 
   required_by_policy(field) {
-    return this.policy.is_required(field);
+    return this.policy.isRequiredField(field);
   }
   works_in_city() {
     return this.work_address && this.work_address.in_city(this.policy);
@@ -229,7 +229,7 @@ class Card {
   }
 
   create_ils_patron() {
-    if (this.policy.is_required(this.barcode)) {
+    if (this.policy.isRequiredField(this.barcode)) {
       this.set_barcode();
     }
     this.set_ptype();
@@ -311,7 +311,7 @@ class Card {
     }
 
     // convert to right type
-    let expiration = this.policy.card_type["temporary"] / 1; //.day.to_i
+    let expiration = this.policy.cardType["temporary"] / 1; //.day.to_i
     return `Your library card is temporary because your ${reason} could not be
        verified. Visit your local NYPL branch within
        ${expiration} days to upgrade to a

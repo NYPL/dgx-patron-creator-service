@@ -15,7 +15,7 @@ describe('CardValidator', () => {
       const card = new Card({
         ...basicCard,
         birthdate: '01/01/1988',
-        policy: new Policy(),
+        policy: Policy(),
       });
 
       const validatedCard = cardValidator.validate_birthdate(card);
@@ -27,7 +27,7 @@ describe('CardValidator', () => {
       const card = new Card({
         ...basicCard,
         birthdate: '01/01/1988',
-        policy: new Policy({ policy_type: 'web_applicant' }),
+        policy: Policy({ policyType: 'webApplicant' }),
       });
 
       const validatedCard = cardValidator.validate_birthdate(card);
@@ -38,7 +38,7 @@ describe('CardValidator', () => {
       const card = new Card({
         ...basicCard,
         birthdate: '01/01/2013',
-        policy: new Policy({ policy_type: 'web_applicant' }),
+        policy: Policy({ policyType: 'webApplicant' }),
       });
 
       const validatedCard = cardValidator.validate_birthdate(card);
