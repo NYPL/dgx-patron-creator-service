@@ -72,9 +72,10 @@ const Policy = (args) => {
       && Object.keys(policyField('serviceArea')).length;
     const hasMetroKey = Object.keys(ptype).includes('metro');
     if (hasServiceArea && hasMetroKey) {
-      if (patron.lives_or_works_in_city()) {
+      if (patron.livesOrWorksInCity()) {
         return ptype.metro.id;
-      } if (patron.lives_in_state()) {
+      }
+      if (patron.livesInState()) {
         return ptype.default.id;
       }
     }

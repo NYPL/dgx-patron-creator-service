@@ -3,6 +3,16 @@
  * TODO: Finish the implementation.
  */
 
-class NameValidationApi {}
+const NameValidationApi = () => {
+  // TODO: temporary
+  const validate = () => true;
+
+  return {
+    validate,
+  };
+};
+
+NameValidationApi.VALID_NAME_TYPE = 'valid-name';
+NameValidationApi.UNRECOGNIZED_NAME_TYPE = 'unrecognized-name';
 
 export default NameValidationApi;

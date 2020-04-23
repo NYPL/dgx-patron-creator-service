@@ -13,9 +13,13 @@ function createPatron(req, res) {
   /**
    * Validate username, all example usage
    */
-  // const usernameValidator = new UsernameValidationAPI();
-  // let validUsername = usernameValidator.validate(req.body.username);
-  // if (validUsername) {
+  // const { responses, validate } = UsernameValidationAPI();
+  // let validUsername = validate(req.body.username);
+  // A valid username can be available or unavailable.
+  // if (validUsername === responses.available ||
+  //   validUsername === responses.unavailable
+  // ) {
+  //   // Do an extra check to make sure the valid username is available
   //   let usernameModel = modelResponse.username(validUsername, 200);
   // } else {
   //   // Throw an error

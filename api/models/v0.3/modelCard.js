@@ -1,28 +1,31 @@
 /* eslint-disable */
 import AddressValidationApi from "../../controllers/v0.3/AddressValidationAPI";
 import UsernameValidationApi from "../../controllers/v0.3/UsernameValidationAPI";
-// import NameValidationApi from "../../controllers/v0.3/NameValidationAPI";
+import NameValidationApi from "../../controllers/v0.3/NameValidationAPI";
 
 /**
  * A validator class to verify a card's address and birthdate. Doesn't
  * directly talk to an API so in this same file as a simple class.
  */
-export class CardValidator {
-  validate(card) {
+export const CardValidator = () => {
+  const UNVALIDATED_ADDRESS_ERROR = `Address has not been validated.
+    Validate address at /validate/address.`;
+
+  const validate = (card) => {
     if (card.workAddress) {
       // There is a work address so the home address needs to be present,
       // confirmed, and normalized, but it doesn't need to meet the usual
       // home address policy requirements.
       card.address = card.address.normalizedVersion();
       if (!card.address) {
-        card.errors["address"] = [CardValidator.UNVALIDATED_ADDRESS_ERROR];
+        card.errors["address"] = [UNVALIDATED_ADDRESS_ERROR];
       }
 
       // The work address needs to be valid for a card.
-      card = validateAddress(card, card.workAddress, "workAddress", true);
+      card = validateAddress(card, "workAddress", true);
     } else {
       // Without a work address, the home address must be valid for a card.
-      card = validateAddress(card, card.address, "address");
+      card = validateAddress(card, "address");
     }
 
     if (!card.checkValidUsername()) {
@@ -44,53 +47,60 @@ export class CardValidator {
     } else {
       return false;
     }
-  }
+  };
 
-  validateAddress(card, address, addressKey, workAddress = null) {
-    let validAddress = address.validatedVersion(workAddress);
+  const validateAddress = (card, addressType, workAddress = null) => {
+    let validAddress = card[addressType].validatedVersion(workAddress);
 
     if (validAddress) {
       // Check card.policy for address limitations.
       if (card.cardDenied(validAddress, workAddress)) {
         const message = Card.RESPONSES["cardDenied"]["message"];
-        card.errors[addressKey].push(message);
+        card.errors[addressType].push(message);
       } else if (validAddress.addressForTemporaryCard(workAddress)) {
         card.setTemporary();
       }
-      // Reset the card's address to the validated version.
-      let addressAttributeSetter = addressKey + "=";
-      card.send(addressAttributeSetter, validAddress);
+      // Reset the card's address type input to the validated version.
+      card[addressType] = validAddress;
     } else {
-      card.errors[addressKey].push(CardValidator.UNVALIDATED_ADDRESS_ERROR);
+      card.errors[addressType].push(UNVALIDATED_ADDRESS_ERROR);
     }
 
     return card;
-  }
+  };
 
-  validateBirthdate(card) {
+  const validateBirthdate = (card) => {
     if (card.requiredByPolicy("birthdate")) {
-      const minAge = card.policy.policyField("minimumAge"); //.year.ago;
+      const minAge = card.policy.policyField("minimumAge");
 
       const today = new Date();
-      const birthDate = new Date(card.birthdate);
-      const age = today.getFullYear() - birthDate.getFullYear();
-      const m = today.getMonth() - birthDate.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      const birthdate = new Date(card.birthdate);
+      const age = today.getFullYear() - birthdate.getFullYear();
+      const m = today.getMonth() - birthdate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthdate.getDate())) {
         age = age - 1;
       }
 
       if (minAge > age) {
-        // TODO acquire an appropriate error message here for below minimum_age.
-        card.errors["age"] = ["Date of birth is below the minimum age of 13."];
+        // TODO acquire an appropriate error message here for below minimum age.
+        card.errors["age"] = [
+          `Date of birth is below the minimum age of ${minAge}.`,
+        ];
       }
     }
     return card;
-  }
-}
-CardValidator.UNVALIDATED_ADDRESS_ERROR = `Address has not been validated.
-    Validate address at /validate/address.`;
+  };
 
-const cardValidator = new CardValidator();
+  return {
+    // Main function to use
+    validate,
+    // Exposing to test
+    validateAddress,
+    validateBirthdate,
+  };
+};
+
+const cardValidator = CardValidator();
 
 /**
  * A card class to create proper Card data structure and validations
@@ -159,10 +169,11 @@ class Card {
   }
 
   checkNameValidity() {
-    let validation = new NameValidationApi().validate(this.name);
+    const { validate } = NameValidationApi();
+    const validatedName = validate(this.name);
     return (
-      typeof validation === "object" &&
-      validation["type"] === NameValidationApi.VALID_NAME_TYPE
+      typeof validatedName === "object" &&
+      validatedName["type"] === NameValidationApi.VALID_NAME_TYPE
     );
   }
 
@@ -175,11 +186,9 @@ class Card {
   }
 
   checkUsernameAvailability() {
-    let validation = new UsernameValidationApi().validate(this.username);
-    return (
-      typeof validation === "object" &&
-      validation["type"] === UsernameValidationApi.AVAILABLE_USERNAME_TYPE
-    );
+    const { responses, validate } = UsernameValidationApi();
+    let validation = validate(this.username);
+    return typeof validation === "object" && validation === responses.available;
   }
 
   requiredByPolicy(field) {

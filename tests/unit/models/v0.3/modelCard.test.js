@@ -9,7 +9,8 @@ const basicCard = {
 };
 
 describe('CardValidator', () => {
-  const cardValidator = new CardValidator();
+  const { validateBirthdate } = CardValidator();
+
   describe('validateBirthdate', () => {
     it("returns no errors if the policy doesn't require it", () => {
       const card = new Card({
@@ -18,7 +19,7 @@ describe('CardValidator', () => {
         policy: Policy(),
       });
 
-      const validatedCard = cardValidator.validateBirthdate(card);
+      const validatedCard = validateBirthdate(card);
 
       expect(validatedCard.errors).toEqual({});
     });
@@ -30,7 +31,7 @@ describe('CardValidator', () => {
         policy: Policy({ policyType: 'webApplicant' }),
       });
 
-      const validatedCard = cardValidator.validateBirthdate(card);
+      const validatedCard = validateBirthdate(card);
 
       expect(validatedCard.errors).toEqual({});
     });
@@ -41,7 +42,7 @@ describe('CardValidator', () => {
         policy: Policy({ policyType: 'webApplicant' }),
       });
 
-      const validatedCard = cardValidator.validateBirthdate(card);
+      const validatedCard = validateBirthdate(card);
 
       expect(validatedCard.errors).toEqual({
         age: ['Date of birth is below the minimum age of 13.'],
@@ -62,7 +63,7 @@ describe('Card', () => {
     });
   });
 
-  describe('validations', () => {});
+  describe('validate', () => {});
 
   describe('checkValidName', () => {
     it('should return whatever value is already set', () => {
@@ -89,6 +90,7 @@ describe('Card', () => {
       expect(card.checkValidName()).toEqual(true);
     });
   });
+
   // TODO when NameValidationApi is complete
   describe('checkNameValidity', () => {});
 

@@ -2,6 +2,8 @@
 
 /**
  * Creates Barcode objects.
+ * TODO: This might require a DB connection to store and keep track of
+ * barcodes being used.
  */
 class Barcode {
   constructor() {

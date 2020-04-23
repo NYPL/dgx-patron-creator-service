@@ -3,7 +3,8 @@ import UsernameValidationApi from "../../../../api/controllers/v0.3/UsernameVali
 import IlsHelper from "../../../../api/controllers/v0.3/ILSHelper";
 jest.mock("../../../../api/controllers/v0.3/ILSHelper");
 
-describe.only("UsernameValidationApi", () => {
+// TODO: Once IlsHelper is finished, test username_available.
+describe("UsernameValidationApi", () => {
   const { responses, validate } = UsernameValidationApi();
 
   beforeEach(() => {
