@@ -53,12 +53,14 @@ class Address {
   }
 
   in_state(policy) {
-    this.state.toLowerCase() in policy.service_area[this.state];
+    return policy.serviceArea["state"].includes(
+      this.address.state.toLowerCase()
+    );
   }
   in_city(policy) {
     return (
-      this.city.toLowerCase() in policy.service_area[this.city] ||
-      this.county.toLowerCase() in policy.service_area[this.county]
+      policy.serviceArea["city"].includes(this.address.city.toLowerCase()) ||
+      policy.serviceArea["county"].includes(this.address.county.toLowerCase())
     );
   }
 

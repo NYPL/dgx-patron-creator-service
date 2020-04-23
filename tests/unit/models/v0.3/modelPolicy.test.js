@@ -1,4 +1,6 @@
 import Policy from '../../../../api/models/v0.3/modelPolicy';
+import Card from '../../../../api/models/v0.3/modelCard';
+import Address from '../../../../api/models/v0.3/modelAddress';
 
 describe('Policy', () => {
   it('should return the two valid types', () => {
@@ -58,8 +60,72 @@ describe('Policy', () => {
       expect(policy.isRequiredField('birthdate')).toEqual(false);
     });
 
-    // TODO:
-    // determinePtype
+    it('returns the ptype for patrons in the metro', () => {
+      // Metro residents have a city of "New York" or can also have counties
+      // of Richmond, Queens, New York, Kings, and the Bronx.
+      const metroAddress = new Address({
+        line_1: '476th 5th Ave',
+        city: 'New York',
+        state: 'New York',
+        zip: '10018',
+      });
+      // Card = Patron
+      const metroCard = new Card({
+        name: 'some name',
+        username: 'username',
+        address: metroAddress,
+        pin: '1234',
+        // This cyclical dependancy seems unnecessary but will update later.
+        policy,
+      });
+      const metroAddress2 = new Address({
+        line_1: 'some address',
+        state: 'New York',
+        county: 'Queens',
+        zip: '11368',
+      });
+      const metroCard2 = new Card({
+        name: 'some name',
+        username: 'username',
+        address: metroAddress2,
+        pin: '1234',
+        // This cyclical dependancy seems unnecessary but will update later.
+        policy,
+      });
+      const simplyePtype = policy.ilsPolicy.simplye.ptype;
+      const metroPtype = simplyePtype.metro.id;
+
+      let ptype = policy.determinePtype(metroCard);
+      expect(ptype).toEqual(metroPtype);
+      expect(ptype).toEqual('2');
+
+      ptype = policy.determinePtype(metroCard2);
+      expect(ptype).toEqual(metroPtype);
+      expect(ptype).toEqual('2');
+    });
+
+    it('returns the ptype for patrons in the state', () => {
+      const stateAddress = new Address({
+        line_1: 'Some address',
+        city: 'Albany',
+        state: 'New York',
+        zip: '10018',
+      });
+      const stateCard = new Card({
+        name: 'some name',
+        username: 'username',
+        address: stateAddress,
+        pin: '1234',
+        policy,
+      });
+
+      const simplyePtype = policy.ilsPolicy.simplye.ptype;
+      const nysPtype = simplyePtype.default.id;
+
+      const ptype = policy.determinePtype(stateCard);
+      expect(ptype).toEqual(nysPtype);
+      expect(ptype).toEqual('3');
+    });
 
     it("doesn't update the agency for non-web applicants", () => {
       const agency = policy.determineAgency();
@@ -99,6 +165,36 @@ describe('Policy', () => {
       expect(policy.isRequiredField('email')).toEqual(false);
       expect(policy.isRequiredField('barcode')).toEqual(false);
       expect(policy.isRequiredField('birthdate')).toEqual(true);
+    });
+
+    it('always returns the default web ptype for web applications', () => {
+      const address = new Address({
+        line_1: '476th 5th Ave',
+        city: 'New York City',
+        state: 'New York',
+        zip: '10018',
+      });
+      // Card = Patron
+      const card = new Card({
+        name: 'some name',
+        username: 'username',
+        address,
+        pin: '1234',
+      });
+      const webApplicantPtype = policy.ilsPolicy.webApplicant.ptype;
+      const webPtypeID = webApplicantPtype.default.id;
+
+      const ptype = policy.determinePtype(card);
+      expect(ptype).toEqual(webPtypeID);
+
+      // For web applicants, address is not checked, so it's okay
+      // to not pass in the patron param;
+      const ptypeNoPatron = policy.determinePtype();
+      expect(ptypeNoPatron).toEqual(webPtypeID);
+
+      // The ptype value is '1':
+      expect(ptype).toEqual('1');
+      expect(ptypeNoPatron).toEqual('1');
     });
 
     it('updates the agency for web applicants', () => {

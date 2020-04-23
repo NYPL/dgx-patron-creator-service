@@ -15,7 +15,7 @@ const Policy = (args) => {
     "Kings",
     "Bronx",
   ]);
-  const ALLOWED_CITIES = lowerCase(["New York"]);
+  const ALLOWED_CITIES = lowerCase(["New York", "New York City", "NYC"]);
   const ilsPolicy = {
     simplye: {
       agency: IlsHelper.DEFAULT_PATRON_AGENCY,
@@ -68,13 +68,16 @@ const Policy = (args) => {
   const policyField = (field) => policy[field];
   const isRequiredField = (field) =>
     policyField("requiredFields").includes(field);
-
-  const determinePtype = (patron) => {
-    const ptype = policy.policyField("ptype");
-    if (policy.policyField("serviceArea").length && ptype.has_key("metro")) {
-      if (patron.lives_or_works_in_city) {
+  const determinePtype = (patron = undefined) => {
+    const ptype = policyField("ptype");
+    const hasServiceArea =
+      policyField("serviceArea") &&
+      Object.keys(policyField("serviceArea")).length;
+    const hasMetroKey = Object.keys(ptype).includes("metro");
+    if (hasServiceArea && hasMetroKey) {
+      if (patron.lives_or_works_in_city()) {
         return ptype["metro"]["id"];
-      } else if (patron.lives_in_state) {
+      } else if (patron.lives_in_state()) {
         return ptype["default"]["id"];
       }
     }

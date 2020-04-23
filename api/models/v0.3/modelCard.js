@@ -186,13 +186,13 @@ class Card {
     return this.policy.isRequiredField(field);
   }
   works_in_city() {
-    return this.work_address && this.work_address.in_city(this.policy);
+    return this.work_address && this.work_address.in_city(this.policy.policy);
   }
   lives_or_works_in_city() {
-    return this.address.in_city(this.policy) || this.works_in_city();
+    return this.address.in_city(this.policy.policy) || this.works_in_city();
   }
   lives_in_state() {
-    return this.address.in_state(this.policy);
+    return this.address.in_state(this.policy.policy);
   }
   // how to check validity?
   valid_for_ils() {
