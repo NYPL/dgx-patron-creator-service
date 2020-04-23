@@ -10,7 +10,7 @@ const basicCard = {
 
 describe('CardValidator', () => {
   const cardValidator = new CardValidator();
-  describe('validate_birthdate', () => {
+  describe('validateBirthdate', () => {
     it("returns no errors if the policy doesn't require it", () => {
       const card = new Card({
         ...basicCard,
@@ -18,7 +18,7 @@ describe('CardValidator', () => {
         policy: Policy(),
       });
 
-      const validatedCard = cardValidator.validate_birthdate(card);
+      const validatedCard = cardValidator.validateBirthdate(card);
 
       expect(validatedCard.errors).toEqual({});
     });
@@ -30,7 +30,7 @@ describe('CardValidator', () => {
         policy: Policy({ policyType: 'webApplicant' }),
       });
 
-      const validatedCard = cardValidator.validate_birthdate(card);
+      const validatedCard = cardValidator.validateBirthdate(card);
 
       expect(validatedCard.errors).toEqual({});
     });
@@ -41,7 +41,7 @@ describe('CardValidator', () => {
         policy: Policy({ policyType: 'webApplicant' }),
       });
 
-      const validatedCard = cardValidator.validate_birthdate(card);
+      const validatedCard = cardValidator.validateBirthdate(card);
 
       expect(validatedCard.errors).toEqual({
         age: ['Date of birth is below the minimum age of 13.'],
@@ -49,7 +49,7 @@ describe('CardValidator', () => {
     });
   });
 
-  describe('validate_address', () => {});
+  describe('validateAddress', () => {});
 
   describe('validate', () => {});
 });
@@ -58,117 +58,117 @@ describe('Card', () => {
   describe('Init', () => {
     it('should not set a temporary card by default', () => {
       const card = new Card(basicCard);
-      expect(card.is_temporary).toEqual(false);
+      expect(card.isTemporary).toEqual(false);
     });
   });
 
   describe('validations', () => {});
 
-  describe('check_valid_name', () => {
+  describe('checkValidName', () => {
     it('should return whatever value is already set', () => {
       const card = new Card(basicCard);
-      expect(card.has_valid_name).toEqual(undefined);
+      expect(card.hasValidName).toEqual(undefined);
       // mock that it has a valid name
-      card.has_valid_name = true;
-      expect(card.check_valid_name()).toEqual(true);
+      card.hasValidName = true;
+      expect(card.checkValidName()).toEqual(true);
       // mock that it has an invalid name
-      card.has_valid_name = false;
-      expect(card.check_valid_name()).toEqual(false);
+      card.hasValidName = false;
+      expect(card.checkValidName()).toEqual(false);
     });
     it("should return if it's not already valid and validation is disabled", () => {
       const card = new Card(basicCard);
       // mock that it has a valid name
-      expect(card.check_valid_name()).toEqual(true);
+      expect(card.checkValidName()).toEqual(true);
     });
     it('should check for name validity', () => {
       const card = new Card(basicCard);
-      card.name_validation_disabled = false;
+      card.nameValidationDisabled = false;
       // Mock until NameValidationAPI is implemented.
-      card.check_name_validity = jest.fn().mockReturnValue(true);
+      card.checkNameValidity = jest.fn().mockReturnValue(true);
 
-      expect(card.check_valid_name()).toEqual(true);
+      expect(card.checkValidName()).toEqual(true);
     });
   });
   // TODO when NameValidationApi is complete
-  describe('check_name_validity', () => {});
+  describe('checkNameValidity', () => {});
 
-  describe('check_valid_username', () => {
+  describe('checkValidUsername', () => {
     it('should return whatever value is already set', () => {
       const card = new Card(basicCard);
-      expect(card.has_valid_username).toEqual(undefined);
+      expect(card.hasValidUsername).toEqual(undefined);
       // mock that it has a valid name
-      card.has_valid_username = true;
-      expect(card.check_valid_username()).toEqual(true);
+      card.hasValidUsername = true;
+      expect(card.checkValidUsername()).toEqual(true);
       // mock that it has an invalid name
-      card.has_valid_username = false;
-      expect(card.check_valid_username()).toEqual(false);
+      card.hasValidUsername = false;
+      expect(card.checkValidUsername()).toEqual(false);
     });
     it('should check for username availability', () => {
       const card = new Card(basicCard);
       // Mock until UsernameValidationApi is implemented.
-      card.check_username_availability = jest.fn().mockReturnValue(true);
+      card.checkUsernameAvailability = jest.fn().mockReturnValue(true);
 
-      expect(card.check_valid_name()).toEqual(true);
+      expect(card.checkValidName()).toEqual(true);
     });
   });
 
   // TODO when UsernameValidationApi is complete
-  describe('check_username_availability', () => {});
+  describe('checkUsernameAvailability', () => {});
 
-  describe('required_by_policy', () => {});
-  describe('works_in_city', () => {});
-  describe('lives_or_works_in_city', () => {});
-  describe('lives_in_state', () => {});
+  describe('requiredByPolicy', () => {});
+  describe('worksInCity', () => {});
+  describe('livesOrWorksInCity', () => {});
+  describe('livesInState', () => {});
 
-  describe('valid_for_ils', () => {
+  describe('validForIls', () => {
     it('should return false if the card is not valid', () => {
       const card = new Card(basicCard);
-      expect(card.valid_for_ils()).toEqual(false);
+      expect(card.validForIls()).toEqual(false);
     });
     it('should return false if the card is valid but there is no ptype', () => {
       const card = new Card(basicCard);
       // mocking this for now
       card.validate();
-      expect(card.valid_for_ils()).toEqual(false);
+      expect(card.validForIls()).toEqual(false);
     });
     it('should return true if the card is valid and there is a ptype', () => {
       const card = new Card(basicCard);
       // mocking this for now
       card.ptype = '2';
       card.valid = true;
-      expect(card.valid_for_ils()).toEqual(true);
+      expect(card.validForIls()).toEqual(true);
     });
   });
 
-  describe('set_barcode', () => {});
-  describe('set_ptype', () => {});
+  describe('setBarcode', () => {});
+  describe('setPtype', () => {});
 
-  describe('set_temporary', () => {
+  describe('setTemporary', () => {
     it('should not be temporary by default and set to temporary', () => {
       const card = new Card(basicCard);
 
-      expect(card.is_temporary).toEqual(false);
-      card.set_temporary();
-      expect(card.is_temporary).toEqual(true);
+      expect(card.isTemporary).toEqual(false);
+      card.setTemporary();
+      expect(card.isTemporary).toEqual(true);
     });
   });
 
-  describe('card_denied', () => {});
-  describe('normalized_birthdate', () => {
+  describe('cardDenied', () => {});
+  describe('normalizedBirthdate', () => {
     const card = new Card(basicCard);
     it('should return undefined if nothing is passed', () => {
-      expect(card.normalized_birthdate()).toEqual(undefined);
+      expect(card.normalizedBirthdate()).toEqual(undefined);
     });
     it('should return a new date object', () => {
       const date = '01/01/1988';
-      expect(card.normalized_birthdate(date)).toEqual(new Date(date));
+      expect(card.normalizedBirthdate(date)).toEqual(new Date(date));
     });
   });
 
-  describe('create_ils_patron', () => {});
-  describe('set_patron_id', () => {});
-  describe('set_temporary_barcode', () => {});
-  describe('check_card_type_policy', () => {});
+  describe('createIlsPatron', () => {});
+  describe('setPatronId', () => {});
+  describe('setTemporaryBarcode', () => {});
+  describe('checkCardTypePolicy', () => {});
   describe('details', () => {});
-  describe('select_message', () => {});
+  describe('selectMessage', () => {});
 });

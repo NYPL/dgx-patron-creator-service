@@ -17,7 +17,7 @@ describe.only("UsernameValidationApi", () => {
     const notAlphanumeric = "!!uhuhNotRight$";
 
     // responses.invalid =
-    //  { type: "invalid-username", card_type: null,
+    //  { type: "invalid-username", cardType: null,
     //    message: "Username must be 5-25 alphanumeric characters (A-z0-9)." }
     expect(validate(tooShort)).toEqual(responses.invalid);
     expect(validate(tooLong)).toEqual(responses.invalid);
@@ -30,7 +30,7 @@ describe.only("UsernameValidationApi", () => {
     const unavailable = "unavailableName";
 
     // responses.unavailable =
-    //  { type: "unavailable-username", card_type: null,
+    //  { type: "unavailable-username", cardType: null,
     //    message: "This username is unavailable. Please try another." }
     expect(validate(unavailable)).toEqual(responses.unavailable);
     expect(IlsHelper).toHaveBeenCalled();
@@ -42,7 +42,7 @@ describe.only("UsernameValidationApi", () => {
     const available = "availableName";
 
     // responses.available =
-    //  { type: "available-username", card_type: "standard",
+    //  { type: "available-username", cardType: "standard",
     //    message: "This username is available." }
     expect(validate(available)).toEqual(responses.available);
     expect(IlsHelper).toHaveBeenCalled();

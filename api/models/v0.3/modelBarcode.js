@@ -13,17 +13,17 @@ class Barcode {
   }
 
   // update in db that barcode was used
-  mark_used(barcode) {
+  markUsed(barcode) {
     noop();
   }
   // this wasnt used in previous codebase
-  mark_unused(barcode) {
+  markUnused(barcode) {
     noop();
   }
   // update in db that barcode is unused
 
   // Might not need to implement this
-  send_barcode_alert_email(count) {
+  sendBarcodeAlertEmail(count) {
     if (Barcode.LOW_BARCODE_ALERT_COUNTS.includes(count)) {
       // get last barcode from db
       // send email - AdminMailer was used before
@@ -31,30 +31,30 @@ class Barcode {
   }
 
   // returns next available barcode record
-  next_available(tries = 10) {
+  nextavailable(tries = 10) {
     // make ils connection helper
     const client = new IlsHelper();
-    let barcode_found = false;
+    let barcodeFound = false;
     let barcode;
 
-    while (!barcode_found && tries > 0) {
+    while (!barcodeFound && tries > 0) {
       // get the first available barcode
       barcode = undefined;
       if (!barcode) {
-        this.send_barcode_alert_email();
+        this.sendBarcodeAlertEmail();
         return;
       }
 
-      this.mark_used(barcode.barcode);
+      this.markUsed(barcode.barcode);
 
       // # make sure barcode is available on ILS
-      barcode_found = client.available(barcode.barcode);
+      barcodeFound = client.available(barcode.barcode);
 
       tries -= 1;
     }
 
-    this.send_barcode_alert_email();
-    return barcode_found ? barcode.barcode : null;
+    this.sendBarcodeAlertEmail();
+    return barcodeFound ? barcode.barcode : null;
   }
 }
 

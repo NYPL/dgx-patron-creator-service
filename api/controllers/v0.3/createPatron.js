@@ -4,6 +4,7 @@ import AddressValidationAPI from "./AddressValidationAPI";
 
 /**
  * The callback for the route "/patrons".
+ * TODO: Just boilderplate for now.
  */
 
 function createPatron(req, res) {

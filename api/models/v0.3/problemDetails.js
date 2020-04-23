@@ -6,7 +6,7 @@ const ProblemDetail = (args) => {
   this.type = `${PROBLEM_DETAIL_URI}${args["type"]}`;
   this.title = args["title"] || "";
   this.detail = args["detail"] || "";
-  this.debug_message = args["debug_message"] || "";
+  this.debugMessage = args["debugMessage"] || "";
 
   const detailed = (detail, opts = {}) => {
     const attributes = currentValues();
@@ -18,9 +18,9 @@ const ProblemDetail = (args) => {
     return ProblemDetail(attributes);
   };
 
-  const with_debug = (debug_message) => {
+  const withDebug = (debugMessage) => {
     const attributes = currentValues();
-    attributes["debug_message"] = debug_message;
+    attributes["debugMessage"] = debugMessage;
     attributes["type"] = this.type.split("/")[-1];
     return ProblemDetail(attributes);
   };
@@ -30,7 +30,7 @@ const ProblemDetail = (args) => {
     status: this.status,
     title: this.title,
     detail: this.detail,
-    debug_message: this.debug_message,
+    debugMessage: this.debugMessage,
   });
 
   const response = () => ({ json: currentValues, status: this.status });

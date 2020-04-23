@@ -2,15 +2,15 @@
 import Address from "../../../../api/models/v0.3/modelAddress";
 
 const emptyAddress = {
-  line_1: "",
-  line_2: "",
+  line1: "",
+  line2: "",
   city: "",
   county: "",
   state: "",
   zip: "",
-  is_residential: undefined,
+  isResidential: undefined,
   errors: {},
-  has_been_validated: false,
+  hasBeenValidated: false,
 };
 
 describe("Address", () => {
@@ -25,69 +25,69 @@ describe("Address", () => {
 
     it("returns the input as an address object", () => {
       const address = new Address({
-        line_1: "476th 5th Ave",
+        line1: "476th 5th Ave",
         city: "New York City",
         state: "New York",
       });
 
       expect(address.address).toEqual({
         ...emptyAddress,
-        line_1: "476th 5th Ave",
+        line1: "476th 5th Ave",
         city: "New York City",
         state: "New York",
       });
     });
 
     it("returns a valid address if the parameter was passed", () => {
-      const is_valid = true;
+      const isValid = true;
       let address = new Address({
-        line_1: "476th 5th Ave",
+        line1: "476th 5th Ave",
         city: "New York City",
       });
 
-      expect(address.is_valid).toEqual(false);
+      expect(address.isValid).toEqual(false);
 
       address = new Address(
         {
-          line_1: "476th 5th Ave",
+          line1: "476th 5th Ave",
           city: "New York City",
         },
-        is_valid
+        isValid
       );
 
-      expect(address.is_valid).toEqual(true);
+      expect(address.isValid).toEqual(true);
     });
 
     it("returns an error if the two address lines are too long", () => {
       const address = new Address({
-        line_1:
+        line1:
           "some very long line to throw a validation error for the address",
-        line_2: "continuing the very long address line for the error more text",
+        line2: "continuing the very long address line for the error more text",
         city: "New York City",
         state: "New York",
       });
       expect(address.validate()).toEqual(false);
       expect(address.address.errors).toEqual({
-        line_1: "Address lines must be less than 100 characters combined",
+        line1: "Address lines must be less than 100 characters combined",
       });
     });
   });
 
   describe("class methods", () => {
-    describe("str_to_bool", () => {
-      const str_to_bool = new Address().str_to_bool;
+    describe("strToBool", () => {
+      const strToBool = new Address().strToBool;
 
       it("returns undefined for bad string", () => {
-        const bool = str_to_bool();
+        const bool = strToBool();
         expect(bool).toEqual(undefined);
       });
       it("returns true or false if that value is in the string passed", () => {
-        const trueInString = str_to_bool("true string");
-        const falseInString = str_to_bool("false string");
-        const trueInStringUpper = str_to_bool("True string");
-        const falseInStringUpper = str_to_bool("False string");
-        const trueString = str_to_bool("true");
-        const falseString = str_to_bool("false");
+        const trueInString = strToBool("true string");
+        const falseInString = strToBool("false string");
+        const trueInStringUpper = strToBool("True string");
+        const falseInStringUpper = strToBool("False string");
+        const trueString = strToBool("true");
+        const falseString = strToBool("false");
 
         expect(trueInString).toEqual(true);
         expect(falseInString).toEqual(false);
@@ -99,25 +99,25 @@ describe("Address", () => {
     });
 
     // TODO
-    describe("in_state", () => {
+    describe("inState", () => {
       it("should determine if the address is in NY state", () => {
         // const policy = Policy();
         // const address = new Address();
-        // expect(address.in_state(policy))...; //true
-        // const non_nys_address = new Address(...);
-        // expect(non_nys_address.in_state(policy))...; // false
+        // expect(address.inState(policy))...; //true
+        // const nonNysAddress = new Address(...);
+        // expect(nonNysAddress.inState(policy))...; // false
       });
     });
     // TODO
-    describe("in_city", () => {});
+    describe("inCity", () => {});
 
-    describe("to_string", () => {
+    describe("toString", () => {
       it("should return a string representation of the address", () => {
         const empty = new Address();
         expect(empty.toString().trim()).toEqual(",");
 
         const address = new Address({
-          line_1: "476th 5th Ave",
+          line1: "476th 5th Ave",
           city: "New York City",
           state: "New York",
           zip: "10018",
@@ -128,158 +128,158 @@ describe("Address", () => {
       });
     });
 
-    describe("residential_work_address", () => {
+    describe("residentialWorkAddress", () => {
       const residentialAddress = new Address({
-        line_1: "street address",
-        is_residential: "true",
+        line1: "street address",
+        isResidential: "true",
       });
       const nonResidentialAddress = new Address({
-        line_1: "street address",
-        is_residential: "false",
+        line1: "street address",
+        isResidential: "false",
       });
 
       it("should return false for addresses that are not work address", () => {
-        const is_work_address = false;
+        const isWorkAddress = false;
         expect(
-          residentialAddress.residential_work_address(is_work_address)
+          residentialAddress.residentialWorkAddress(isWorkAddress)
         ).toEqual(false);
         expect(
-          nonResidentialAddress.residential_work_address(is_work_address)
+          nonResidentialAddress.residentialWorkAddress(isWorkAddress)
         ).toEqual(false);
       });
 
       it("should return true for work addresses that are residential", () => {
-        const is_work_address = true;
+        const isWorkAddress = true;
         expect(
-          residentialAddress.residential_work_address(is_work_address)
+          residentialAddress.residentialWorkAddress(isWorkAddress)
         ).toEqual(true);
         expect(
-          nonResidentialAddress.residential_work_address(is_work_address)
+          nonResidentialAddress.residentialWorkAddress(isWorkAddress)
         ).toEqual(false);
       });
     });
 
-    describe("non_residential_home_address", () => {
+    describe("nonResidentialHomeAddress", () => {
       const residentialAddress = new Address({
-        line_1: "street address",
-        is_residential: "true",
+        line1: "street address",
+        isResidential: "true",
       });
       const nonResidentialAddress = new Address({
-        line_1: "street address",
-        is_residential: "false",
+        line1: "street address",
+        isResidential: "false",
       });
 
       it("should return false for a work address", () => {
-        const is_work_address = true;
+        const isWorkAddress = true;
         expect(
-          residentialAddress.non_residential_home_address(is_work_address)
+          residentialAddress.nonResidentialHomeAddress(isWorkAddress)
         ).toEqual(false);
         expect(
-          nonResidentialAddress.non_residential_home_address(is_work_address)
+          nonResidentialAddress.nonResidentialHomeAddress(isWorkAddress)
         ).toEqual(false);
       });
 
       it("should return true for non work addresses that are not residential", () => {
-        const is_work_address = false;
+        const isWorkAddress = false;
         expect(
-          residentialAddress.non_residential_home_address(is_work_address)
+          residentialAddress.nonResidentialHomeAddress(isWorkAddress)
         ).toEqual(false);
         expect(
-          nonResidentialAddress.non_residential_home_address(is_work_address)
+          nonResidentialAddress.nonResidentialHomeAddress(isWorkAddress)
         ).toEqual(true);
       });
     });
 
-    describe("address_for_temporary_card", () => {
+    describe("addressForTemporaryCard", () => {
       const residentialAddress = new Address({
-        line_1: "street address",
-        is_residential: "true",
+        line1: "street address",
+        isResidential: "true",
       });
       const nonResidentialAddress = new Address({
-        line_1: "street address",
-        is_residential: "false",
+        line1: "street address",
+        isResidential: "false",
       });
 
       it("returns a temporary card for a residential work address", () => {
-        const is_work_address = true;
+        const isWorkAddress = true;
         expect(
-          residentialAddress.address_for_temporary_card(is_work_address)
+          residentialAddress.addressForTemporaryCard(isWorkAddress)
         ).toEqual(true);
       });
       it("returns a temporary card for a non-residential home address that is not a work address", () => {
-        const is_work_address = false;
+        const isWorkAddress = false;
         expect(
-          nonResidentialAddress.address_for_temporary_card(is_work_address)
+          nonResidentialAddress.addressForTemporaryCard(isWorkAddress)
         ).toEqual(true);
       });
       it("returns false for any other type of address", () => {
         // non-residential work address
-        let is_work_address = true;
+        let isWorkAddress = true;
         expect(
-          nonResidentialAddress.address_for_temporary_card(is_work_address)
+          nonResidentialAddress.addressForTemporaryCard(isWorkAddress)
         ).toEqual(false);
 
         // residential address that is not a work address
-        is_work_address = false;
+        isWorkAddress = false;
         expect(
-          residentialAddress.address_for_temporary_card(is_work_address)
+          residentialAddress.addressForTemporaryCard(isWorkAddress)
         ).toEqual(false);
       });
     });
 
     // TODO:
-    describe("validation_response", () => {});
+    describe("validationResponse", () => {});
 
-    describe("validated_version", () => {
+    describe("validatedVersion", () => {
       it("should return the current address if it already has been validated", () => {
         // mock that the address is valid and has been validated.
         const address = new Address({
-          has_been_validated: true,
+          hasBeenValidated: true,
         });
-        expect(address.validated_version()).toEqual(address);
+        expect(address.validatedVersion()).toEqual(address);
       });
 
       it("should return undefined if the address is not valid", () => {
         // mock that the address is valid and has been validated.
         const address = new Address({
-          line_1: "not valid address",
+          line1: "not valid address",
         });
-        address.is_valid = false;
-        expect(address.validated_version()).toEqual(undefined);
+        address.isValid = false;
+        expect(address.validatedVersion()).toEqual(undefined);
       });
 
       it("should try to validate the address but it failed", () => {
         const address = new Address({
-          line_1: "some address",
+          line1: "some address",
         });
         // mock this function for now until it's implemented.
-        address.validation_response = jest.fn().mockReturnValue(undefined);
+        address.validationResponse = jest.fn().mockReturnValue(undefined);
 
-        let validatedVersion = address.validated_version();
+        let validatedVersion = address.validatedVersion();
         expect(validatedVersion).toEqual(undefined);
       });
       it("should try to validate the address and succeeded", () => {
         const address = new Address({
-          line_1: "some address",
+          line1: "some address",
         });
         address.validate();
 
-        expect(address.address.has_been_validated).toEqual(false);
+        expect(address.address.hasBeenValidated).toEqual(false);
 
-        let validatedVersion = address.validated_version();
-        expect(validatedVersion.address.has_been_validated).toEqual(true);
+        let validatedVersion = address.validatedVersion();
+        expect(validatedVersion.address.hasBeenValidated).toEqual(true);
         expect(validatedVersion).toEqual(address);
       });
     });
 
     // TODO: This needs more when the AddressValidationsAPI is done.
-    describe("normalized_version", () => {
+    describe("normalizedVersion", () => {
       it("should return the current address if it already has been validated", () => {
         // mock that the address is valid and has been validated.
         const address = new Address({
-          has_been_validated: true,
+          hasBeenValidated: true,
         });
-        expect(address.normalized_version()).toEqual(address);
+        expect(address.normalizedVersion()).toEqual(address);
       });
     });
   });

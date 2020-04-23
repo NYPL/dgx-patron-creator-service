@@ -64,7 +64,7 @@ describe('Policy', () => {
       // Metro residents have a city of "New York" or can also have counties
       // of Richmond, Queens, New York, Kings, and the Bronx.
       const metroAddress = new Address({
-        line_1: '476th 5th Ave',
+        line1: '476th 5th Ave',
         city: 'New York',
         state: 'New York',
         zip: '10018',
@@ -79,7 +79,7 @@ describe('Policy', () => {
         policy,
       });
       const metroAddress2 = new Address({
-        line_1: 'some address',
+        line1: 'some address',
         state: 'New York',
         county: 'Queens',
         zip: '11368',
@@ -106,7 +106,7 @@ describe('Policy', () => {
 
     it('returns the ptype for patrons in the state', () => {
       const stateAddress = new Address({
-        line_1: 'Some address',
+        line1: 'Some address',
         city: 'Albany',
         state: 'New York',
         zip: '10018',
@@ -169,7 +169,7 @@ describe('Policy', () => {
 
     it('always returns the default web ptype for web applications', () => {
       const address = new Address({
-        line_1: '476th 5th Ave',
+        line1: '476th 5th Ave',
         city: 'New York City',
         state: 'New York',
         zip: '10018',
