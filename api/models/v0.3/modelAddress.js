@@ -6,35 +6,34 @@ import AddressValidationApi from "../../controllers/v0.3/AddressValidationAPI";
  * the data against the AddressValidationApi.
  */
 class Address {
-  constructor(address = {}, is_valid = false) {
+  constructor(address = {}, isValid = false) {
     this.address = {
-      line_1: address.line_1 || "",
-      line_2: address.line_2 || "",
+      line1: address.line1 || "",
+      line2: address.line2 || "",
       city: address.city || "",
       county: address.county || "",
       state: address.state || "",
       zip: address.zip || "",
-      is_residential: this.str_to_bool(address.is_residential),
+      isResidential: this.strToBool(address.isResidential),
       errors: {},
       // Only set in the API call
-      has_been_validated: address.has_been_validated || false,
+      hasBeenValidated: address.hasBeenValidated || false,
     };
-    this.is_valid = is_valid;
+    this.isValid = isValid;
   }
 
   validate() {
-    const fullAddressLength = (this.address.line_1 + this.address.line_2)
-      .length;
+    const fullAddressLength = (this.address.line1 + this.address.line2).length;
     if (fullAddressLength > 100) {
-      this.address.errors["line_1"] =
+      this.address.errors["line1"] =
         "Address lines must be less than 100 characters combined";
       return false;
     }
-    this.is_valid = true;
+    this.isValid = true;
     return true;
   }
 
-  str_to_bool(str) {
+  strToBool(str) {
     if (!str) {
       return undefined; // Is this right? prev was nil
     }
@@ -52,72 +51,84 @@ class Address {
     return valsHash[found || str.toLowerCase()];
   }
 
-  in_state(policy) {
-    this.state.toLowerCase() in policy.service_area[this.state];
-  }
-  in_city(policy) {
-    return (
-      this.city.toLowerCase() in policy.service_area[this.city] ||
-      this.county.toLowerCase() in policy.service_area[this.county]
+  inState(policyParam) {
+    const policy = policyParam.policy;
+    return !!(
+      policy.serviceArea &&
+      policy.serviceArea["state"].includes(this.address.state.toLowerCase())
     );
   }
-
+  inCity(policyParam) {
+    const policy = policyParam.policy;
+    if (!policy.serviceArea) {
+      return false;
+    }
+    return (
+      (policy.serviceArea["city"] &&
+        policy.serviceArea["city"].includes(this.address.city.toLowerCase())) ||
+      (policy.serviceArea["county"] &&
+        policy.serviceArea["county"].includes(
+          this.address.county.toLowerCase()
+        ))
+    );
+  }
   toString() {
     const address = this.address;
-    const street_info = `${address.line_1}${
-      address.line_2.length > 0 ? `, ${address.line_2}` : address.line_2
+    const streetInfo = `${address.line1}${
+      address.line2.length > 0 ? `, ${address.line2}` : address.line2
     }`;
-    const city_info = `${address.city}, ${address.state} ${address.zip}`;
-    return `${street_info}\n${city_info}`;
+    const cityInfo = `${address.city}, ${address.state} ${address.zip}`;
+    return `${streetInfo}\n${cityInfo}`;
   }
 
-  residential_work_address(is_work_address) {
-    return is_work_address && this.address.is_residential;
+  residentialWorkAddress(isWorkAddress) {
+    return isWorkAddress && this.address.isResidential;
   }
 
-  non_residential_home_address(is_work_address) {
-    return !is_work_address && !this.address.is_residential;
+  nonResidentialHomeAddress(isWorkAddress) {
+    return !isWorkAddress && !this.address.isResidential;
   }
 
-  address_for_temporary_card(is_work_address) {
-    if (this.residential_work_address(is_work_address)) {
+  addressForTemporaryCard(isWorkAddress) {
+    if (this.residentialWorkAddress(isWorkAddress)) {
       return true;
-    } else if (this.non_residential_home_address(is_work_address)) {
+    } else if (this.nonResidentialHomeAddress(isWorkAddress)) {
       return true;
     }
     return false;
   }
 
   // TODO: Need to call validation API to validate the address
-  validation_response(is_work_address = undefined) {
-    // const api = AddressValidationApi.new(is_work_address);
+  // which depends on Service Objects
+  validationresponse(isWorkAddress = undefined) {
+    // const api = AddressValidationApi.new(isWorkAddress);
     // api.validate(this);
-    // this.is_valid = true;
+    // this.isValid = true;
     return this;
-    // if false return null; and is_valid = false;
+    // if false return null; and isValid = false;
   }
 
   // Public: Creates new address with updated attributes from
   // the validation process.
-  validated_version(is_work_address = undefined) {
+  validatedVersion(isWorkAddress = undefined) {
     // return the current address since it's already validated;
-    if (this.address.has_been_validated) {
+    if (this.address.hasBeenValidated) {
       return this;
     }
     // if the address is not already valid, return;
-    if (!this.is_valid) {
+    if (!this.isValid) {
       return;
     }
 
     // Check to see if address is valid
-    const validation = this.validation_response(is_work_address);
+    const validation = this.validationresponse(isWorkAddress);
     // TODO if validation error return; integration error
 
     if (validation && validation.address) {
-      validation.address["has_been_validated"] = true;
-      const is_valid = true;
-      const updated_address = new Address(validation.address, is_valid);
-      return updated_address;
+      validation.address["hasBeenValidated"] = true;
+      const isValid = true;
+      const updatedAddress = new Address(validation.address, isValid);
+      return updatedAddress;
     }
 
     return;
@@ -126,18 +137,18 @@ class Address {
   // Public: Returns an address updated with its API-formalized version
   // without incorporating about the card policy.
   // Returns a new address or null.
-  normalized_version() {
-    if (this.address.has_been_validated) {
+  normalizedVersion() {
+    if (this.address.hasBeenValidated) {
       return this;
     }
 
-    const validation = this.validation_response(is_work_address);
+    const validation = this.validationresponse(isWorkAddress);
     // TODO: if error do something integration error
 
     if (validation.type === AddressValidationApi.VALID_ADDRESS_TYPE) {
-      validation.address["has_been_validated"] = true;
-      const updated_address = new Address(validation.address);
-      return updated_address;
+      validation.address["hasBeenValidated"] = true;
+      const updatedAddress = new Address(validation.address);
+      return updatedAddress;
     }
   }
 }

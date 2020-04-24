@@ -112,7 +112,8 @@ class IlsHelper {
     const result = search(
       `//${IlsHelper.BARCODE_FIELDTAG}//${barcodeOrUsername}`
     );
-    return !!(result === "NotFoundError");
+    // Can return an error;
+    return result;
   }
 
   // Format a patron's address as ILS expects it.
@@ -340,9 +341,9 @@ IlsHelper.NOTICE_PREF_FIELDTAG = "268";
 IlsHelper.NOTE_FIELDTAG = "x";
 // Standard and temporary expiration times
 // TODO: Update these to integers
-IlsHelper.STANDARD_EXPIRATION_TIME = "3 years";
-IlsHelper.TEMPORARY_EXPIRATION_TIME = "30 days";
-IlsHelper.WEB_APPLICANT_EXPIRATION_TIME = "90 days";
+IlsHelper.STANDARD_EXPIRATION_TIME = "3"; // years
+IlsHelper.TEMPORARY_EXPIRATION_TIME = "30"; // days
+IlsHelper.WEB_APPLICANT_EXPIRATION_TIME = "90"; // days
 // Ptypes for various library card offerings
 IlsHelper.WEB_APPLICANT_PTYPE = "1";
 IlsHelper.NO_PRINT_ADULT_METRO_PTYPE = "2";

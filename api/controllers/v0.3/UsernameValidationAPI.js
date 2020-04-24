@@ -1,5 +1,4 @@
 /* eslint-disable */
-import Card from "../../models/v0.3/modelCard";
 import IlsHelper from "./ILSHelper";
 
 /**
@@ -7,13 +6,13 @@ import IlsHelper from "./ILSHelper";
  */
 const UsernameValidationAPI = () => {
   // class IntegrationError < StandardError; end
-  const USERNAME_PATTERN = /\A[a-zA-Z0-9]{5,25}\z/;
+  const USERNAME_PATTERN = /^[a-zA-Z0-9]{5,25}$/;
   const AVAILABLE_USERNAME_TYPE = "available-username";
   const UNAVAILABLE_USERNAME_TYPE = "unavailable-username";
   const INVALID_USERNAME_TYPE = "invalid-username";
 
-  const STANDARD_CARD_TYPE = Card.STANDARD_CARD_TYPE;
-  const TEMPORARY_CARD_TYPE = Card.TEMPORARY_CARD_TYPE;
+  const STANDARD_CARD_TYPE = "standard";
+  const TEMPORARY_CARD_TYPE = "temporary";
 
   const RESPONSES = {
     invalid: {
@@ -33,18 +32,16 @@ const UsernameValidationAPI = () => {
     },
   };
 
-  this.validate = (username) => {
-    if (!username && !username.match(USERNAME_PATTERN)) {
+  const validate = (username) => {
+    if (!username || !USERNAME_PATTERN.test(username)) {
       return RESPONSES["invalid"];
     } else {
-      const type = this.username_available(username)
-        ? "available"
-        : "unavailable";
+      const type = username_available(username) ? "available" : "unavailable";
       return RESPONSES[type];
     }
   };
 
-  this.username_available = (username) => {
+  const username_available = (username) => {
     const client = new IlsHelper();
     let available = false;
 
@@ -52,9 +49,14 @@ const UsernameValidationAPI = () => {
       available = client.available(username);
     } catch (e) {
       // IlsHelper::ConnectionTimeoutError
-      throw new IntegrationError();
+      throw new Error("IntegrationError()");
     }
     return available;
+  };
+
+  return {
+    validate,
+    responses: RESPONSES,
   };
 };
 
