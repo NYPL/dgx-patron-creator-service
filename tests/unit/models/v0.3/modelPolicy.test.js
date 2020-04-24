@@ -37,7 +37,8 @@ describe('Policy', () => {
         'metro',
         'default',
       ]);
-      expect(policy.policyField('cardType').standard).toEqual('3 years');
+      // The type is for 3 years
+      expect(policy.policyField('cardType').standard).toEqual('3');
       expect(policy.policyField('requiredFields')).toEqual([
         'email',
         'barcode',
@@ -151,7 +152,8 @@ describe('Policy', () => {
       // Values found in IlsHelper:
       expect(policy.policyField('agency')).toEqual('198');
       expect(Object.keys(policy.policyField('ptype'))).toEqual(['default']);
-      expect(policy.policyField('cardType').standard).toEqual('90 days');
+      // The card type is for 90 days.
+      expect(policy.policyField('cardType').standard).toEqual('90');
       expect(policy.policyField('requiredFields')).toEqual(['birthdate']);
       expect(policy.policyField('serviceArea')).toEqual(undefined);
       expect(policy.policyField('minimumAge')).toEqual(13);

@@ -5,7 +5,7 @@
 
 const NameValidationApi = () => {
   // TODO: temporary
-  const validate = () => true;
+  const validate = () => ({ valid: true });
 
   return {
     validate,

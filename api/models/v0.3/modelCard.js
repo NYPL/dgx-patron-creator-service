@@ -140,10 +140,12 @@ class Card {
     if (!this.name || !this.address || !this.username || !this.pin) {
       return false;
     }
+    // The pin must be a 4 digit string.
     if (!/\A\d{4}\z/.test(this.pin)) {
       this.errors["pin"] = "pin must be 4 numbers";
       return false;
     }
+    // Depending on the policy, some fields are required.
     validateByPolicy.forEach((attr) => {
       if (this.requiredByPolicy(attr) && this[attr] === "") {
         this.errors[attr] = `${attr} cannot be empty`;
@@ -153,6 +155,8 @@ class Card {
     if (Object.keys(this.errors).length === 0) {
       return false;
     }
+    // Now that all values have gone through a basic validation process,
+    // do the more in-depth validation.
     const isValid = cardValidator.validate(this);
     if (isValid) {
       this.valid = true;
@@ -195,13 +199,13 @@ class Card {
     return this.policy.isRequiredField(field);
   }
   worksInCity() {
-    return this.workAddress && this.workAddress.inCity(this.policy.policy);
+    return !!(this.workAddress && this.workAddress.inCity(this.policy));
   }
   livesOrWorksInCity() {
-    return this.address.inCity(this.policy.policy) || this.worksInCity();
+    return !!(this.address.inCity(this.policy) || this.worksInCity());
   }
   livesInState() {
-    return this.address.inState(this.policy.policy);
+    return this.address.inState(this.policy);
   }
   // how to check validity?
   validForIls() {
@@ -212,18 +216,25 @@ class Card {
     return (this.barcode = Barcode.nextAvailable);
   }
   setPtype() {
-    return (this.ptype = this.policy.determinePtype(this));
+    this.ptype = this.policy.determinePtype(this);
   }
 
   setTemporary() {
-    return (this.isTemporary = true);
+    this.isTemporary = true;
   }
 
   cardDenied(address, isWorkAddress) {
-    if (this.policy.serviceArea.present) {
-      return (
-        !address.inState(policy) || (isWorkAddress && !address.inCity(policy))
-      );
+    if (this.policy.policy.serviceArea) {
+      // If they are not in NY state, check to see if the patron
+      // works in NYC.
+      if (!address.inState(this.policy)) {
+        if (isWorkAddress) {
+          // && !address.inCity(this.policy)) {
+          return false;
+        }
+
+        return true;
+      }
     }
     return false;
   }
@@ -246,13 +257,13 @@ class Card {
     }
 
     // create the patron
-    const client = IlsHelper.new();
+    const client = new IlsHelper();
     const response = client.createPatron(this);
     return response === typeof IlsHelper.IlsError ? false : response;
   }
 
   setPatronId(response) {
-    return (this.patronId = IlsHelper.getPatronIdFromResponse(response));
+    this.patronId = IlsHelper.getPatronIdFromResponse(response);
   }
 
   setTemporaryBarcode() {
@@ -308,9 +319,10 @@ class Card {
     }
 
     const residentialWorkAddress =
-      this.workAddress && this.workAddress.isResidential;
+      this.workAddress && this.workAddress.address.isResidential;
     let reason;
-    if (!this.address.isResidential) {
+
+    if (!this.address.address.isResidential) {
       reason = "address";
     } else if (residentialWorkAddress) {
       reason = "work address";
@@ -318,12 +330,10 @@ class Card {
       reason = "personal information";
     }
 
-    // convert to right type
-    let expiration = this.policy.cardType["temporary"] / 1; //.day.to_i
+    let expiration = this.policy.policy.cardType["temporary"];
     return `Your library card is temporary because your ${reason} could not be
-       verified. Visit your local NYPL branch within
-       ${expiration} days to upgrade to a
-       standard card.`;
+        verified. Visit your local NYPL branch within ${expiration} days to
+        upgrade to a standard card.`;
   }
 }
 

@@ -51,18 +51,27 @@ class Address {
     return valsHash[found || str.toLowerCase()];
   }
 
-  inState(policy) {
-    return policy.serviceArea["state"].includes(
-      this.address.state.toLowerCase()
+  inState(policyParam) {
+    const policy = policyParam.policy;
+    return !!(
+      policy.serviceArea &&
+      policy.serviceArea["state"].includes(this.address.state.toLowerCase())
     );
   }
-  inCity(policy) {
+  inCity(policyParam) {
+    const policy = policyParam.policy;
+    if (!policy.serviceArea) {
+      return false;
+    }
     return (
-      policy.serviceArea["city"].includes(this.address.city.toLowerCase()) ||
-      policy.serviceArea["county"].includes(this.address.county.toLowerCase())
+      (policy.serviceArea["city"] &&
+        policy.serviceArea["city"].includes(this.address.city.toLowerCase())) ||
+      (policy.serviceArea["county"] &&
+        policy.serviceArea["county"].includes(
+          this.address.county.toLowerCase()
+        ))
     );
   }
-
   toString() {
     const address = this.address;
     const streetInfo = `${address.line1}${

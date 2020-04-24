@@ -1,5 +1,6 @@
 /* eslint-disable */
 import Address from "../../../../api/models/v0.3/modelAddress";
+import Policy from "../../../../api/models/v0.3/modelPolicy";
 
 const emptyAddress = {
   line1: "",
@@ -98,18 +99,89 @@ describe("Address", () => {
       });
     });
 
-    // TODO
     describe("inState", () => {
-      it("should determine if the address is in NY state", () => {
-        // const policy = Policy();
-        // const address = new Address();
-        // expect(address.inState(policy))...; //true
-        // const nonNysAddress = new Address(...);
-        // expect(nonNysAddress.inState(policy))...; // false
+      it("should return false for web applicants in and out of NY state", () => {
+        const webApplicant = Policy({ policyType: "webApplicant" });
+        const addressNotNY = new Address({
+          line1: "street address",
+          state: "New Jersey",
+        });
+        const addressNY = new Address({
+          line1: "street address",
+          state: "New York",
+        });
+
+        expect(addressNotNY.inState(webApplicant)).toEqual(false);
+        expect(addressNY.inState(webApplicant)).toEqual(false);
+      });
+
+      it("should return false if they are not in NY state", () => {
+        const simplyePolicy = Policy();
+        const addressNotNY = new Address({
+          line1: "street address",
+          state: "New Jersey",
+        });
+
+        expect(addressNotNY.inState(simplyePolicy)).toEqual(false);
+      });
+
+      it("should return true if they are in NY state", () => {
+        const simplyePolicy = Policy();
+        const addressNY = new Address({
+          line1: "street address",
+          state: "New York",
+        });
+
+        expect(addressNY.inState(simplyePolicy)).toEqual(true);
       });
     });
-    // TODO
-    describe("inCity", () => {});
+
+    describe("inCity", () => {
+      it("should return false for web applicants in and out of NYC", () => {
+        const webApplicant = Policy({ policyType: "webApplicant" });
+        const addressNotNYC = new Address({
+          line1: "street address",
+          city: "Albany",
+        });
+        const addressNYC = new Address({
+          line1: "street address",
+          city: "New York",
+        });
+
+        expect(addressNotNYC.inCity(webApplicant)).toEqual(false);
+        expect(addressNYC.inCity(webApplicant)).toEqual(false);
+      });
+
+      it("should return false if they are not in NYC", () => {
+        const simplyePolicy = Policy();
+        const addressNotNYC = new Address({
+          line1: "street address",
+          city: "Albany",
+        });
+
+        expect(addressNotNYC.inCity(simplyePolicy)).toEqual(false);
+      });
+
+      it("should return true if they are in NYC", () => {
+        const simplyePolicy = Policy();
+        const addressNYC = new Address({
+          line1: "street address",
+          city: "New York",
+        });
+
+        expect(addressNYC.inCity(simplyePolicy)).toEqual(true);
+      });
+
+      it("should return true if they are in an NYC county", () => {
+        const simplyePolicy = Policy();
+        const addressNYC = new Address({
+          line1: "street address",
+          county: "Queens",
+        });
+
+        expect(addressNYC.inCity(simplyePolicy)).toEqual(true);
+      });
+    });
 
     describe("toString", () => {
       it("should return a string representation of the address", () => {
@@ -227,7 +299,7 @@ describe("Address", () => {
       });
     });
 
-    // TODO:
+    // TODO: when AddressValidationApi is implemented
     describe("validationResponse", () => {});
 
     describe("validatedVersion", () => {
