@@ -1,5 +1,5 @@
 /* eslint-disable */
-import IlsHelper from "./ILSHelper";
+import IlsClient from "./IlsClient";
 
 /**
  * A class that validates usernames against the ILS.
@@ -55,13 +55,13 @@ const UsernameValidationAPI = () => {
    * @param {string} username
    */
   const usernameAvailable = (username) => {
-    const client = new IlsHelper();
+    const client = new IlsClient();
     let available = false;
 
     try {
       available = client.available(username);
     } catch (e) {
-      // IlsHelper::ConnectionTimeoutError
+      // IlsClient::ConnectionTimeoutError
       throw new Error("IntegrationError()");
     }
     return available;

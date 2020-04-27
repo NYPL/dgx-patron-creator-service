@@ -1,15 +1,15 @@
 /* eslint-disable */
 import UsernameValidationApi from "../../../../api/controllers/v0.3/UsernameValidationAPI";
-import IlsHelper from "../../../../api/controllers/v0.3/ILSHelper";
-jest.mock("../../../../api/controllers/v0.3/ILSHelper");
+import IlsClient from "../../../../api/controllers/v0.3/IlsClient";
+jest.mock("../../../../api/controllers/v0.3/IlsClient");
 
-// TODO: Once IlsHelper is finished, test username_available.
+// TODO: Once IlsClient is finished, test username_available.
 describe("UsernameValidationApi", () => {
   const { responses, validate } = UsernameValidationApi();
 
   beforeEach(() => {
     // Clear all instances and calls to constructor and all methods:
-    IlsHelper.mockClear();
+    IlsClient.mockClear();
   });
 
   it("returns an invalid response if the username is not 5-25 alphanumeric", () => {
@@ -27,25 +27,25 @@ describe("UsernameValidationApi", () => {
 
   it("returns an unavailable response if the username is not available", () => {
     // Mocking that the ILS request returned false and username is unavailable.
-    IlsHelper.mockImplementation(() => ({ available: () => false }));
+    IlsClient.mockImplementation(() => ({ available: () => false }));
     const unavailable = "unavailableName";
 
     // responses.unavailable =
     //  { type: "unavailable-username", cardType: null,
     //    message: "This username is unavailable. Please try another." }
     expect(validate(unavailable)).toEqual(responses.unavailable);
-    expect(IlsHelper).toHaveBeenCalled();
+    expect(IlsClient).toHaveBeenCalled();
   });
 
   it("returns an available response if the username is available", () => {
     // Mocking that the ILS request returned true and username is available.
-    IlsHelper.mockImplementation(() => ({ available: () => true }));
+    IlsClient.mockImplementation(() => ({ available: () => true }));
     const available = "availableName";
 
     // responses.available =
     //  { type: "available-username", cardType: "standard",
     //    message: "This username is available." }
     expect(validate(available)).toEqual(responses.available);
-    expect(IlsHelper).toHaveBeenCalled();
+    expect(IlsClient).toHaveBeenCalled();
   });
 });

@@ -35,7 +35,7 @@ class Barcode {
   // returns next available barcode record
   nextavailable(tries = 10) {
     // make ils connection helper
-    const client = new IlsHelper();
+    const client = new IlsClient();
     let barcodeFound = false;
     let barcode;
 

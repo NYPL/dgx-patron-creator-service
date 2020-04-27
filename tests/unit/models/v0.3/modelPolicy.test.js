@@ -31,7 +31,7 @@ describe('Policy', () => {
       // returns the full policy in `.policy`
       expect(policy.policy).toEqual(policy.ilsPolicy.simplye);
 
-      // Values found in IlsHelper:
+      // Values found in IlsClient:
       expect(policy.policyField('agency')).toEqual('202');
       expect(Object.keys(policy.policyField('ptype'))).toEqual([
         'metro',
@@ -149,7 +149,7 @@ describe('Policy', () => {
       // returns the full policy in `.policy`
       expect(policy.policy).toEqual(policy.ilsPolicy.webApplicant);
 
-      // Values found in IlsHelper:
+      // Values found in IlsClient:
       expect(policy.policyField('agency')).toEqual('198');
       expect(Object.keys(policy.policyField('ptype'))).toEqual(['default']);
       // The card type is for 90 days.

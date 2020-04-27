@@ -361,9 +361,9 @@ class Card {
     }
 
     // create the patron
-    const client = new IlsHelper();
+    const client = new IlsClient();
     const response = client.createPatron(this);
-    return response === typeof IlsHelper.IlsError ? false : response;
+    return response === typeof IlsClient.IlsError ? false : response;
   }
 
   /**
@@ -373,7 +373,7 @@ class Card {
    * @param {object} response
    */
   setPatronId(response) {
-    this.patronId = IlsHelper.getPatronIdFromResponse(response);
+    this.patronId = IlsClient.getPatronIdFromResponse(response);
   }
 
   /**
@@ -384,9 +384,9 @@ class Card {
     // Set patronId as temporary barcode removing the check digit wrapper.
     this.barcode = this.patronId; // get from values [1, 7]
 
-    const client = IlsHelper.new();
+    const client = IlsClient.new();
     const response = client.updatePatron(this);
-    return response === typeof IlsHelper.IlsError ? false : response;
+    return response === typeof IlsClient.IlsError ? false : response;
   }
 
   /**
