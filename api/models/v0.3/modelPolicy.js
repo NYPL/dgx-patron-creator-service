@@ -2,7 +2,10 @@
 import IlsHelper from '../../controllers/v0.3/ILSHelper';
 
 /**
- * Creates a policy object to find out what type of card is allowed.
+ * Creates a policy object to find out what type of card is allowed for a
+ * given patron and their location.
+ *
+ * @param {object} args - Object consisting of the policy type.
  */
 const Policy = (args) => {
   const lowerCase = (arr) => arr.map((item) => item.toLowerCase());
@@ -64,8 +67,29 @@ const Policy = (args) => {
   const isDefault = policyType === DEFAULT_POLICY_TYPE;
   const isWebApplicant = policyType === 'webApplicant';
 
+  /**
+   * policyField(field)
+   * Returns the field in the current policy object.
+   *
+   * @param {string} field
+   */
   const policyField = (field) => policy[field];
+
+  /**
+   * isRequiredField(field)
+   * Checks if the field is part of the requiredFields for the current policy.
+   *
+   * @param {string} field
+   */
   const isRequiredField = (field) => policyField('requiredFields').includes(field);
+
+  /**
+   * determinePtype(patron)
+   * Determins the ptype for a patron based on the policy type and the
+   * patron's address.
+   *
+   * @param {Patron object} patron
+   */
   const determinePtype = (patron = undefined) => {
     const ptype = policyField('ptype');
     const hasServiceArea = policyField('serviceArea')
@@ -81,6 +105,13 @@ const Policy = (args) => {
     }
     return ptype.default.id;
   };
+
+  /**
+   * determineAgency(patronParams)
+   * Determines the agency of a patron based on the current policy.
+   *
+   * @param {object} patronParams
+   */
   const determineAgency = (patronParams = {}) => {
     if (isWebApplicant) {
       if (
@@ -99,7 +130,11 @@ const Policy = (args) => {
     return policy.agency;
   };
 
-  // Validations
+  /**
+   * usesAnApprovedPolicy()
+   * Checks if the passed policy type as the argument is a valid ILS policy.
+   *
+   */
   const usesAnApprovedPolicy = () => {
     const keys = Object.keys(ilsPolicy);
     if (!keys.includes(policyType)) {

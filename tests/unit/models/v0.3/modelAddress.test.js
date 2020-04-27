@@ -9,7 +9,7 @@ const emptyAddress = {
   county: "",
   state: "",
   zip: "",
-  isResidential: undefined,
+  isResidential: null,
   errors: {},
   hasBeenValidated: false,
 };
@@ -80,7 +80,7 @@ describe("Address", () => {
 
       it("returns undefined for bad string", () => {
         const bool = strToBool();
-        expect(bool).toEqual(undefined);
+        expect(bool).toEqual(null);
       });
       it("returns true or false if that value is in the string passed", () => {
         const trueInString = strToBool("true string");

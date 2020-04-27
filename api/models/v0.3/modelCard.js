@@ -5,12 +5,19 @@ import NameValidationApi from "../../controllers/v0.3/NameValidationAPI";
 
 /**
  * A validator class to verify a card's address and birthdate. Doesn't
- * directly talk to an API so in this same file as a simple class.
+ * directly talk to an API so it's placed in this same file as a simple class.
  */
 export const CardValidator = () => {
   const UNVALIDATED_ADDRESS_ERROR = `Address has not been validated.
     Validate address at /validate/address.`;
 
+  /**
+   * validate(card)
+   * Validates that the card has a correct and valid address, username, email,
+   * and birthdate.
+   *
+   * @param {Card object} card
+   */
   const validate = (card) => {
     if (card.workAddress) {
       // There is a work address so the home address needs to be present,
@@ -49,6 +56,15 @@ export const CardValidator = () => {
     }
   };
 
+  /**
+   * validateAddress(card, addressType, workAddress)
+   * Returns the card object with updated validated address or errors based
+   * on policy and ILS verification.
+   *
+   * @param {Card object} card
+   * @param {string} addressType - "address" or "workAddres"
+   * @param {boolean} isWorkAddress
+   */
   const validateAddress = (card, addressType, workAddress = null) => {
     let validAddress = card[addressType].validatedVersion(workAddress);
 
@@ -69,6 +85,12 @@ export const CardValidator = () => {
     return card;
   };
 
+  /**
+   * validateBirthdate(card)
+   * Validates the card's birthdate.
+   *
+   * @param {Card object} card
+   */
   const validateBirthdate = (card) => {
     if (card.requiredByPolicy("birthdate")) {
       const minAge = card.policy.policyField("minimumAge");
@@ -105,6 +127,11 @@ const cardValidator = CardValidator();
 /**
  * A card class to create proper Card data structure and validations
  * on that data.
+ *
+ * @param {object} args - Object consisting of the name string,
+ *  address Address object, username string, pin string, email string,
+ *  birthdate string, workAddress Address object, ecommunicationsPref string,
+ *  and policy Policy object.
  */
 class Card {
   constructor(args) {
@@ -134,6 +161,12 @@ class Card {
     this.STANDARD_CARD_TYPE = "standard";
   }
 
+  /**
+   * validate()
+   * Runs simple validations to make sure that the arguments are present and
+   * passes the needed requirements, and once those pass, then validates the
+   * card's address and username against the ILS.
+   */
   validate() {
     const validateByPolicy = ["email", "birthdate"];
     // These four values are necessary
@@ -164,6 +197,11 @@ class Card {
     return isValid;
   }
 
+  /**
+   * checkValidName()
+   * If the current name has been validated or not, return that value.
+   * Otherwise, check the name validity.
+   */
   checkValidName() {
     this.hasValidName =
       this.hasValidName !== undefined
@@ -172,6 +210,10 @@ class Card {
     return this.hasValidName;
   }
 
+  /**
+   * checkNameValidity()
+   * Verifies that the current name is valid against the NameValidation API.
+   */
   checkNameValidity() {
     const { validate } = NameValidationApi();
     const validatedName = validate(this.name);
@@ -181,6 +223,11 @@ class Card {
     );
   }
 
+  /**
+   * checkValidUsername()
+   * If the current usernamename has been validated or not, return that value.
+   * Otherwise, check the username availability.
+   */
   checkValidUsername() {
     this.hasValidUsername =
       this.hasValidUsername !== undefined
@@ -189,47 +236,97 @@ class Card {
     return this.hasValidUsername;
   }
 
+  /**
+   * checkUsernameAvailability()
+   * Verifies that the current username is valid against the
+   * UsernameValidation API.
+   */
   checkUsernameAvailability() {
     const { responses, validate } = UsernameValidationApi();
     let validation = validate(this.username);
     return typeof validation === "object" && validation === responses.available;
   }
 
+  /**
+   * requiredByPolicy(field)
+   * Checks if the field is required in the current policy.
+   *
+   * @param {string} field
+   */
   requiredByPolicy(field) {
     return this.policy.isRequiredField(field);
   }
+
+  /**
+   * worksInCity()
+   * Checks if the card has a work address in NYC.
+   */
   worksInCity() {
     return !!(this.workAddress && this.workAddress.inCity(this.policy));
   }
+
+  /**
+   * livesOrWorksInCity()
+   * Checks if the card has an address in NYC or a work address in NYC.
+   */
   livesOrWorksInCity() {
     return !!(this.address.inCity(this.policy) || this.worksInCity());
   }
+
+  /**
+   * livesInState()
+   * Checks if the card has an address in NY state.
+   */
   livesInState() {
     return this.address.inState(this.policy);
   }
-  // how to check validity?
+
+  /**
+   * validForIls()
+   * Checks if the current card is valid and has a ptype.
+   */
   validForIls() {
     return !!(this.valid && this.ptype);
   }
 
+  /**
+   * setBarcode()
+   * Sets the current barcode to the next available.
+   * TODO: implement the Barcode class.
+   */
   setBarcode() {
     return (this.barcode = Barcode.nextAvailable);
   }
+
+  /**
+   * setPtype()
+   * Sets the ptype for the current card based on the current policy.
+   */
   setPtype() {
     this.ptype = this.policy.determinePtype(this);
   }
 
+  /**
+   * setTemporary()
+   * Sets the current card to temporary.
+   */
   setTemporary() {
     this.isTemporary = true;
   }
 
+  /**
+   * cardDenied()
+   * Returns true if the card's address is not in NY state. Returns false if
+   * the card is for a web applicant (no serviceArea fields), if they don't
+   * live in NY state but work in NYC.
+   */
   cardDenied(address, isWorkAddress) {
     if (this.policy.policy.serviceArea) {
       // If they are not in NY state, check to see if the patron
       // works in NYC.
       if (!address.inState(this.policy)) {
         if (isWorkAddress) {
-          // && !address.inCity(this.policy)) {
+          // && workAddress.inCity(this.policy)) {
           return false;
         }
 
@@ -239,7 +336,10 @@ class Card {
     return false;
   }
 
-  // # Convert MM/DD/YYYY to Date object.
+  /**
+   * normalizedBirthdate(birthdate)
+   * Convert a MM/DD/YYYY formatted string to a Date object.
+   */
   normalizedBirthdate(birthdate = null) {
     if (birthdate) {
       return new Date(birthdate);
@@ -247,6 +347,10 @@ class Card {
     return;
   }
 
+  /**
+   * createIlsPatron()
+   * If the current card is valid, then create it against the ILS API.
+   */
   createIlsPatron() {
     if (this.policy.isRequiredField(this.barcode)) {
       this.setBarcode();
@@ -262,10 +366,20 @@ class Card {
     return response === typeof IlsHelper.IlsError ? false : response;
   }
 
+  /**
+   * setPatronId(response)
+   * Sets the current card's patron ID to the ID sent from the ILs.
+   *
+   * @param {object} response
+   */
   setPatronId(response) {
     this.patronId = IlsHelper.getPatronIdFromResponse(response);
   }
 
+  /**
+   * setTemporaryBarcode()
+   * Updates the current card's barcode to temporary in the ILS.
+   */
   setTemporaryBarcode() {
     // Set patronId as temporary barcode removing the check digit wrapper.
     this.barcode = this.patronId; // get from values [1, 7]
@@ -275,6 +389,13 @@ class Card {
     return response === typeof IlsHelper.IlsError ? false : response;
   }
 
+  /**
+   * checkCardTypePolicy(validAddress, workAddress)
+   * Returns a response object based on the type of card that is set.
+   *
+   * @param {Address object} validAddress
+   * @param {boolean} workAddress
+   */
   checkCardTypePolicy(validAddress, workAddress = null) {
     if (this.cardDenied(validAddress, workAddress)) {
       return {
@@ -294,6 +415,10 @@ class Card {
     }
   }
 
+  /**
+   * details()
+   * Returns a simple object with all the card's current values.
+   */
   details() {
     let details = {
       barcode: this.barcode,
@@ -313,6 +438,10 @@ class Card {
     return details;
   }
 
+  /**
+   * selectMessage()
+   * Returns the appropriate messaged based on the card's validity or errors.
+   */
   selectMessage() {
     if (!this.isTemporary) {
       return "Your library card has been created.";

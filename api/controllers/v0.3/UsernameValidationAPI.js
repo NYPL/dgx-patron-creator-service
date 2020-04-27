@@ -32,16 +32,29 @@ const UsernameValidationAPI = () => {
     },
   };
 
+  /**
+   * validate(username)
+   * Checks if the username is valid and available and returns and object
+   * with the appropriate response.
+   *
+   * @param {string} username
+   */
   const validate = (username) => {
     if (!username || !USERNAME_PATTERN.test(username)) {
       return RESPONSES["invalid"];
     } else {
-      const type = username_available(username) ? "available" : "unavailable";
+      const type = usernameAvailable(username) ? "available" : "unavailable";
       return RESPONSES[type];
     }
   };
 
-  const username_available = (username) => {
+  /**
+   * usernameAvailable(username)
+   * Calls the ILS API to check username availability.
+   *
+   * @param {string} username
+   */
+  const usernameAvailable = (username) => {
     const client = new IlsHelper();
     let available = false;
 
@@ -57,6 +70,8 @@ const UsernameValidationAPI = () => {
   return {
     validate,
     responses: RESPONSES,
+    // used for testing
+    usernameAvailable,
   };
 };
 

@@ -22,6 +22,10 @@ class Address {
     this.isValid = isValid;
   }
 
+  /**
+   * validate()
+   * Simple validation to make sure the address length is the proper length.
+   */
   validate() {
     const fullAddressLength = (this.address.line1 + this.address.line2).length;
     if (fullAddressLength > 100) {
@@ -33,9 +37,16 @@ class Address {
     return true;
   }
 
+  /**
+   * strToBool(str)
+   * Helper function to convert a string with boolean values into actual
+   * boolean values - values that may come from separate APIs.
+   *
+   * @param {string} str
+   */
   strToBool(str) {
     if (!str) {
-      return undefined; // Is this right? prev was nil
+      return null; // Is this right? prev was nil
     }
     // TODO: this was in there before but should it be copied over?
     const vals = ["true", "false"];
@@ -51,6 +62,12 @@ class Address {
     return valsHash[found || str.toLowerCase()];
   }
 
+  /**
+   * inState(policyParam)
+   * Checks to see if the address is in the New York state.
+   *
+   * @param {Policy object} policyParam
+   */
   inState(policyParam) {
     const policy = policyParam.policy;
     return !!(
@@ -58,6 +75,13 @@ class Address {
       policy.serviceArea["state"].includes(this.address.state.toLowerCase())
     );
   }
+
+  /**
+   * inCity(policyParam)
+   * Checks to see if the address is in New York City.
+   *
+   * @param {Policy object} policyParam
+   */
   inCity(policyParam) {
     const policy = policyParam.policy;
     if (!policy.serviceArea) {
@@ -72,6 +96,12 @@ class Address {
         ))
     );
   }
+
+  /**
+   * toString()
+   * Helper function to convert the address values into a
+   * two-line addres string.
+   */
   toString() {
     const address = this.address;
     const streetInfo = `${address.line1}${
@@ -81,14 +111,33 @@ class Address {
     return `${streetInfo}\n${cityInfo}`;
   }
 
+  /**
+   * residentialWorkAddress(isWorkAddress)
+   * Returns true if the current address is a residential work address.
+   *
+   * @param {boolean} isWorkAddress
+   */
   residentialWorkAddress(isWorkAddress) {
     return isWorkAddress && this.address.isResidential;
   }
 
+  /**
+   * nonResidentialWorkAddress(isWorkAddress)
+   * Returns true if the current address is a non-residential home address.
+   *
+   * @param {boolean} isWorkAddress
+   */
   nonResidentialHomeAddress(isWorkAddress) {
     return !isWorkAddress && !this.address.isResidential;
   }
 
+  /**
+   * addressForTemporaryCard(isWorkAddress)
+   * Returns true if the current address is a residential work address or
+   * a non-residential home address for a temporary card.
+   *
+   * @param {boolean} isWorkAddress
+   */
   addressForTemporaryCard(isWorkAddress) {
     if (this.residentialWorkAddress(isWorkAddress)) {
       return true;
@@ -98,9 +147,14 @@ class Address {
     return false;
   }
 
-  // TODO: Need to call validation API to validate the address
-  // which depends on Service Objects
-  validationresponse(isWorkAddress = undefined) {
+  /**
+   * validationResponse(isWorkAddress)
+   * TODO: Need to call validation API to validate the address
+   * which depends on Service Objects
+   *
+   * @param {boolean} isWorkAddress
+   */
+  validationResponse(isWorkAddress = undefined) {
     // const api = AddressValidationApi.new(isWorkAddress);
     // api.validate(this);
     // this.isValid = true;
@@ -108,8 +162,13 @@ class Address {
     // if false return null; and isValid = false;
   }
 
-  // Public: Creates new address with updated attributes from
-  // the validation process.
+  /**
+   * validatedVersion(isWorkAddress)
+   * Creates a validated address with updated attributes from
+   * the validation process.
+   *
+   * @param {boolean} isWorkAddress
+   */
   validatedVersion(isWorkAddress = undefined) {
     // return the current address since it's already validated;
     if (this.address.hasBeenValidated) {
@@ -121,7 +180,7 @@ class Address {
     }
 
     // Check to see if address is valid
-    const validation = this.validationresponse(isWorkAddress);
+    const validation = this.validationResponse(isWorkAddress);
     // TODO if validation error return; integration error
 
     if (validation && validation.address) {
@@ -134,15 +193,17 @@ class Address {
     return;
   }
 
-  // Public: Returns an address updated with its API-formalized version
-  // without incorporating about the card policy.
-  // Returns a new address or null.
+  /**
+   * normalizedVersion()
+   * Returns an address updated with its API-formalized version without
+   * incorporating about the card policy.
+   */
   normalizedVersion() {
     if (this.address.hasBeenValidated) {
       return this;
     }
 
-    const validation = this.validationresponse(isWorkAddress);
+    const validation = this.validationResponse(isWorkAddress);
     // TODO: if error do something integration error
 
     if (validation.type === AddressValidationApi.VALID_ADDRESS_TYPE) {
