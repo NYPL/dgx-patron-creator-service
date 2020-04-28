@@ -6,20 +6,19 @@ const AddressValidationApi = require("../../controllers/v0.3/AddressValidationAP
  * the data against the AddressValidationApi.
  */
 class Address {
-  constructor(address = {}, isValid = false) {
+  constructor(args = {}) {
     this.address = {
-      line1: address.line1 || "",
-      line2: address.line2 || "",
-      city: address.city || "",
-      county: address.county || "",
-      state: address.state || "",
-      zip: address.zip || "",
-      isResidential: this.strToBool(address.isResidential),
-      errors: {},
-      // Only set in the API call
-      hasBeenValidated: address.hasBeenValidated || false,
+      line1: args.line1 || "",
+      line2: args.line2 || "",
+      city: args.city || "",
+      county: args.county || "",
+      state: args.state || "",
+      zip: args.zip || "",
+      isResidential: this.strToBool(args.isResidential),
     };
-    this.isValid = isValid;
+    this.errors = {};
+    // Only set in the API call
+    this.hasBeenValidated = args.hasBeenValidated || false;
   }
 
   /**
@@ -29,11 +28,10 @@ class Address {
   validate() {
     const fullAddressLength = (this.address.line1 + this.address.line2).length;
     if (fullAddressLength > 100) {
-      this.address.errors["line1"] =
+      this.errors["line1"] =
         "Address lines must be less than 100 characters combined";
       return false;
     }
-    this.isValid = true;
     return true;
   }
 
@@ -48,7 +46,7 @@ class Address {
     if (!str) {
       return null; // Is this right? prev was nil
     }
-    // TODO: this was in there before but should it be copied over?
+
     const vals = ["true", "false"];
     const valsHash = { true: true, false: false };
     let found = "";
@@ -150,16 +148,15 @@ class Address {
   /**
    * validationResponse(isWorkAddress)
    * TODO: Need to call validation API to validate the address
-   * which depends on Service Objects
+   * which depends on Service Objects.
    *
    * @param {boolean} isWorkAddress
    */
   validationResponse(isWorkAddress = undefined) {
-    // const api = AddressValidationApi.new(isWorkAddress);
-    // api.validate(this);
-    // this.isValid = true;
+    // const { responses, validate } = AddressValidationAPI({ ilsClient });
+    // let validAddress = await validate(this.address);
+    // if false return null;
     return this;
-    // if false return null; and isValid = false;
   }
 
   /**
@@ -171,46 +168,21 @@ class Address {
    */
   validatedVersion(isWorkAddress = undefined) {
     // return the current address since it's already validated;
-    if (this.address.hasBeenValidated) {
+    if (this.hasBeenValidated) {
       return this;
-    }
-    // if the address is not already valid, return;
-    if (!this.isValid) {
-      return;
     }
 
     // Check to see if address is valid
     const validation = this.validationResponse(isWorkAddress);
     // TODO if validation error return; integration error
 
-    if (validation && validation.address) {
-      validation.address["hasBeenValidated"] = true;
-      const isValid = true;
-      const updatedAddress = new Address(validation.address, isValid);
-      return updatedAddress;
+    if (validation) {
+      this.hasBeenValidated = true;
+
+      return this.address;
     }
 
     return;
-  }
-
-  /**
-   * normalizedVersion()
-   * Returns an address updated with its API-formalized version without
-   * incorporating about the card policy.
-   */
-  normalizedVersion() {
-    if (this.address.hasBeenValidated) {
-      return this;
-    }
-
-    const validation = this.validationResponse(isWorkAddress);
-    // TODO: if error do something integration error
-
-    if (validation.type === AddressValidationApi.VALID_ADDRESS_TYPE) {
-      validation.address["hasBeenValidated"] = true;
-      const updatedAddress = new Address(validation.address);
-      return updatedAddress;
-    }
   }
 }
 

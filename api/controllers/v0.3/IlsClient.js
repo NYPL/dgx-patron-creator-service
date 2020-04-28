@@ -82,13 +82,22 @@ const IlsClient = (args) => {
       });
   };
 
-  const available = async (barcodeOrUsername, isBarcode = false) => {
+  /**
+   * available(barcodeOrUsername, isBarcode)
+   * For the /find endpoint in the ILS, a 200 response means that the username
+   * was found and is therefore not available. A 404 response means that the
+   * username was not found and is therefore available. Unfortunately, those
+   * are the responses from the ILS at the moment.
+   *
+   * @param {string} barcodeOrUsername
+   * @param {boolean}} isBarcode
+   */
+  const available = async (barcodeOrUsername, isBarcode = true) => {
     const fieldTag = isBarcode ? "b" : "u";
+    // These two query parameters are required to make a valid GET request.
     const params = `?varFieldTag=${fieldTag}&varFieldContent=${barcodeOrUsername}`;
     let available = false;
 
-    // If a correct response, then it's already taken.
-    // If error, then it's available.
     await axios
       .get(`${findUrl}${params}`, {
         headers: {
@@ -99,38 +108,48 @@ const IlsClient = (args) => {
       .then((response) => {
         const status = response.status;
         const data = response.data;
-        available = false;
-        // console.log(`response from ils available`, data);
+        // {
+        //   "id": 5346889,
+        //   "expirationDate": "2029-10-21",
+        //   "birthDate": "1988-01-19",
+        //   "patronType": 10,
+        //   "patronCodes": {
+        //     "pcode1": "s",
+        //     "pcode2": "f",
+        //     "pcode3": 5,
+        //     "pcode4": 0
+        //   },
+        //   "homeLibraryCode": "ma",
+        //   "message": {
+        //     "code": "-",
+        //     "accountMessages": [
+        //       "edwin.gzmn@gmail.com"
+        //     ]
+        //   },
+        //   "blockInfo": {
+        //     "code": "-"
+        //   },
+        //   "moneyOwed": 2.5
+        // }
+
+        if (status === 200 && data.id) {
+          available = false;
+        }
       })
       .catch((error) => {
-        available = true;
-        // console.log(`error from ils available - ${error}`);
+        const response = error.response;
+
+        // The ILS returns a 404 with the record not found...
+        // so it's available!
+        if (
+          response.status === 404 &&
+          response.data.name === "Record not found"
+        ) {
+          available = true;
+        }
       });
 
     return available;
-    // {
-    //   "id": 5346889,
-    //   "expirationDate": "2029-10-21",
-    //   "birthDate": "1988-01-19",
-    //   "patronType": 10,
-    //   "patronCodes": {
-    //     "pcode1": "s",
-    //     "pcode2": "f",
-    //     "pcode3": 5,
-    //     "pcode4": 0
-    //   },
-    //   "homeLibraryCode": "ma",
-    //   "message": {
-    //     "code": "-",
-    //     "accountMessages": [
-    //       "edwin.gzmn@gmail.com"
-    //     ]
-    //   },
-    //   "blockInfo": {
-    //     "code": "-"
-    //   },
-    //   "moneyOwed": 2.5
-    // }
   };
 
   // To update the barcode
@@ -141,27 +160,37 @@ const IlsClient = (args) => {
     let ilsPatron = formattedPatronData(patron);
 
     // Call update url
-    // axios.post(process.env.ILS_CREATE_PATRON_URL + patron.id);
+    // axios.post(`${createUrl}${patron.id}`);
   };
 
   const getPatronIdFromResponse = (response) => {
-    // where is the ID?
-    return response.body;
+    return response.id;
   };
 
-  // Format a patron's address as ILS expects it.
-  // Needs to be formatted as such:
-  // Types
-  // "a" - primary address, "h" - alternate address
-  // {
-  //   "lines": [
-  //     "5775 Golden Gate Parkway",
-  //     "San Francisco, CA 94129 USA"
-  //   ],
-  //   "type": "h"
-  // }
-  const formatAddress = (address) => {
-    return address.toUpperCase.gsub(/[\n\r]+/, "$");
+  /**
+   * formatAddress(address, isWorkAddress)
+   * Format a patron's address as ILS expects it.
+   * Types: "a" is primary address, "h" is alternate (work) address
+   * The address needs to be formatted in this shape:
+   * {
+   *   "lines": [
+   *     "5775 Golden Gate Parkway",
+   *     "San Francisco, CA 94129 USA"
+   *   ],
+   *   "type": "h"
+   * }
+   *
+   * @param {Address object} address
+   * @param {boolean} isWorkAddress
+   */
+  const formatAddress = (address, isWorkAddress = false) => {
+    const type = isWorkAddress
+      ? IlsClient.WORK_ADDRESS_FIELD_TAG // 'h'
+      : IlsClient.ADDRESS_FIELD_TAG; // 'a'
+    const fullString = address.toString();
+    const lines = fullString.split("\n");
+
+    return { lines, type };
   };
 
   // This needs to be updated

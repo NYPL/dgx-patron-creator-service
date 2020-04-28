@@ -259,7 +259,7 @@ function tryCatchAttemptCreatePatron(req, res) {
 
 /**
  * The callback for the route "/patrons".
- * TODO: Just boilderplate for now.
+ * TODO: Just boilerplate for now.
  */
 function createPatron(req, res) {
   try {

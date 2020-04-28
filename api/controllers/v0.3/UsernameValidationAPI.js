@@ -44,7 +44,6 @@ const UsernameValidationAPI = (args) => {
       return RESPONSES["invalid"];
     } else {
       const available = await usernameAvailable(username);
-      console.log("validate available", available);
       const type = available ? "available" : "unavailable";
       return RESPONSES[type];
     }

@@ -8,8 +8,7 @@ const NameValidationApi = require("../../controllers/v0.3/NameValidationAPI");
  * directly talk to an API so it's placed in this same file as a simple class.
  */
 const CardValidator = () => {
-  const UNVALIDATED_ADDRESS_ERROR = `Address has not been validated.
-    Validate address at /validate/address.`;
+  const UNVALIDATED_ADDRESS_ERROR = "Address has not been validated.";
 
   /**
    * validate(card)
@@ -23,9 +22,8 @@ const CardValidator = () => {
       // There is a work address so the home address needs to be present,
       // confirmed, and normalized, but it doesn't need to meet the usual
       // home address policy requirements.
-      card.address = card.address.normalizedVersion();
-      if (!card.address) {
-        card.errors["address"] = [UNVALIDATED_ADDRESS_ERROR];
+      if (!card.address || !card.address.hasBeenValidated) {
+        card.errors["address"] = UNVALIDATED_ADDRESS_ERROR;
       }
 
       // The work address needs to be valid for a card.
