@@ -1,13 +1,13 @@
 /* eslint-disable */
-import AddressValidationApi from "../../controllers/v0.3/AddressValidationAPI";
-import UsernameValidationApi from "../../controllers/v0.3/UsernameValidationAPI";
-import NameValidationApi from "../../controllers/v0.3/NameValidationAPI";
+const AddressValidationApi = require("../../controllers/v0.3/AddressValidationAPI");
+const UsernameValidationApi = require("../../controllers/v0.3/UsernameValidationAPI");
+const NameValidationApi = require("../../controllers/v0.3/NameValidationAPI");
 
 /**
  * A validator class to verify a card's address and birthdate. Doesn't
  * directly talk to an API so it's placed in this same file as a simple class.
  */
-export const CardValidator = () => {
+const CardValidator = () => {
   const UNVALIDATED_ADDRESS_ERROR = `Address has not been validated.
     Validate address at /validate/address.`;
 
@@ -487,4 +487,7 @@ Card.RESPONSES = {
   },
 };
 
-export default Card;
+module.exports = {
+  CardValidator,
+  Card,
+};

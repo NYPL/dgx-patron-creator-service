@@ -1,5 +1,5 @@
 /* eslint-disable */
-import AddressValidationApi from "../../controllers/v0.3/AddressValidationAPI";
+const AddressValidationApi = require("../../controllers/v0.3/AddressValidationAPI");
 
 /**
  * Creates objects with proper address structure and validates
@@ -214,4 +214,4 @@ class Address {
   }
 }
 
-export default Address;
+module.exports = Address;

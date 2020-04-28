@@ -1,8 +1,12 @@
-import Card, { CardValidator } from '../../../../api/models/v0.3/modelCard';
-import Policy from '../../../../api/models/v0.3/modelPolicy';
-import Address from '../../../../api/models/v0.3/modelAddress';
-import NameValidationAPI from '../../../../api/controllers/v0.3/NameValidationAPI';
-import UsernameValidationAPI from '../../../../api/controllers/v0.3/UsernameValidationAPI';
+const {
+  Card,
+  CardValidator,
+} = require('../../../../api/models/v0.3/modelCard');
+
+const Policy = require('../../../../api/models/v0.3/modelPolicy');
+const Address = require('../../../../api/models/v0.3/modelAddress');
+const NameValidationAPI = require('../../../../api/controllers/v0.3/NameValidationAPI');
+const UsernameValidationAPI = require('../../../../api/controllers/v0.3/UsernameValidationAPI');
 
 jest.mock('../../../../api/controllers/v0.3/NameValidationAPI');
 jest.mock('../../../../api/controllers/v0.3/UsernameValidationAPI');

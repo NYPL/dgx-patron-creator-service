@@ -62,4 +62,4 @@ class Barcode {
 
 Barcode.LOW_BARCODE_ALERT_COUNTS = [1, 5, 10, 25, 50, 100, 250, 500];
 
-export default Barcode;
+module.exports = Barcode;

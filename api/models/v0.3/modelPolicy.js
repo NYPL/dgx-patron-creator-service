@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import IlsClient from '../../controllers/v0.3/IlsClient';
+const IlsClient = require('../../controllers/v0.3/IlsClient');
 
 /**
  * Creates a policy object to find out what type of card is allowed for a
@@ -166,4 +166,4 @@ const Policy = (args) => {
   };
 };
 
-export default Policy;
+module.exports = Policy;

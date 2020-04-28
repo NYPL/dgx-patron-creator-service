@@ -1,15 +1,11 @@
 /* eslint-disable */
-
-/**
- * Client that connects to the ILS.
- */
-class ILSAPIClient {}
+const axios = require("axios");
 
 /**
  * Helper class to setup API calls to the ILS.
  */
 const IlsClient = (args) => {
-  const apiUrl = args["apiUrl"] || "";
+  const createUrl = args["createUrl"] || "";
   const findUrl = args["findUrl"] || "";
   const tokenUrl = args["tokenUrl"] || "";
   const ilsClientKey = args["ilsClientKey"] || "";
@@ -26,13 +22,13 @@ const IlsClient = (args) => {
   // const ConnectionTimeoutError = () => HttpError();
 
   const createPatron = (params) => {
-    if (!patron.validForIls) {
+    if (!params.patron.validForIls) {
       throw new Error("IlsError");
     }
-    let ilsPatron = formattedPatronData(patron);
+    let ilsPatron = formattedPatronData(params);
 
     axios
-      .post(process.env.ILS_CREATE_PATRON_URL, params, {
+      .post(createUrl, ilsPatron, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${ilsToken}`,
@@ -86,15 +82,55 @@ const IlsClient = (args) => {
       });
   };
 
-  const available = (barcodeOrUsername, isBarcode = false) => {
+  const available = async (barcodeOrUsername, isBarcode = false) => {
     const fieldTag = isBarcode ? "b" : "u";
     const params = `?varFieldTag=${fieldTag}&varFieldContent=${barcodeOrUsername}`;
-    return axios.post(process.env.ILS_FIND_VALUE_URL + params, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${ilsToken}`,
-      },
-    });
+    let available = false;
+
+    // If a correct response, then it's already taken.
+    // If error, then it's available.
+    await axios
+      .get(`${findUrl}${params}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${ilsToken}`,
+        },
+      })
+      .then((response) => {
+        const status = response.status;
+        const data = response.data;
+        available = false;
+        // console.log(`response from ils available`, data);
+      })
+      .catch((error) => {
+        available = true;
+        // console.log(`error from ils available - ${error}`);
+      });
+
+    return available;
+    // {
+    //   "id": 5346889,
+    //   "expirationDate": "2029-10-21",
+    //   "birthDate": "1988-01-19",
+    //   "patronType": 10,
+    //   "patronCodes": {
+    //     "pcode1": "s",
+    //     "pcode2": "f",
+    //     "pcode3": 5,
+    //     "pcode4": 0
+    //   },
+    //   "homeLibraryCode": "ma",
+    //   "message": {
+    //     "code": "-",
+    //     "accountMessages": [
+    //       "edwin.gzmn@gmail.com"
+    //     ]
+    //   },
+    //   "blockInfo": {
+    //     "code": "-"
+    //   },
+    //   "moneyOwed": 2.5
+    // }
   };
 
   // To update the barcode
@@ -235,6 +271,7 @@ const IlsClient = (args) => {
 
   return {
     createPatron,
+    available,
   };
 };
 
@@ -305,4 +342,4 @@ IlsClient.STRING_MARCTAG = { "@xsi:type": "xsd:string" };
 // fields that require marc tag to be set
 IlsClient.WITH_MARCTAG = ["expiration", "ptype"];
 
-export default IlsClient;
+module.exports = IlsClient;

@@ -1,6 +1,6 @@
 /* eslint-disable */
-import UsernameValidationApi from "../../../../api/controllers/v0.3/UsernameValidationAPI";
-import IlsClient from "../../../../api/controllers/v0.3/IlsClient";
+const UsernameValidationApi = require("../../../../api/controllers/v0.3/UsernameValidationAPI");
+const IlsClient = require("../../../../api/controllers/v0.3/IlsClient");
 jest.mock("../../../../api/controllers/v0.3/IlsClient");
 
 // TODO: Once IlsClient is finished, test username_available.

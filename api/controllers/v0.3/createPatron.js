@@ -1,13 +1,25 @@
 /* eslint-disable */
-import modelResponse from "../../models/v0.2/modelResponse";
-import UsernameValidationAPI from "./UsernameValidationAPI";
-import AddressValidationAPI from "./AddressValidationAPI";
+const modelResponse = require("../../models/v0.2/modelResponse");
+const UsernameValidationAPI = require("./UsernameValidationAPI");
+const axios = require("axios");
+const isEmpty = require("underscore").isEmpty;
+const awsDecrypt = require("./../../../config/awsDecrypt.js");
+const AddressValidationAPI = require("./AddressValidationAPI");
+const IlsClient = require("./IlsClient");
+const modelDebug = require("./../../models/v0.2/modelDebug.js");
+const modelStreamPatron = require("./../../models/v0.2/modelStreamPatron.js")
+  .modelStreamPatron;
+const streamPublish = require("./../../helpers/streamPublish");
+const logger = require("../../helpers/Logger");
+const encode = require("../../helpers/encode");
+const customErrors = require("../../helpers/errors");
 
 const ROUTE_TAG = "CREATE_PATRON_0.3";
 let ilsClientKey;
 let ilsClientPassword;
 let ilsToken;
 let ilsTokenTimestamp;
+let ilsClient;
 
 /**
  * validateEnvVariable(envVariableName)
@@ -88,7 +100,8 @@ function renderResponse(req, res, status, message) {
  * @return {object}
  */
 function collectErrorResponseData(status, type, message, title, debugMessage) {
-  logger.error(
+  // logger.error(
+  console.error(
     `status_code: ${status}, ` +
       `type: ${type}, ` +
       `message: ${message}, ` +
@@ -154,7 +167,7 @@ function getIlsToken(req, res, username, password) {
  * @param {HTTP response} res
  * @param {object} tokenResponse
  */
-function callCreatePatron(req, res) {
+async function callCreatePatron(req, res) {
   const timeNow = new Date();
   // eslint-disable-next-line max-len
   const ilsTokenExpired =
@@ -166,38 +179,58 @@ function callCreatePatron(req, res) {
     return;
   }
 
+  // By now, these are already defiend.
+  // assigned in createPatron
+  // ilsClientKey
+  // ilsClientPassword
+  // assigned in getIlsToken
+  // ilsToken
+  // ilsTokenTimestamp
+  ilsClient = IlsClient({
+    createUrl: process.env.ILS_CREATE_PATRON_URL,
+    findUrl: process.env.ILS_FIND_VALUE_URL,
+    tokenUrl: process.env.ILS_CREATE_TOKEN_URL,
+    ilsToken,
+    ilsTokenTimestamp,
+    ilsClientKey,
+    ilsClientPassword,
+  });
+
   // Instead of calling Card Creator API. Make the internal ILS calls here.
 
-  // axios.post(process.env.ILS_CREATE_PATRON_URL, req.body, {
-  //   headers: {
-  //     'Content-Type': 'application/json',
-  //     Authorization: `Bearer ${ilsToken}`,
-  //   },
-  // })
-  //   .then((axiosResponse) => {
-  //     const modeledResponse = modelResponse.patronCreator(axiosResponse.data, axiosResponse.status, req.body); // eslint-disable-line max-len
-  //     modelStreamPatron.transformPatronRequest(req.body, modeledResponse)
-  //       .then((streamPatronData) => {
-  //         streamPatron(req, res, streamPatronData, modeledResponse);
-  //       })
-  //       .catch(() => {
-  //         // eslint-disable-next-line max-len
-  //         renderResponse(req, res, 201, modeledResponse); // respond with 201 even if streaming fails
-  //       });
-  //   })
-  //   .catch((axiosError) => {
-  //     try {
-  //       const errorResponseData = modelResponse.errorResponseData(
-  //         collectErrorResponseData(axiosError.response.status, '', axiosError.response.data, '', '') // eslint-disable-line comma-dangle
-  //       );
-  //       renderResponse(req, res, axiosError.response.status, errorResponseData);
-  //     } catch (error) {
-  //       const errorResponseData = modelResponse.errorResponseData(
-  //         collectErrorResponseData(500, '', `Error related to ${process.env.ILS_CREATE_PATRON_URL} or publishing to the NewPatron stream.`, '', '') // eslint-disable-line comma-dangle
-  //       );
-  //       renderResponse(req, res, 500, errorResponseData);
-  //     }
-  //   });
+  /**
+   * Validate username
+   */
+  const { responses, validate } = UsernameValidationAPI({ ilsClient });
+  let validUsername = await validate(req.body.username);
+  console.log("validUsername", validUsername);
+  // TODO: remove this later.
+  renderResponse(req, res, 200, validUsername);
+  // A valid username can be available or unavailable.
+  // if (validUsername === responses.available ||
+  //   validUsername === responses.unavailable
+  // ) {
+  //   let usernameModel = modelResponse.username(validUsername, 200);
+  // } else {
+  //   // the username is invalid.
+  // }
+  /**
+   * Validate address
+   */
+  // const address = new Address(req.body.address);
+  // let validAddress = address.validationResponse(isWorkAddress = false);
+  // if (validAddress) {
+  //   let addressModel = modelResponse.username(validAddress, 200);
+  // } else {
+  //   // Throw an error
+  // }
+  // If validUsername && validAddress
+  // use usernameModel and addressModel together to create the patron
+
+  /**
+   * Then create patron
+   */
+  // ilsClient.createPatron()...
 }
 
 /**
@@ -256,10 +289,10 @@ function createPatron(req, res) {
       );
   }
 
-  ilsClientKey =
-    ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
-  ilsClientPassword =
-    ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
+  ilsClientKey = process.env.ILS_CLIENT_KEY;
+  // ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
+  ilsClientPassword = process.env.ILS_CLIENT_SECRET;
+  // ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
 
   Promise.all([ilsClientKey, ilsClientPassword])
     .then((decryptedValues) => {
@@ -281,37 +314,8 @@ function createPatron(req, res) {
       );
       renderResponse(req, res, 500, errorResponseData);
     });
-
-  /**
-   * Validate username, all example usage
-   */
-  // const { responses, validate } = UsernameValidationAPI();
-  // let validUsername = validate(req.body.username);
-  // A valid username can be available or unavailable.
-  // if (validUsername === responses.available ||
-  //   validUsername === responses.unavailable
-  // ) {
-  //   // Do an extra check to make sure the valid username is available
-  //   let usernameModel = modelResponse.username(validUsername, 200);
-  // } else {
-  //   // Throw an error
-  // }
-  /**
-   * Validate address
-   */
-  // Might be better to use the addressValidator
-  // const address = new Address(req.body.address);
-  // let validAddress = address.validation_response(isWorkAddress = false);
-  // if (validAddress) {
-  //   let addressModel = modelResponse.username(validAddress, 200);
-  // } else {
-  //   // Throw an error
-  // }
-  /**
-   * Then create patron
-   */
-  // If validUsername && validAddress
-  // use usernameModel and addressModel together to create the patron
 }
 
-export default createPatron;
+module.exports = {
+  createPatron,
+};

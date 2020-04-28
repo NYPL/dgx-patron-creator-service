@@ -1,6 +1,6 @@
 /* eslint-disable */
-import Address from "../../../../api/models/v0.3/modelAddress";
-import Policy from "../../../../api/models/v0.3/modelPolicy";
+const Address = require("../../../../api/models/v0.3/modelAddress");
+const Policy = require("../../../../api/models/v0.3/modelPolicy");
 
 const emptyAddress = {
   line1: "",

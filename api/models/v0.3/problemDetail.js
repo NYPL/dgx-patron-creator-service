@@ -44,4 +44,4 @@ const ProblemDetail = (args) => {
   };
 };
 
-export default ProblemDetail;
+module.exports = ProblemDetail;

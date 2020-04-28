@@ -1,6 +1,6 @@
-import Policy from '../../../../api/models/v0.3/modelPolicy';
-import Card from '../../../../api/models/v0.3/modelCard';
-import Address from '../../../../api/models/v0.3/modelAddress';
+const Policy = require('../../../../api/models/v0.3/modelPolicy');
+const { Card } = require('../../../../api/models/v0.3/modelCard');
+const Address = require('../../../../api/models/v0.3/modelAddress');
 
 describe('Policy', () => {
   it('should return the two valid types', () => {
