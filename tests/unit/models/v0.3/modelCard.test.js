@@ -563,8 +563,6 @@ describe('Card', () => {
 
   // TODO when Ils API is implemented.
   describe('createIlsPatron', () => {});
-  describe('setPatronId', () => {});
-  describe('setTemporaryBarcode', () => {});
 
   describe('checkCardTypePolicy', () => {
     const simplyePolicy = Policy();

@@ -156,7 +156,7 @@ class Address {
     // const { responses, validate } = AddressValidationAPI({ ilsClient });
     // let validAddress = await validate(this.address);
     // if false return null;
-    return this;
+    return true;
   }
 
   /**
@@ -179,10 +179,10 @@ class Address {
     if (validation) {
       this.hasBeenValidated = true;
 
-      return this.address;
+      return this;
     }
 
-    return;
+    return this;
   }
 }
 

@@ -7,11 +7,12 @@ const axios = require("axios");
 const IlsClient = (args) => {
   const createUrl = args["createUrl"] || "";
   const findUrl = args["findUrl"] || "";
-  const tokenUrl = args["tokenUrl"] || "";
-  const ilsClientKey = args["ilsClientKey"] || "";
-  const ilsClientPassword = args["ilsClientPassword"] || "";
   const ilsToken = args["ilsToken"] || "";
-  const ilsTokenTimestamp = args["ilsTokenTimestamps"] || "";
+  // TBD if these should be moved into this file.
+  // const tokenUrl = args["tokenUrl"] || "";
+  // const ilsClientKey = args["ilsClientKey"] || "";
+  // const ilsClientPassword = args["ilsClientPassword"] || "";
+  // const ilsTokenTimestamp = args["ilsTokenTimestamps"] || "";
 
   // TODO: Implement the error classes and codes
   // const StandardError = (err = "Standard error") => { throw new Error(err) };
@@ -21,13 +22,14 @@ const IlsClient = (args) => {
   // const HttpError = () => IlsError();
   // const ConnectionTimeoutError = () => HttpError();
 
-  const createPatron = (params) => {
-    if (!params.patron.validForIls) {
+  const createPatron = async (patron) => {
+    if (!patron.validForIls) {
       throw new Error("IlsError");
     }
-    let ilsPatron = formattedPatronData(params);
+    let ilsPatron = formattedPatronData(patron);
 
-    axios
+    console.log("ilsPatron", ilsPatron);
+    return await axios
       .post(createUrl, ilsPatron, {
         headers: {
           "Content-Type": "application/json",
@@ -35,50 +37,24 @@ const IlsClient = (args) => {
         },
       })
       .then((axiosResponse) => {
-        const modeledResponse = modelResponse.patronCreator(
-          axiosResponse.data,
-          axiosResponse.status,
-          req.body
-        ); // eslint-disable-line max-len
-        modelStreamPatron
-          .transformPatronRequest(req.body, modeledResponse)
-          .then((streamPatronData) => {
-            streamPatron(req, res, streamPatronData, modeledResponse);
-          })
-          .catch(() => {
-            // eslint-disable-next-line max-len
-            renderResponse(req, res, 201, modeledResponse); // respond with 201 even if streaming fails
-          });
+        return axiosResponse;
+        // const modeledResponse = modelResponse.patronCreator(
+        //   axiosResponse.data,
+        //   axiosResponse.status,
+        //   req.body
+        // ); // eslint-disable-line max-len
+        // modelStreamPatron
+        //   .transformPatronRequest(req.body, modeledResponse)
+        //   .then((streamPatronData) => {
+        //     streamPatron(req, res, streamPatronData, modeledResponse);
+        //   })
+        //   .catch(() => {
+        //     // eslint-disable-next-line max-len
+        //     renderResponse(req, res, 201, modeledResponse); // respond with 201 even if streaming fails
+        //   });
       })
       .catch((axiosError) => {
-        try {
-          const errorResponseData = modelResponse.errorResponseData(
-            collectErrorResponseData(
-              axiosError.response.status,
-              "",
-              axiosError.response.data,
-              "",
-              ""
-            ) // eslint-disable-line comma-dangle
-          );
-          renderResponse(
-            req,
-            res,
-            axiosError.response.status,
-            errorResponseData
-          );
-        } catch (error) {
-          const errorResponseData = modelResponse.errorResponseData(
-            collectErrorResponseData(
-              500,
-              "",
-              `Error related to ${process.env.ILS_CREATE_PATRON_URL} or publishing to the NewPatron stream.`,
-              "",
-              ""
-            ) // eslint-disable-line comma-dangle
-          );
-          renderResponse(req, res, 500, errorResponseData);
-        }
+        return axiosError;
       });
   };
 
@@ -89,11 +65,16 @@ const IlsClient = (args) => {
    * username was not found and is therefore available. Unfortunately, those
    * are the responses from the ILS at the moment.
    *
+   * The barcode field tag is denoted as 'b' and the username field tag is
+   * denoted as 'u'.
+   *
    * @param {string} barcodeOrUsername
    * @param {boolean}} isBarcode
    */
   const available = async (barcodeOrUsername, isBarcode = true) => {
-    const fieldTag = isBarcode ? "b" : "u";
+    const fieldTag = isBarcode
+      ? IlsClient.BARCODE_FIELD_TAG
+      : IlsClient.USERNAME_FIELD_TAG;
     // These two query parameters are required to make a valid GET request.
     const params = `?varFieldTag=${fieldTag}&varFieldContent=${barcodeOrUsername}`;
     let available = false;
@@ -152,21 +133,6 @@ const IlsClient = (args) => {
     return available;
   };
 
-  // To update the barcode
-  const updatePatron = (patron) => {
-    if (!patron.validForIls) {
-      throw new Error("IlsError");
-    }
-    let ilsPatron = formattedPatronData(patron);
-
-    // Call update url
-    // axios.post(`${createUrl}${patron.id}`);
-  };
-
-  const getPatronIdFromResponse = (response) => {
-    return response.id;
-  };
-
   /**
    * formatAddress(address, isWorkAddress)
    * Format a patron's address as ILS expects it.
@@ -195,107 +161,60 @@ const IlsClient = (args) => {
 
   // This needs to be updated
   const formattedPatronData = (patron) => {
-    let email;
-    let birthdate;
-    let workAddress;
-    if (patron.email) {
-      email = patron.email.gsub(/\s+/, "").toUpperCase;
-    }
-    if (patron.birthdate) {
-      // birthdate = patron.birthdate.strftime("%Y%m%d000000");
-      birthdate = patron.birthdate;
-    }
-
     // Addresses are now in a list.
-    let address = this.formatAddress(patron.address);
-    if (patron.worksInCity) {
-      workAddress = this.formatAddress(patron.workAddress);
-    }
+    let addresses = [];
+    let varFields = [];
 
-    let fullName = patron.name.toUpperCase();
-    if (!fullName.includes(",")) {
-      // Existing TODO: Replace this code with a call to a dedicated human name
-      // parsing library.
+    let address = formatAddress(patron.address);
+    addresses.push(address);
+    // if (patron.worksInCity) {
+    //   let workAddress = formatAddress(patron.workAddress);
+    //   addresses.push(workAddress);
+    // }
 
-      // Simplistically assume person's name has two segments: the first
-      // and last name, with no middle names or honorifics.
-      // (e.g. "Dorothy Vaughn" "Katherine Johnson" "Mary Jackson")
-      let [firstName, lastName] = fullName.split(" ", 2);
-      firstName = firstName.trim();
-      lastName = lastName.trim();
+    let usernameVarField = {
+      fieldTag: IlsClient.USERNAME_FIELD_TAG,
+      content: patron.username,
+    };
+    let ecommunicationsVarField = ecommunicationsPref(
+      patron.ecommunicationsPref
+    );
 
-      if (firstName !== "" || lastName !== "") {
-        fullName = `//${lastName}, //${firstName}`;
-      } else {
-        // Our assumption of at least two names was wrong, and we got
-        // something like "Dorothy" or "Katherine " or " Jackson".
-        // We'll take what we can get.
-        fullName = firstName || lastName;
-      }
-    }
+    varFields.push(usernameVarField);
+    // varFields.push(ecommunicationsVarField);
 
     let fields = {
-      name: fullName,
-      address: address,
-      username: patron.username,
+      names: [patron.name],
+      addresses: addresses,
       pin: patron.pin,
-      ptype: patron.ptype,
-      workAddress: workAddress,
-      ecommunications_pref: patron.ecommunicationsPref,
+      patronType: parseInt(patron.ptype, 10),
+      expirationDate: patron.expirationDate.toISOString().slice(0, 10),
+      varFields,
     };
 
     if (patron.barcode) {
-      fields["barcode"] = patron.barcode;
+      fields["barcodes"] = [patron.barcode];
     }
-    if (email) {
-      fields["email"] = email;
+    if (patron.email && patron.email.length) {
+      fields["emails"] = [patron.email];
     }
-    if (birthdate) {
-      fields["birthdate"] = birthdate;
+    if (patron.birthdate) {
+      fields["birthDate"] = patron.birthdate;
     }
 
     return fields;
   };
 
-  // Determine whether a patron should have a permanent card.
-  const longExpiration = (patron) => {
-    // False if a patron's existing work address isn't commercial
-    if (patron.workAddress && patron.workAddress.isResidential) {
-      return false;
-    }
+  // Opt-in/opt-out of marketing email
+  // Get true/false and need to convert it to 's' and '-'
+  // ('s' = subscribed; '-' = not subscribed)
+  const ecommunicationsPref = (ecommunicationsPrefValue) => {
+    let value = ecommunicationsPrefValue ? "s" : "-";
 
-    // False if patron provides a home address that is not residential
-    // False if patron does not have a recognized name
-    // False if patron policy is not the default (:simplye)
-    return (
-      patron.address.isResidential &&
-      patron.hasValidName &&
-      patron.policy.isDefault
-    );
-  };
-
-  const expirationAsField = (time) => {
-    // TODO convert date object
-    let expiration = time.strftime("%Y%m%d000000");
-    return this.customField(
-      IlsClient.EXPIRATION_FIELD_TAG,
-      expiration,
-      IlsClient.STRING_MARCTAG
-    );
-  };
-
-  const longExpirationAsField = (patron) => {
-    let timeNow = Date.now();
-    return this.expirationAsField(
-      `${timeNow}${parseInt(patron.policy.card_type["standard"], 10)}`
-    );
-  };
-
-  const shortExpirationAsField = (patron) => {
-    let timeNow = Date.now();
-    return this.expirationAsField(
-      `${timeNow}${parseInt(patron.policy.card_type["temporary"], 10)}`
-    );
+    return {
+      fieldTag: IlsClient.ECOMMUNICATIONS_PREF_FIELD_TAG,
+      content: value,
+    };
   };
 
   return {
@@ -326,20 +245,20 @@ IlsClient.PATRON_AGENCY_FIELD_TAG = "158";
 IlsClient.NOTICE_PREF_FIELD_TAG = "268";
 IlsClient.NOTE_FIELD_TAG = "x";
 // Standard and temporary expiration times
-IlsClient.STANDARD_EXPIRATION_TIME = "3"; // years
-IlsClient.TEMPORARY_EXPIRATION_TIME = "30"; // days
-IlsClient.WEB_APPLICANT_EXPIRATION_TIME = "90"; // days
+IlsClient.STANDARD_EXPIRATION_TIME = [3, 0, 0]; // [years, month, days]
+IlsClient.TEMPORARY_EXPIRATION_TIME = [0, 0, 30]; // [years, month, days]
+IlsClient.WEB_APPLICANT_EXPIRATION_TIME = [0, 0, 90]; // [years, month, days]
 // Ptypes for various library card offerings
-IlsClient.WEB_APPLICANT_PTYPE = "1";
-IlsClient.NO_PRINT_ADULT_METRO_PTYPE = "2";
-IlsClient.NO_PRINT_ADULT_NYS_PTYPE = "3";
-IlsClient.ADULT_METRO_PTYPE = "10";
-IlsClient.ADULT_NYS_PTYPE = "11";
-IlsClient.SENIOR_METRO_PTYPE = "20";
-IlsClient.SENIOR_NYS_PTYPE = "21";
-IlsClient.TEEN_METRO_PTYPE = "50";
-IlsClient.TEEN_NYS_PTYPE = "51";
-IlsClient.REJECTED_PTYPE = "101";
+IlsClient.WEB_APPLICANT_PTYPE = 1;
+IlsClient.NO_PRINT_ADULT_METRO_PTYPE = 2;
+IlsClient.NO_PRINT_ADULT_NYS_PTYPE = 3;
+IlsClient.ADULT_METRO_PTYPE = 10;
+IlsClient.ADULT_NYS_PTYPE = 11;
+IlsClient.SENIOR_METRO_PTYPE = 20;
+IlsClient.SENIOR_NYS_PTYPE = 21;
+IlsClient.TEEN_METRO_PTYPE = 50;
+IlsClient.TEEN_NYS_PTYPE = 51;
+IlsClient.REJECTED_PTYPE = 101;
 IlsClient.ILS_ERROR = "-1";
 IlsClient.PTYPE_TO_TEXT = {
   WEB_APPLICANT_PTYPE: "Web applicant (No Borrowing)",

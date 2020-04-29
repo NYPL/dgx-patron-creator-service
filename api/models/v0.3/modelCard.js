@@ -48,9 +48,10 @@ const CardValidator = () => {
     }
 
     if (Object.keys(card.errors).length === 0) {
-      return true;
+      card.setExpirationDate();
+      return { card, valid: true };
     } else {
-      return false;
+      return { card, valid: false };
     }
   };
 
@@ -145,12 +146,15 @@ class Card {
     this.isTemporary = false;
     this.errors = {};
 
+    this.ilsClient = args["ilsClient"];
+
     // Attributes set during processing
     this.barcode = undefined;
     this.ptype = undefined;
     this.patronId = undefined;
     this.hasValidName = undefined;
     this.hasValidUsername = undefined;
+    this.expirationDate = undefined;
     this.valid = false;
 
     this.nameValidationDisabled = true;
@@ -172,7 +176,7 @@ class Card {
       return false;
     }
     // The pin must be a 4 digit string.
-    if (!/\A\d{4}\z/.test(this.pin)) {
+    if (!/^\d{4}$/.test(this.pin)) {
       this.errors["pin"] = "pin must be 4 numbers";
       return false;
     }
@@ -183,16 +187,16 @@ class Card {
       }
     });
     // Nope, some attributes are empty and required by the specific policy.
-    if (Object.keys(this.errors).length === 0) {
+    if (Object.keys(this.errors).length !== 0) {
       return false;
     }
     // Now that all values have gone through a basic validation process,
     // do the more in-depth validation.
-    const isValid = cardValidator.validate(this);
-    if (isValid) {
+    const validated = cardValidator.validate(this);
+    if (validated.valid) {
       this.valid = true;
     }
-    return isValid;
+    return this.valid;
   }
 
   /**
@@ -239,9 +243,11 @@ class Card {
    * Verifies that the current username is valid against the
    * UsernameValidation API.
    */
-  checkUsernameAvailability() {
-    const { responses, validate } = UsernameValidationApi();
-    let validation = validate(this.username);
+  async checkUsernameAvailability() {
+    const { responses, validate } = UsernameValidationApi({
+      ilsClient: this.ilsClient,
+    });
+    let validation = await validate(this.username);
     return typeof validation === "object" && validation === responses.available;
   }
 
@@ -312,6 +318,40 @@ class Card {
     this.isTemporary = true;
   }
 
+  setExpirationDate() {
+    let now = new Date();
+    let policy = this.policy.policy;
+
+    let [policyYears, policyMonths, policyDays] = this.determinePermanentCard()
+      ? policy.cardType["standard"]
+      : policy.cardType["temporary"];
+
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const currentDay = now.getDate();
+    const expirationDate = new Date(
+      currentYear + policyYears,
+      currentMonth + policyMonths,
+      currentDay + policyDays
+    );
+
+    this.expirationDate = expirationDate;
+  }
+
+  determinePermanentCard() {
+    // False if a patron's existing work address isn't commercial
+    if (this.workAddress && this.workAddress.isResidential) {
+      return false;
+    }
+
+    // False if patron provides a home address that is not residential
+    // False if patron does not have a recognized name
+    // False if patron policy is not the default (:simplye)
+    return (
+      this.address.isResidential && this.hasValidName && this.policy.isDefault
+    );
+  }
+
   /**
    * cardDenied()
    * Returns true if the card's address is not in NY state. Returns false if
@@ -354,37 +394,14 @@ class Card {
       this.setBarcode();
     }
     this.setPtype();
+
     if (!this.validForIls()) {
       throw new Error("Some error with ILS");
     }
 
     // create the patron
-    const client = new IlsClient();
-    const response = client.createPatron(this);
-    return response === typeof IlsClient.IlsError ? false : response;
-  }
-
-  /**
-   * setPatronId(response)
-   * Sets the current card's patron ID to the ID sent from the ILs.
-   *
-   * @param {object} response
-   */
-  setPatronId(response) {
-    this.patronId = IlsClient.getPatronIdFromResponse(response);
-  }
-
-  /**
-   * setTemporaryBarcode()
-   * Updates the current card's barcode to temporary in the ILS.
-   */
-  setTemporaryBarcode() {
-    // Set patronId as temporary barcode removing the check digit wrapper.
-    this.barcode = this.patronId; // get from values [1, 7]
-
-    const client = IlsClient.new();
-    const response = client.updatePatron(this);
-    return response === typeof IlsClient.IlsError ? false : response;
+    const response = this.ilsClient.createPatron(this);
+    return response;
   }
 
   /**

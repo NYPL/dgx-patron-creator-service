@@ -13,6 +13,9 @@ const streamPublish = require("./../../helpers/streamPublish");
 const logger = require("../../helpers/Logger");
 const encode = require("../../helpers/encode");
 const customErrors = require("../../helpers/errors");
+const Address = require("../../models/v0.3/modelAddress");
+const { Card } = require("../../models/v0.3/modelCard");
+const Policy = require("../../models/v0.3/modelPolicy");
 
 const ROUTE_TAG = "CREATE_PATRON_0.3";
 let ilsClientKey;
@@ -189,11 +192,11 @@ async function callCreatePatron(req, res) {
   ilsClient = IlsClient({
     createUrl: process.env.ILS_CREATE_PATRON_URL,
     findUrl: process.env.ILS_FIND_VALUE_URL,
-    tokenUrl: process.env.ILS_CREATE_TOKEN_URL,
     ilsToken,
-    ilsTokenTimestamp,
-    ilsClientKey,
-    ilsClientPassword,
+    tokenUrl: process.env.ILS_CREATE_TOKEN_URL,
+    // ilsTokenTimestamp,
+    // ilsClientKey,
+    // ilsClientPassword,
   });
 
   // Instead of calling Card Creator API. Make the internal ILS calls here.
@@ -201,11 +204,11 @@ async function callCreatePatron(req, res) {
   /**
    * Validate username
    */
-  const { responses, validate } = UsernameValidationAPI({ ilsClient });
-  let validUsername = await validate(req.body.username);
-  console.log("validUsername", validUsername);
-  // TODO: remove this later.
-  renderResponse(req, res, 200, validUsername);
+  // const { responses, validate } = UsernameValidationAPI({ ilsClient });
+  // let validUsername = await validate(req.body.username);
+  // console.log("validUsername", validUsername);
+  // renderResponse(req, res, 200, validUsername);
+
   // A valid username can be available or unavailable.
   // if (validUsername === responses.available ||
   //   validUsername === responses.unavailable
@@ -215,7 +218,7 @@ async function callCreatePatron(req, res) {
   //   // the username is invalid.
   // }
   /**
-   * Validate address
+   * Validate address TODO
    */
   // const address = new Address(req.body.address);
   // let validAddress = address.validationResponse(isWorkAddress = false);
@@ -226,6 +229,50 @@ async function callCreatePatron(req, res) {
   // }
   // If validUsername && validAddress
   // use usernameModel and addressModel together to create the patron
+
+  // const policy = Policy({ policyType: "webApplicant" });
+  // const card = Card({
+  //   name: "name", // from req
+  //   address: address, // created above
+  //   username: username, // created above
+  //   pin: pin, // from req
+  //   email: email, // from req
+  //   birthdate: birthdate, // from req
+  //   workAddress: workAddress, // created above
+  //   ecommunicationsPref: ecommunicationsPref, // from req
+  //   policy: policy, //created above
+  // });
+
+  let address = new Address(req.body.address);
+  const policy = Policy({ policyType: "webApplicant" });
+  const card = new Card({
+    name: req.body.name, // from req
+    address: address, // created above
+    username: req.body.username, // created above
+    pin: req.body.pin, // from req
+    email: req.body.email, // from req
+    birthdate: req.body.birthdate, // from req
+    ecommunicationsPref: req.body.ecommunicationsPref, // from req
+    policy, //created above
+    ilsClient,
+  });
+
+  // TODO - validate address and username in the card but have flag from
+  // request stating if the address and username have already been validated
+  let valid = card.validate();
+  let actualResp;
+  if (valid) {
+    console.log("valid", valid);
+    let resp = await card.createIlsPatron();
+    actualResp = {
+      status: resp.status,
+      data: resp.data,
+    };
+  } else {
+    console.log("not valid", card.errors);
+  }
+
+  renderResponse(req, res, 200, actualResp);
 
   /**
    * Then create patron
@@ -242,7 +289,7 @@ async function callCreatePatron(req, res) {
  */
 function tryCatchAttemptCreatePatron(req, res) {
   try {
-    callCreatePatron(req, res, ilsToken);
+    callCreatePatron(req, res);
   } catch (err) {
     const errorResponseData = modelResponse.errorResponseData(
       collectErrorResponseData(
