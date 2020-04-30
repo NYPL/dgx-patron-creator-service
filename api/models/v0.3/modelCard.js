@@ -182,7 +182,7 @@ class Card {
     }
     // Depending on the policy, some fields are required.
     validateByPolicy.forEach((attr) => {
-      if (this.requiredByPolicy(attr) && this[attr] === "") {
+      if (this.requiredByPolicy(attr) && !this[attr]) {
         this.errors[attr] = `${attr} cannot be empty`;
       }
     });
@@ -376,9 +376,9 @@ class Card {
 
   /**
    * normalizedBirthdate(birthdate)
-   * Convert a MM/DD/YYYY formatted string to a Date object.
+   * Convert a MM/DD/YYYY date string to a Date object.
    */
-  normalizedBirthdate(birthdate = null) {
+  normalizedBirthdate(birthdate) {
     if (birthdate) {
       return new Date(birthdate);
     }
@@ -474,7 +474,10 @@ class Card {
       reason = "personal information";
     }
 
-    let expiration = this.policy.policy.cardType["temporary"];
+    // The expiration time is an array of [years, months, days]. We only
+    // need the 'days' index value for a temporary card and its message.
+    const expArray = this.policy.policy.cardType["temporary"];
+    const expiration = expArray[2];
     return `Your library card is temporary because your ${reason} could not be
         verified. Visit your local NYPL branch within ${expiration} days to
         upgrade to a standard card.`;

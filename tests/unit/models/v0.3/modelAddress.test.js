@@ -298,16 +298,6 @@ describe("Address", () => {
         expect(address.validatedVersion()).toEqual(undefined);
       });
 
-      it("should try to validate the address but it failed", () => {
-        const address = new Address({
-          line1: "some address",
-        });
-        // mock this function for now until it's implemented.
-        address.validationResponse = jest.fn().mockReturnValue(undefined);
-
-        let validatedVersion = address.validatedVersion();
-        expect(validatedVersion).toEqual(undefined);
-      });
       it("should try to validate the address and succeeded", () => {
         const address = new Address({
           line1: "some address",

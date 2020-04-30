@@ -182,7 +182,8 @@ class Address {
       return this;
     }
 
-    return this;
+    // The address is not valid so return undefined.
+    return;
   }
 }
 

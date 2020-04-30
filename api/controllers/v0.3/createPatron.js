@@ -230,19 +230,6 @@ async function callCreatePatron(req, res) {
   // If validUsername && validAddress
   // use usernameModel and addressModel together to create the patron
 
-  // const policy = Policy({ policyType: "webApplicant" });
-  // const card = Card({
-  //   name: "name", // from req
-  //   address: address, // created above
-  //   username: username, // created above
-  //   pin: pin, // from req
-  //   email: email, // from req
-  //   birthdate: birthdate, // from req
-  //   workAddress: workAddress, // created above
-  //   ecommunicationsPref: ecommunicationsPref, // from req
-  //   policy: policy, //created above
-  // });
-
   let address = new Address(req.body.address);
   const policy = Policy({ policyType: "webApplicant" });
   const card = new Card({
@@ -260,24 +247,21 @@ async function callCreatePatron(req, res) {
   // TODO - validate address and username in the card but have flag from
   // request stating if the address and username have already been validated
   let valid = card.validate();
-  let actualResp;
+  let response = {};
   if (valid) {
-    console.log("valid", valid);
     let resp = await card.createIlsPatron();
-    actualResp = {
+    // resp.data.link has the ID of the newly created patron in the form of:
+    // "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{patron-id}"
+    response = {
       status: resp.status,
       data: resp.data,
     };
   } else {
     console.log("not valid", card.errors);
+    response = card.errors;
   }
 
-  renderResponse(req, res, 200, actualResp);
-
-  /**
-   * Then create patron
-   */
-  // ilsClient.createPatron()...
+  renderResponse(req, res, 200, response);
 }
 
 /**

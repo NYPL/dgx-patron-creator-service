@@ -22,13 +22,22 @@ const IlsClient = (args) => {
   // const HttpError = () => IlsError();
   // const ConnectionTimeoutError = () => HttpError();
 
+  /**
+   * createPatron(patron)
+   * First checks if the patron has met all the requirements before calling the
+   * ILS API. If the patron is valid, format the data as the ILS expects it.
+   * Returns the response from the ILS or an error.
+   * Note: the newly created patron's id is in the response object in
+   *  `response.data.link`.
+   *
+   * @param {Card object} patron
+   */
   const createPatron = async (patron) => {
     if (!patron.validForIls) {
       throw new Error("IlsError");
     }
-    let ilsPatron = formattedPatronData(patron);
+    let ilsPatron = formatPatronData(patron);
 
-    console.log("ilsPatron", ilsPatron);
     return await axios
       .post(createUrl, ilsPatron, {
         headers: {
@@ -37,21 +46,14 @@ const IlsClient = (args) => {
         },
       })
       .then((axiosResponse) => {
+        // Example correct response:
+        // {
+        //   status: 200,
+        //   data: {
+        //     link: "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{patron-id}"
+        //   }
+        // }
         return axiosResponse;
-        // const modeledResponse = modelResponse.patronCreator(
-        //   axiosResponse.data,
-        //   axiosResponse.status,
-        //   req.body
-        // ); // eslint-disable-line max-len
-        // modelStreamPatron
-        //   .transformPatronRequest(req.body, modeledResponse)
-        //   .then((streamPatronData) => {
-        //     streamPatron(req, res, streamPatronData, modeledResponse);
-        //   })
-        //   .catch(() => {
-        //     // eslint-disable-next-line max-len
-        //     renderResponse(req, res, 201, modeledResponse); // respond with 201 even if streaming fails
-        //   });
       })
       .catch((axiosError) => {
         return axiosError;
@@ -159,18 +161,33 @@ const IlsClient = (args) => {
     return { lines, type };
   };
 
-  // This needs to be updated
-  const formattedPatronData = (patron) => {
-    // Addresses are now in a list.
+  /**
+   * formatedPatronData(patron)
+   * Format all the data into an object that the ILS understands.
+   * Example of an ILS-ready object:
+   * {
+   *   names: [ 'Edwin Guzman' ],
+   *   addresses: [ { lines: ['476 5th Ave', 'New York, NY 10018'], type: 'a' } ],
+   *   pin: '1234',
+   *   patronType: 1,
+   *   expirationDate: '2020-07-29',
+   *   varFields: [ { fieldTag: 'u', content: 'mikeolson' } ],
+   *   birthDate: '1988-01-01'
+   * }
+   *
+   * @param {Card object} patron
+   */
+  const formatPatronData = (patron) => {
+    // Addresses should be in a list.
     let addresses = [];
     let varFields = [];
 
     let address = formatAddress(patron.address);
     addresses.push(address);
-    // if (patron.worksInCity) {
-    //   let workAddress = formatAddress(patron.workAddress);
-    //   addresses.push(workAddress);
-    // }
+    if (patron.worksInCity()) {
+      let workAddress = formatAddress(patron.workAddress, true);
+      addresses.push(workAddress);
+    }
 
     let usernameVarField = {
       fieldTag: IlsClient.USERNAME_FIELD_TAG,
@@ -181,13 +198,14 @@ const IlsClient = (args) => {
     );
 
     varFields.push(usernameVarField);
+    // TODO: Figure out with ILS team how to send this field.
     // varFields.push(ecommunicationsVarField);
 
     let fields = {
       names: [patron.name],
       addresses: addresses,
       pin: patron.pin,
-      patronType: parseInt(patron.ptype, 10),
+      patronType: patron.ptype,
       expirationDate: patron.expirationDate.toISOString().slice(0, 10),
       varFields,
     };
@@ -199,17 +217,24 @@ const IlsClient = (args) => {
       fields["emails"] = [patron.email];
     }
     if (patron.birthdate) {
-      fields["birthDate"] = patron.birthdate;
+      fields["birthDate"] = patron.birthdate.toISOString().slice(0, 10);
     }
 
     return fields;
   };
 
-  // Opt-in/opt-out of marketing email
-  // Get true/false and need to convert it to 's' and '-'
-  // ('s' = subscribed; '-' = not subscribed)
+  /**
+   * ecommunicationsPref(ecommunicationsPrefValue)
+   * Opt-in/opt-out of marketing email. The request value is a boolean which
+   * must be converted to a string. The values are 's' for subscribed and
+   * '-' for not subscribed.
+   *
+   * @param {string} ecommunicationsPrefValue
+   */
   const ecommunicationsPref = (ecommunicationsPrefValue) => {
-    let value = ecommunicationsPrefValue ? "s" : "-";
+    let value = ecommunicationsPrefValue
+      ? IlsClient.SUBSCRIBED_ECOMMUNICATIONS_PREF
+      : IlsClient.NOT_SUBSCRIBED_ECOMMUNICATIONS_PREF;
 
     return {
       fieldTag: IlsClient.ECOMMUNICATIONS_PREF_FIELD_TAG,
@@ -220,6 +245,10 @@ const IlsClient = (args) => {
   return {
     createPatron,
     available,
+    // For testing,
+    ecommunicationsPref,
+    formatPatronData,
+    formatAddress,
   };
 };
 
@@ -279,7 +308,8 @@ IlsClient.DEFAULT_PATRON_AGENCY = "202";
 IlsClient.DEFAULT_NOTICE_PREF = "z";
 IlsClient.DEFAULT_NOTE = `Patron's work/school address is ADDRESS2[ph].
                     Out-of-state home address is ADDRESS1[pa].`;
-IlsClient.DEFAULT_ECOMMUNICATIONS_PREF = "s";
+IlsClient.SUBSCRIBED_ECOMMUNICATIONS_PREF = "s";
+IlsClient.NOT_SUBSCRIBED_ECOMMUNICATIONS_PREF = "-";
 IlsClient.WEB_APPLICANT_AGENCY = "198";
 IlsClient.WEB_APPLICANT_NYS_AGENCY = "199";
 // Error codes
