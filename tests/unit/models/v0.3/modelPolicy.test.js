@@ -1,6 +1,6 @@
-import Policy from '../../../../api/models/v0.3/modelPolicy';
-import Card from '../../../../api/models/v0.3/modelCard';
-import Address from '../../../../api/models/v0.3/modelAddress';
+const Policy = require('../../../../api/models/v0.3/modelPolicy');
+const { Card } = require('../../../../api/models/v0.3/modelCard');
+const Address = require('../../../../api/models/v0.3/modelAddress');
 
 describe('Policy', () => {
   it('should return the two valid types', () => {
@@ -31,14 +31,14 @@ describe('Policy', () => {
       // returns the full policy in `.policy`
       expect(policy.policy).toEqual(policy.ilsPolicy.simplye);
 
-      // Values found in IlsHelper:
+      // Values found in IlsClient:
       expect(policy.policyField('agency')).toEqual('202');
       expect(Object.keys(policy.policyField('ptype'))).toEqual([
         'metro',
         'default',
       ]);
-      // The type is for 3 years
-      expect(policy.policyField('cardType').standard).toEqual('3');
+      // The type is for 3 years in an array of [years, months, days]
+      expect(policy.policyField('cardType').standard).toEqual([3, 0, 0]);
       expect(policy.policyField('requiredFields')).toEqual([
         'email',
         'barcode',
@@ -98,11 +98,11 @@ describe('Policy', () => {
 
       let ptype = policy.determinePtype(metroCard);
       expect(ptype).toEqual(metroPtype);
-      expect(ptype).toEqual('2');
+      expect(ptype).toEqual(2);
 
       ptype = policy.determinePtype(metroCard2);
       expect(ptype).toEqual(metroPtype);
-      expect(ptype).toEqual('2');
+      expect(ptype).toEqual(2);
     });
 
     it('returns the ptype for patrons in the state', () => {
@@ -125,7 +125,7 @@ describe('Policy', () => {
 
       const ptype = policy.determinePtype(stateCard);
       expect(ptype).toEqual(nysPtype);
-      expect(ptype).toEqual('3');
+      expect(ptype).toEqual(3);
     });
 
     it("doesn't update the agency for non-web applicants", () => {
@@ -149,11 +149,11 @@ describe('Policy', () => {
       // returns the full policy in `.policy`
       expect(policy.policy).toEqual(policy.ilsPolicy.webApplicant);
 
-      // Values found in IlsHelper:
+      // Values found in IlsClient:
       expect(policy.policyField('agency')).toEqual('198');
       expect(Object.keys(policy.policyField('ptype'))).toEqual(['default']);
-      // The card type is for 90 days.
-      expect(policy.policyField('cardType').standard).toEqual('90');
+      // The card type is for 90 days in an array of [years, months, days]
+      expect(policy.policyField('cardType').standard).toEqual([0, 0, 90]);
       expect(policy.policyField('requiredFields')).toEqual(['birthdate']);
       expect(policy.policyField('serviceArea')).toEqual(undefined);
       expect(policy.policyField('minimumAge')).toEqual(13);
@@ -195,8 +195,8 @@ describe('Policy', () => {
       expect(ptypeNoPatron).toEqual(webPtypeID);
 
       // The ptype value is '1':
-      expect(ptype).toEqual('1');
-      expect(ptypeNoPatron).toEqual('1');
+      expect(ptype).toEqual(1);
+      expect(ptypeNoPatron).toEqual(1);
     });
 
     it('updates the agency for web applicants', () => {

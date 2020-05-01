@@ -1,4 +1,4 @@
-import ProblemDetail from '../../../../api/models/v0.3/problemDetail';
+const ProblemDetail = require('../../../../api/models/v0.3/problemDetail');
 
 describe('ProblemDetail', () => {
   const PROBLEM_DETAIL_URI = 'http://librarysimplified.org/terms/problem/';

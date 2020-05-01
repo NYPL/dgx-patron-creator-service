@@ -1,15 +1,14 @@
 /* eslint-disable */
-import AddressValidationApi from "../../controllers/v0.3/AddressValidationAPI";
-import UsernameValidationApi from "../../controllers/v0.3/UsernameValidationAPI";
-import NameValidationApi from "../../controllers/v0.3/NameValidationAPI";
+const AddressValidationApi = require("../../controllers/v0.3/AddressValidationAPI");
+const UsernameValidationApi = require("../../controllers/v0.3/UsernameValidationAPI");
+const NameValidationApi = require("../../controllers/v0.3/NameValidationAPI");
 
 /**
  * A validator class to verify a card's address and birthdate. Doesn't
  * directly talk to an API so it's placed in this same file as a simple class.
  */
-export const CardValidator = () => {
-  const UNVALIDATED_ADDRESS_ERROR = `Address has not been validated.
-    Validate address at /validate/address.`;
+const CardValidator = () => {
+  const UNVALIDATED_ADDRESS_ERROR = "Address has not been validated.";
 
   /**
    * validate(card)
@@ -23,9 +22,8 @@ export const CardValidator = () => {
       // There is a work address so the home address needs to be present,
       // confirmed, and normalized, but it doesn't need to meet the usual
       // home address policy requirements.
-      card.address = card.address.normalizedVersion();
-      if (!card.address) {
-        card.errors["address"] = [UNVALIDATED_ADDRESS_ERROR];
+      if (!card.address || !card.address.hasBeenValidated) {
+        card.errors["address"] = UNVALIDATED_ADDRESS_ERROR;
       }
 
       // The work address needs to be valid for a card.
@@ -50,9 +48,10 @@ export const CardValidator = () => {
     }
 
     if (Object.keys(card.errors).length === 0) {
-      return true;
+      card.setExpirationDate();
+      return { card, valid: true };
     } else {
-      return false;
+      return { card, valid: false };
     }
   };
 
@@ -147,12 +146,15 @@ class Card {
     this.isTemporary = false;
     this.errors = {};
 
+    this.ilsClient = args["ilsClient"];
+
     // Attributes set during processing
     this.barcode = undefined;
     this.ptype = undefined;
     this.patronId = undefined;
     this.hasValidName = undefined;
     this.hasValidUsername = undefined;
+    this.expirationDate = undefined;
     this.valid = false;
 
     this.nameValidationDisabled = true;
@@ -174,28 +176,28 @@ class Card {
       return false;
     }
     // The pin must be a 4 digit string.
-    if (!/\A\d{4}\z/.test(this.pin)) {
+    if (!/^\d{4}$/.test(this.pin)) {
       this.errors["pin"] = "pin must be 4 numbers";
       return false;
     }
     const validateByPolicy = ["email", "birthdate"];
     // Depending on the policy, some fields are required.
     validateByPolicy.forEach((attr) => {
-      if (this.requiredByPolicy(attr) && this[attr] === "") {
+      if (this.requiredByPolicy(attr) && !this[attr]) {
         this.errors[attr] = `${attr} cannot be empty`;
       }
     });
     // Nope, some attributes are empty and required by the specific policy.
-    if (Object.keys(this.errors).length === 0) {
+    if (Object.keys(this.errors).length !== 0) {
       return false;
     }
     // Now that all values have gone through a basic validation process,
     // do the more in-depth validation.
-    const isValid = cardValidator.validate(this);
-    if (isValid) {
+    const validated = cardValidator.validate(this);
+    if (validated.valid) {
       this.valid = true;
     }
-    return isValid;
+    return this.valid;
   }
 
   /**
@@ -246,9 +248,11 @@ class Card {
    * Verifies that the current username is valid against the
    * UsernameValidation API.
    */
-  checkUsernameAvailability() {
-    const { responses, validate } = UsernameValidationApi();
-    let validation = validate(this.username);
+  async checkUsernameAvailability() {
+    const { responses, validate } = UsernameValidationApi({
+      ilsClient: this.ilsClient,
+    });
+    let validation = await validate(this.username);
     return typeof validation === "object" && validation === responses.available;
   }
 
@@ -319,6 +323,40 @@ class Card {
     this.isTemporary = true;
   }
 
+  setExpirationDate() {
+    let now = new Date();
+    let policy = this.policy.policy;
+
+    let [policyYears, policyMonths, policyDays] = this.determinePermanentCard()
+      ? policy.cardType["standard"]
+      : policy.cardType["temporary"];
+
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const currentDay = now.getDate();
+    const expirationDate = new Date(
+      currentYear + policyYears,
+      currentMonth + policyMonths,
+      currentDay + policyDays
+    );
+
+    this.expirationDate = expirationDate;
+  }
+
+  determinePermanentCard() {
+    // False if a patron's existing work address isn't commercial
+    if (this.workAddress && this.workAddress.isResidential) {
+      return false;
+    }
+
+    // False if patron provides a home address that is not residential
+    // False if patron does not have a recognized name
+    // False if patron policy is not the default (:simplye)
+    return (
+      this.address.isResidential && this.hasValidName && this.policy.isDefault
+    );
+  }
+
   /**
    * cardDenied()
    * Returns true if the card's address is not in NY state. Returns false if
@@ -342,9 +380,9 @@ class Card {
 
   /**
    * normalizedBirthdate(birthdate)
-   * Convert a MM/DD/YYYY formatted string to a Date object.
+   * Convert a MM/DD/YYYY date string to a Date object.
    */
-  normalizedBirthdate(birthdate = null) {
+  normalizedBirthdate(birthdate) {
     if (birthdate) {
       return new Date(birthdate);
     }
@@ -360,37 +398,14 @@ class Card {
       this.setBarcode();
     }
     this.setPtype();
+
     if (!this.validForIls()) {
       throw new Error("Some error with ILS");
     }
 
     // create the patron
-    const client = new IlsHelper();
-    const response = client.createPatron(this);
-    return response === typeof IlsHelper.IlsError ? false : response;
-  }
-
-  /**
-   * setPatronId(response)
-   * Sets the current card's patron ID to the ID sent from the ILs.
-   *
-   * @param {object} response
-   */
-  setPatronId(response) {
-    this.patronId = IlsHelper.getPatronIdFromResponse(response);
-  }
-
-  /**
-   * setTemporaryBarcode()
-   * Updates the current card's barcode to temporary in the ILS.
-   */
-  setTemporaryBarcode() {
-    // Set patronId as temporary barcode removing the check digit wrapper.
-    this.barcode = this.patronId; // get from values [1, 7]
-
-    const client = IlsHelper.new();
-    const response = client.updatePatron(this);
-    return response === typeof IlsHelper.IlsError ? false : response;
+    const response = this.ilsClient.createPatron(this);
+    return response;
   }
 
   /**
@@ -463,7 +478,10 @@ class Card {
       reason = "personal information";
     }
 
-    let expiration = this.policy.policy.cardType["temporary"];
+    // The expiration time is an array of [years, months, days]. We only
+    // need the 'days' index value for a temporary card and its message.
+    const expArray = this.policy.policy.cardType["temporary"];
+    const expiration = expArray[2];
     return `Your library card is temporary because your ${reason} could not be
         verified. Visit your local NYPL branch within ${expiration} days to
         upgrade to a standard card.`;
@@ -491,4 +509,7 @@ Card.RESPONSES = {
   },
 };
 
-export default Card;
+module.exports = {
+  CardValidator,
+  Card,
+};

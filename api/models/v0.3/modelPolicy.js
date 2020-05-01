@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import IlsHelper from '../../controllers/v0.3/ILSHelper';
+const IlsClient = require('../../controllers/v0.3/IlsClient');
 
 /**
  * Creates a policy object to find out what type of card is allowed for a
@@ -21,20 +21,20 @@ const Policy = (args) => {
   const ALLOWED_CITIES = lowerCase(['New York', 'New York City', 'NYC']);
   const ilsPolicy = {
     simplye: {
-      agency: IlsHelper.DEFAULT_PATRON_AGENCY,
+      agency: IlsClient.DEFAULT_PATRON_AGENCY,
       ptype: {
         metro: {
-          id: IlsHelper.NO_PRINT_ADULT_METRO_PTYPE,
-          desc: IlsHelper.PTYPE_TO_TEXT.NO_PRINT_ADULT_METRO_PTYPE,
+          id: IlsClient.NO_PRINT_ADULT_METRO_PTYPE,
+          desc: IlsClient.PTYPE_TO_TEXT.NO_PRINT_ADULT_METRO_PTYPE,
         },
         default: {
-          id: IlsHelper.NO_PRINT_ADULT_NYS_PTYPE,
-          desc: IlsHelper.PTYPE_TO_TEXT.NO_PRINT_ADULT_NYS_PTYPE,
+          id: IlsClient.NO_PRINT_ADULT_NYS_PTYPE,
+          desc: IlsClient.PTYPE_TO_TEXT.NO_PRINT_ADULT_NYS_PTYPE,
         },
       },
       cardType: {
-        standard: IlsHelper.STANDARD_EXPIRATION_TIME,
-        temporary: IlsHelper.TEMPORARY_EXPIRATION_TIME,
+        standard: IlsClient.STANDARD_EXPIRATION_TIME,
+        temporary: IlsClient.TEMPORARY_EXPIRATION_TIME,
       },
       requiredFields: ['email', 'barcode'],
       serviceArea: {
@@ -44,16 +44,16 @@ const Policy = (args) => {
       },
     },
     webApplicant: {
-      agency: IlsHelper.WEB_APPLICANT_AGENCY,
+      agency: IlsClient.WEB_APPLICANT_AGENCY,
       ptype: {
         default: {
-          id: IlsHelper.WEB_APPLICANT_PTYPE,
-          desc: IlsHelper.PTYPE_TO_TEXT.WEB_APPLICANT_PTYPE,
+          id: IlsClient.WEB_APPLICANT_PTYPE,
+          desc: IlsClient.PTYPE_TO_TEXT.WEB_APPLICANT_PTYPE,
         },
       },
       cardType: {
-        standard: IlsHelper.WEB_APPLICANT_EXPIRATION_TIME,
-        temporary: IlsHelper.WEB_APPLICANT_EXPIRATION_TIME,
+        standard: IlsClient.WEB_APPLICANT_EXPIRATION_TIME,
+        temporary: IlsClient.WEB_APPLICANT_EXPIRATION_TIME,
       },
       requiredFields: ['birthdate'],
       minimumAge: 13,
@@ -119,12 +119,12 @@ const Policy = (args) => {
         && patronParams.patronAgency
         && parseInt(patronParams.patronAgency, 10) === 199
       ) {
-        policy.agency = IlsHelper.WEB_APPLICANT_NYS_AGENCY;
+        policy.agency = IlsClient.WEB_APPLICANT_NYS_AGENCY;
       } else {
-        policy.agency = IlsHelper.WEB_APPLICANT_AGENCY;
+        policy.agency = IlsClient.WEB_APPLICANT_AGENCY;
       }
     } else {
-      policy.agency = IlsHelper.DEFAULT_PATRON_AGENCY;
+      policy.agency = IlsClient.DEFAULT_PATRON_AGENCY;
     }
 
     return policy.agency;
@@ -166,4 +166,4 @@ const Policy = (args) => {
   };
 };
 
-export default Policy;
+module.exports = Policy;

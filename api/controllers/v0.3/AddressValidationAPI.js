@@ -27,4 +27,4 @@ AddressValidationApi.ALTERNATE_ADDRESSES_TYPE = 'alternate-addresses';
 AddressValidationApi.UNRECOGNIZED_ADDRESS_TYPE = 'unrecognized-address';
 AddressValidationApi.VALID_ADDRESS_TYPE = 'valid-address';
 
-export default AddressValidationApi;
+module.exports = AddressValidationApi;

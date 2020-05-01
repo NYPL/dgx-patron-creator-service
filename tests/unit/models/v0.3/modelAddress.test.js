@@ -1,6 +1,6 @@
 /* eslint-disable */
-import Address from "../../../../api/models/v0.3/modelAddress";
-import Policy from "../../../../api/models/v0.3/modelPolicy";
+const Address = require("../../../../api/models/v0.3/modelAddress");
+const Policy = require("../../../../api/models/v0.3/modelPolicy");
 
 const emptyAddress = {
   line1: "",
@@ -10,8 +10,6 @@ const emptyAddress = {
   state: "",
   zip: "",
   isResidential: null,
-  errors: {},
-  hasBeenValidated: false,
 };
 
 describe("Address", () => {
@@ -39,26 +37,6 @@ describe("Address", () => {
       });
     });
 
-    it("returns a valid address if the parameter was passed", () => {
-      const isValid = true;
-      let address = new Address({
-        line1: "476th 5th Ave",
-        city: "New York City",
-      });
-
-      expect(address.isValid).toEqual(false);
-
-      address = new Address(
-        {
-          line1: "476th 5th Ave",
-          city: "New York City",
-        },
-        isValid
-      );
-
-      expect(address.isValid).toEqual(true);
-    });
-
     it("returns an error if the two address lines are too long", () => {
       const address = new Address({
         line1:
@@ -68,7 +46,7 @@ describe("Address", () => {
         state: "New York",
       });
       expect(address.validate()).toEqual(false);
-      expect(address.address.errors).toEqual({
+      expect(address.errors).toEqual({
         line1: "Address lines must be less than 100 characters combined",
       });
     });
@@ -316,42 +294,24 @@ describe("Address", () => {
         const address = new Address({
           line1: "not valid address",
         });
-        address.isValid = false;
+        address.validationResponse = jest.fn().mockReturnValue(undefined);
         expect(address.validatedVersion()).toEqual(undefined);
       });
 
-      it("should try to validate the address but it failed", () => {
-        const address = new Address({
-          line1: "some address",
-        });
-        // mock this function for now until it's implemented.
-        address.validationResponse = jest.fn().mockReturnValue(undefined);
-
-        let validatedVersion = address.validatedVersion();
-        expect(validatedVersion).toEqual(undefined);
-      });
       it("should try to validate the address and succeeded", () => {
         const address = new Address({
           line1: "some address",
         });
-        address.validate();
 
-        expect(address.address.hasBeenValidated).toEqual(false);
+        expect(address.hasBeenValidated).toEqual(false);
+
+        // Mock for now
+        address.hasBeenValidated = true;
+        address.validationResponse = jest.fn().mockReturnValue(address);
 
         let validatedVersion = address.validatedVersion();
-        expect(validatedVersion.address.hasBeenValidated).toEqual(true);
+        expect(validatedVersion.hasBeenValidated).toEqual(true);
         expect(validatedVersion).toEqual(address);
-      });
-    });
-
-    // TODO: This needs more when the AddressValidationsAPI is done.
-    describe("normalizedVersion", () => {
-      it("should return the current address if it already has been validated", () => {
-        // mock that the address is valid and has been validated.
-        const address = new Address({
-          hasBeenValidated: true,
-        });
-        expect(address.normalizedVersion()).toEqual(address);
       });
     });
   });

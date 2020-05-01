@@ -15,4 +15,4 @@ const NameValidationApi = () => {
 NameValidationApi.VALID_NAME_TYPE = 'valid-name';
 NameValidationApi.UNRECOGNIZED_NAME_TYPE = 'unrecognized-name';
 
-export default NameValidationApi;
+module.exports = NameValidationApi;

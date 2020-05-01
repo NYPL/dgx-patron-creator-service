@@ -35,7 +35,7 @@ class Barcode {
   // returns next available barcode record
   nextavailable(tries = 10) {
     // make ils connection helper
-    const client = new IlsHelper();
+    const client = new IlsClient();
     let barcodeFound = false;
     let barcode;
 
@@ -62,4 +62,4 @@ class Barcode {
 
 Barcode.LOW_BARCODE_ALERT_COUNTS = [1, 5, 10, 25, 50, 100, 250, 500];
 
-export default Barcode;
+module.exports = Barcode;

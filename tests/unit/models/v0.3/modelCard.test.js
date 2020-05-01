@@ -1,8 +1,12 @@
-import Card, { CardValidator } from '../../../../api/models/v0.3/modelCard';
-import Policy from '../../../../api/models/v0.3/modelPolicy';
-import Address from '../../../../api/models/v0.3/modelAddress';
-import NameValidationAPI from '../../../../api/controllers/v0.3/NameValidationAPI';
-import UsernameValidationAPI from '../../../../api/controllers/v0.3/UsernameValidationAPI';
+const {
+  Card,
+  CardValidator,
+} = require('../../../../api/models/v0.3/modelCard');
+
+const Policy = require('../../../../api/models/v0.3/modelPolicy');
+const Address = require('../../../../api/models/v0.3/modelAddress');
+const NameValidationAPI = require('../../../../api/controllers/v0.3/NameValidationAPI');
+const UsernameValidationAPI = require('../../../../api/controllers/v0.3/UsernameValidationAPI');
 
 jest.mock('../../../../api/controllers/v0.3/NameValidationAPI');
 jest.mock('../../../../api/controllers/v0.3/UsernameValidationAPI');
@@ -12,6 +16,8 @@ const basicCard = {
   address: new Address({ line1: '476th 5th Ave.', city: 'New York' }),
   username: 'username',
   pin: '1234',
+  // required for web applicants
+  birthdate: '01/01/1988',
 };
 
 describe('CardValidator', () => {
@@ -21,7 +27,6 @@ describe('CardValidator', () => {
     it("returns no errors if the policy doesn't require it", () => {
       const card = new Card({
         ...basicCard,
-        birthdate: '01/01/1988',
         policy: Policy(),
       });
 
@@ -33,7 +38,6 @@ describe('CardValidator', () => {
     it('returns no errors if the policy requires it but the birthdate is valid', () => {
       const card = new Card({
         ...basicCard,
-        birthdate: '01/01/1988',
         policy: Policy({ policyType: 'webApplicant' }),
       });
 
@@ -149,27 +153,27 @@ describe('Card', () => {
   describe('checkUsernameAvailability', () => {
     const card = new Card(basicCard);
 
-    it('fails because the username is not valid', () => {
+    it('fails because the username is not valid', async () => {
       // Mocking that the ILS request returned false and username is invalid.
       UsernameValidationAPI.mockImplementation(() => ({
         validate: () => ({ type: 'invalid-username' }),
         responses: {},
       }));
 
-      expect(card.checkUsernameAvailability()).toEqual(false);
+      expect(await card.checkUsernameAvailability()).toEqual(false);
     });
 
-    it('fails because the username is unavailable', () => {
+    it('fails because the username is unavailable', async () => {
       // Mocking that the ILS request returned false and username is unavailable.
       UsernameValidationAPI.mockImplementation(() => ({
         validate: () => ({ type: 'unavailable-username' }),
         responses: {},
       }));
 
-      expect(card.checkUsernameAvailability()).toEqual(false);
+      expect(await card.checkUsernameAvailability()).toEqual(false);
     });
 
-    it('passes because the name is valid', () => {
+    it('passes because the name is valid', async () => {
       const available = {
         type: 'available-username',
         card_type: 'standard',
@@ -181,7 +185,7 @@ describe('Card', () => {
         responses: { available },
       }));
 
-      expect(card.checkUsernameAvailability()).toEqual(true);
+      expect(await card.checkUsernameAvailability()).toEqual(true);
     });
   });
 
@@ -402,19 +406,40 @@ describe('Card', () => {
   describe('validForIls', () => {
     it('should return false if the card is not valid', () => {
       const card = new Card(basicCard);
+
+      // Defaults since the card wasn't validated.
+      expect(card.valid).toEqual(false);
+      expect(card.ptype).toEqual(undefined);
       expect(card.validForIls()).toEqual(false);
     });
     it('should return false if the card is valid but there is no ptype', () => {
-      const card = new Card(basicCard);
-      // mocking this for now
+      const card = new Card({
+        ...basicCard,
+        policy: Policy({ policyType: 'webApplicant' }),
+      });
+
+      // This sets the `valid` flag to true but a ptype wasn't set.
       card.validate();
+      expect(card.valid).toEqual(true);
+      expect(card.ptype).toEqual(undefined);
       expect(card.validForIls()).toEqual(false);
     });
     it('should return true if the card is valid and there is a ptype', () => {
-      const card = new Card(basicCard);
-      // mocking this for now
-      card.ptype = '2';
-      card.valid = true;
+      // Let's create basic inputs.
+      const card = new Card({
+        ...basicCard,
+        policy: Policy({ policyType: 'webApplicant' }),
+      });
+
+      // Let's try to validate the inputs.
+      card.validate();
+      // When creating a patron in the ILS, the ptype is set before checking
+      // if the card is valid for the ILS. Calling it here directly.
+      card.setPtype();
+
+      // Since it's a 'webApplicant', the pytpe is 2
+      expect(card.valid).toEqual(true);
+      expect(card.ptype).toEqual(1);
       expect(card.validForIls()).toEqual(true);
     });
   });
@@ -443,8 +468,8 @@ describe('Card', () => {
       cardNotNY.setPtype();
       cardNY.setPtype();
       // web applicants ptype is '1'
-      expect(cardNotNY.ptype).toEqual('1');
-      expect(cardNY.ptype).toEqual('1');
+      expect(cardNotNY.ptype).toEqual(1);
+      expect(cardNY.ptype).toEqual(1);
     });
 
     it('sets the ptype for patrons who live or work in NYC', () => {
@@ -463,9 +488,9 @@ describe('Card', () => {
 
       // patrons in the metro area are ptype of '2'
       cardInNYC.setPtype();
-      expect(cardInNYC.ptype).toEqual('2');
+      expect(cardInNYC.ptype).toEqual(2);
       cardWorksInNYC.setPtype();
-      expect(cardWorksInNYC.ptype).toEqual('2');
+      expect(cardWorksInNYC.ptype).toEqual(2);
     });
 
     it('sets the ptype for patrons who live in NY state but not NYC', () => {
@@ -477,7 +502,7 @@ describe('Card', () => {
 
       // patrons in the NY state area are ptype of '3'
       cardNYState.setPtype();
-      expect(cardNYState.ptype).toEqual('3');
+      expect(cardNYState.ptype).toEqual(3);
     });
   });
 
@@ -559,8 +584,6 @@ describe('Card', () => {
 
   // TODO when Ils API is implemented.
   describe('createIlsPatron', () => {});
-  describe('setPatronId', () => {});
-  describe('setTemporaryBarcode', () => {});
 
   describe('checkCardTypePolicy', () => {
     const simplyePolicy = Policy();

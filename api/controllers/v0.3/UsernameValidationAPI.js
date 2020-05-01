@@ -1,10 +1,10 @@
 /* eslint-disable */
-import IlsHelper from "./ILSHelper";
 
 /**
  * A class that validates usernames against the ILS.
  */
-const UsernameValidationAPI = () => {
+const UsernameValidationAPI = (args) => {
+  const ilsClient = args["ilsClient"];
   // class IntegrationError < StandardError; end
   const USERNAME_PATTERN = /^[a-zA-Z0-9]{5,25}$/;
   const AVAILABLE_USERNAME_TYPE = "available-username";
@@ -39,11 +39,12 @@ const UsernameValidationAPI = () => {
    *
    * @param {string} username
    */
-  const validate = (username) => {
+  const validate = async (username) => {
     if (!username || !USERNAME_PATTERN.test(username)) {
       return RESPONSES["invalid"];
     } else {
-      const type = usernameAvailable(username) ? "available" : "unavailable";
+      const available = await usernameAvailable(username);
+      const type = available ? "available" : "unavailable";
       return RESPONSES[type];
     }
   };
@@ -54,14 +55,18 @@ const UsernameValidationAPI = () => {
    *
    * @param {string} username
    */
-  const usernameAvailable = (username) => {
-    const client = new IlsHelper();
+  const usernameAvailable = async (username) => {
     let available = false;
 
+    if (!ilsClient) {
+      return false;
+      // Throw an error.
+    }
+
     try {
-      available = client.available(username);
+      available = await ilsClient.available(username);
     } catch (e) {
-      // IlsHelper::ConnectionTimeoutError
+      // console.log("usernameAvailable catch", e);
       throw new Error("IntegrationError()");
     }
     return available;
@@ -75,4 +80,4 @@ const UsernameValidationAPI = () => {
   };
 };
 
-export default UsernameValidationAPI;
+module.exports = UsernameValidationAPI;
