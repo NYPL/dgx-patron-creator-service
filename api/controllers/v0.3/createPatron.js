@@ -219,7 +219,7 @@ async function callCreatePatron(req, res) {
   //     ) // eslint-disable-line comma-dangle
   //   );
   // }
-  // renderResponse(req, res, usernameResponse.status, usernameResponse);
+  // renderResponse(req, res, usernameResponse.status || 200, usernameResponse);
 
   // A valid username can be available or unavailable.
   // if (validUsername === responses.available ||
@@ -260,8 +260,11 @@ async function callCreatePatron(req, res) {
   // request stating if the address and username have already been validated
   let response = {};
   let validCard;
+  let errors;
   try {
-    validCard = await card.validate();
+    const cardValidation = await card.validate();
+    validCard = cardValidation.valid;
+    errors = cardValidation.errors;
   } catch (error) {
     response = modelResponse.errorResponseData(
       collectErrorResponseData(error.status, "", error.message, "", "") // eslint-disable-line comma-dangle
@@ -269,15 +272,25 @@ async function callCreatePatron(req, res) {
   }
 
   if (validCard) {
-    let resp = await card.createIlsPatron();
-    // resp.data.link has the ID of the newly created patron in the form of:
-    // "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{patron-id}"
-    response = {
-      status: resp.status,
-      data: resp.data,
-    };
+    try {
+      const resp = await card.createIlsPatron();
+      // resp.data.link has the ID of the newly created patron in the form of:
+      // "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{patron-id}"
+      response = {
+        status: resp.status,
+        data: resp.data,
+      };
+    } catch (error) {
+      response = modelResponse.errorResponseData(
+        collectErrorResponseData(error.status, "", error.message, "", "") // eslint-disable-line comma-dangle
+      );
+    }
+  } else {
+    response = modelResponse.errorResponseData(
+      collectErrorResponseData(400, "", errors, "", "") // eslint-disable-line comma-dangle
+    );
   }
-  // TODO: if there are minor errrors, return it
+  // TODO: if there are minor errors, return it
   // } else {
   //   console.log("not valid", card.errors);
   //   response = card.errors;

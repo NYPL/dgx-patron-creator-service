@@ -64,13 +64,8 @@ const UsernameValidationAPI = (args) => {
       throw new NoILSClient("ILS Client not set in Username Validation API.");
     }
 
-    try {
-      available = await ilsClient.available(username);
-    } catch (e) {
-      throw new ILSIntegrationError(
-        "The ILS could not be requested when validating the username."
-      );
-    }
+    available = await ilsClient.available(username);
+
     return available;
   };
 

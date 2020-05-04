@@ -197,12 +197,17 @@ describe('Card', () => {
 
   describe('checkUsernameAvailability', () => {
     const card = new Card(basicCard);
+    const available = {
+      type: 'available-username',
+      card_type: 'standard',
+      message: 'This username is available',
+    };
 
     it('returns an invalid username response', async () => {
       // Mocking that the ILS request returned false and username is invalid.
       UsernameValidationAPI.mockImplementation(() => ({
         validate: () => ({ type: 'invalid-username' }),
-        responses: {},
+        responses: { available },
       }));
 
       expect(await card.checkUsernameAvailability()).toEqual(false);
@@ -212,18 +217,13 @@ describe('Card', () => {
       // Mocking that the ILS request returned false and username is unavailable.
       UsernameValidationAPI.mockImplementation(() => ({
         validate: () => ({ type: 'unavailable-username' }),
-        responses: {},
+        responses: { available },
       }));
 
       expect(await card.checkUsernameAvailability()).toEqual(false);
     });
 
     it('returns a valid username response', async () => {
-      const available = {
-        type: 'available-username',
-        card_type: 'standard',
-        message: 'This username is available',
-      };
       // Mocking that the ILS request returned true and username is available.
       UsernameValidationAPI.mockImplementation(() => ({
         validate: () => available,

@@ -34,7 +34,10 @@ const CardValidator = () => {
     }
 
     // Will throw an error if the username is not valid.
-    await card.checkValidUsername();
+    const validUsername = await card.checkValidUsername();
+    if (!validUsername) {
+      card.errors["username"] = ["Username is not available or valid"];
+    }
 
     if (card.email && !/\A[^@]+@[^@]+\z/.test(card.email)) {
       card.errors["email"] = ["Email address must be valid"];
@@ -174,12 +177,14 @@ class Card {
     const validateByPolicy = ["email", "birthdate"];
     // These four values are necessary
     if (!this.name || !this.address || !this.username || !this.pin) {
-      return false;
+      this.errors["required"] =
+        "'name', 'address', 'username', and 'pin' are all required.";
+      return { valid: false, errors: this.errors };
     }
     // The pin must be a 4 digit string.
     if (!/^\d{4}$/.test(this.pin)) {
       this.errors["pin"] = "pin must be 4 numbers";
-      return false;
+      return { valid: false, errors: this.errors };
     }
     // Depending on the policy, some fields are required.
     validateByPolicy.forEach((attr) => {
@@ -189,7 +194,7 @@ class Card {
     });
     // Nope, some attributes are empty and required by the specific policy.
     if (Object.keys(this.errors).length !== 0) {
-      return false;
+      return { valid: false, errors: this.errors };
     }
     // Now that all values have gone through a basic validation process,
     // do the more in-depth validation.
@@ -197,7 +202,7 @@ class Card {
     if (validated.valid) {
       this.valid = true;
     }
-    return this.valid;
+    return { valid: this.valid, errors: this.errors };
   }
 
   /**
@@ -251,7 +256,11 @@ class Card {
       ilsClient: this.ilsClient,
     });
     let validation = await validate(this.username);
-    return typeof validation === "object" && validation === responses.available;
+
+    return (
+      typeof validation === "object" &&
+      validation.type === responses.available.type
+    );
   }
 
   /**
@@ -392,7 +401,7 @@ class Card {
    * createIlsPatron()
    * If the current card is valid, then create it against the ILS API.
    */
-  createIlsPatron() {
+  async createIlsPatron() {
     if (this.policy.isRequiredField(this.barcode)) {
       this.setBarcode();
     }
@@ -403,7 +412,8 @@ class Card {
     }
 
     // create the patron
-    const response = this.ilsClient.createPatron(this);
+    const response = await this.ilsClient.createPatron(this);
+
     return response;
   }
 

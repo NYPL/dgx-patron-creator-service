@@ -27,7 +27,7 @@ class InvalidRequest extends Error {
 }
 
 class NoILSClient extends Error {
-  constructor(message, status) {
+  constructor(message) {
     super();
     this.name = "NoILSClient";
     this.message = message;
@@ -36,7 +36,7 @@ class NoILSClient extends Error {
 }
 
 class ILSIntegrationError extends Error {
-  constructor(message, status) {
+  constructor(message) {
     super();
     this.name = "ILSIntegrationError";
     this.message = message;

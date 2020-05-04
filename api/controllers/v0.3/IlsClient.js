@@ -1,5 +1,6 @@
 /* eslint-disable */
 const axios = require("axios");
+const { ILSIntegrationError } = require("../../helpers/errors");
 
 /**
  * Helper class to setup API calls to the ILS.
@@ -13,14 +14,6 @@ const IlsClient = (args) => {
   // const ilsClientKey = args["ilsClientKey"] || "";
   // const ilsClientPassword = args["ilsClientPassword"] || "";
   // const ilsTokenTimestamp = args["ilsTokenTimestamps"] || "";
-
-  // TODO: Implement the error classes and codes
-  // const StandardError = (err = "Standard error") => { throw new Error(err) };
-  // const IlsError = () => StandardError("ILS Error");
-  // const NotFoundError = () => IlsError();
-  // const MultipleMatchesError = () => IlsError();
-  // const HttpError = () => IlsError();
-  // const ConnectionTimeoutError = () => HttpError();
 
   /**
    * createPatron(patron)
@@ -55,17 +48,27 @@ const IlsClient = (args) => {
         // }
         return axiosResponse;
       })
-      .catch((axiosError) => {
-        return axiosError;
+      .catch((error) => {
+        const response = error.response;
+
+        if (!(response.status >= 500)) {
+          return response;
+        } else {
+          throw new ILSIntegrationError(
+            "The ILS could not be requested when attempting to create a patron."
+          );
+        }
       });
   };
 
   /**
    * available(barcodeOrUsername, isBarcode)
    * For the /find endpoint in the ILS, a 200 response means that the username
-   * was found and is therefore not available. A 404 response means that the
-   * username was not found and is therefore available. Unfortunately, those
-   * are the responses from the ILS at the moment.
+   * or barcode was found and is therefore not available. A 404 response means
+   * that the username or barcode was not found and is therefore available.
+   * A 409 response means that the ILS found a duplicate and so the username
+   * or barcode is unavailable. These are the responses from the ILS at
+   * the moment.
    *
    * The barcode field tag is denoted as 'b' and the username field tag is
    * denoted as 'u'.
@@ -77,6 +80,7 @@ const IlsClient = (args) => {
     const fieldTag = isBarcode
       ? IlsClient.BARCODE_FIELD_TAG
       : IlsClient.USERNAME_FIELD_TAG;
+    const fieldType = isBarcode ? "barcode" : "username";
     // These two query parameters are required to make a valid GET request.
     const params = `?varFieldTag=${fieldTag}&varFieldContent=${barcodeOrUsername}`;
     let available = false;
@@ -91,10 +95,11 @@ const IlsClient = (args) => {
       .then((response) => {
         const status = response.status;
         const data = response.data;
+        // Example data:
         // {
-        //   "id": 5346889,
+        //   "id": 12345789,
         //   "expirationDate": "2029-10-21",
-        //   "birthDate": "1988-01-19",
+        //   "birthDate": "1988-01-01",
         //   "patronType": 10,
         //   "patronCodes": {
         //     "pcode1": "s",
@@ -106,7 +111,7 @@ const IlsClient = (args) => {
         //   "message": {
         //     "code": "-",
         //     "accountMessages": [
-        //       "edwin.gzmn@gmail.com"
+        //       "email@gmail.com"
         //     ]
         //   },
         //   "blockInfo": {
@@ -114,14 +119,12 @@ const IlsClient = (args) => {
         //   },
         //   "moneyOwed": 2.5
         // }
-
         if (status === 200 && data.id) {
           available = false;
         }
       })
       .catch((error) => {
         const response = error.response;
-
         // The ILS returns a 404 with the record not found...
         // so it's available!
         if (
@@ -129,6 +132,19 @@ const IlsClient = (args) => {
           response.data.name === "Record not found"
         ) {
           available = true;
+        } else if (
+          // But if it returns 409, then a duplicate entry was found
+          // and the field is not available.
+          response.status == 409 &&
+          response.data.name === "Internal server error" &&
+          response.data.description ===
+            "Duplicate patrons found for the specified varFieldTag[b]."
+        ) {
+          available = false;
+        } else if (response.status >= 500) {
+          throw new ILSIntegrationError(
+            `The ILS could not be requested when validating the ${fieldType}.`
+          );
         }
       });
 

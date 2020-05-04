@@ -4,6 +4,7 @@ const Address = require("../../../../api/models/v0.3/modelAddress");
 const Policy = require("../../../../api/models/v0.3/modelPolicy");
 const { Card } = require("../../../../api/models/v0.3/modelCard");
 const axios = require("axios");
+const { ILSIntegrationError } = require("../../../../api/helpers/errors");
 
 jest.mock("axios");
 
@@ -101,6 +102,19 @@ describe("IlsClient", () => {
         },
       },
     };
+    const mockedErrorResponseDup = {
+      response: {
+        status: 409,
+        data: {
+          name: "Internal server error",
+        },
+      },
+    };
+    const mockedILSIntegrationError = {
+      response: {
+        status: 500,
+      },
+    };
 
     describe("barcode", () => {
       const barcode = "12341234123412";
@@ -127,6 +141,22 @@ describe("IlsClient", () => {
         });
       });
 
+      it("checks for barcode availability and gets a server error and duplicate, so it is not available", async () => {
+        axios.get.mockImplementationOnce(() =>
+          Promise.resolve(mockedErrorResponseDup)
+        );
+
+        const available = await ilsClient.available(barcode, isBarcode);
+
+        expect(available).toEqual(false);
+        expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${ilsToken}`,
+          },
+        });
+      });
+
       it("checks for barcode availability and doesn't find an existing patron, so it is available", async () => {
         // Mocking that the call to the ILS was not successful and it returned
         // an error. This means that a patron was not found and so the
@@ -138,6 +168,31 @@ describe("IlsClient", () => {
         const available = await ilsClient.available(barcode, isBarcode);
 
         expect(available).toEqual(true);
+        expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${ilsToken}`,
+          },
+        });
+      });
+
+      it("throws an error if the ILS cannot be called", async () => {
+        // Mocking that the call to the ILS did not go through and we received
+        // a 500 error. Return a 502 error.
+        axios.get.mockImplementationOnce(() =>
+          Promise.reject(mockedILSIntegrationError)
+        );
+
+        // Getting a 404 from the ILS is okay since it tells us that the
+        // request was valid but nothing was returned. But, if the ILS returns
+        // anything about 500, then throw an error and therefore the
+        // different testing syntax.
+        await expect(ilsClient.available(barcode, isBarcode)).rejects.toEqual(
+          new ILSIntegrationError(
+            "The ILS could not be requested when validating the barcode."
+          )
+        );
+
         expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
           headers: {
             "Content-Type": "application/json",
@@ -171,6 +226,23 @@ describe("IlsClient", () => {
           },
         });
       });
+
+      it("checks for username availability and gets a server error and duplicate, so it is not available", async () => {
+        axios.get.mockImplementationOnce(() =>
+          Promise.resolve(mockedErrorResponseDup)
+        );
+
+        const available = await ilsClient.available(username, isBarcode);
+
+        expect(available).toEqual(false);
+        expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${ilsToken}`,
+          },
+        });
+      });
+
       it("checks for username availability and doesn't find an existing patron, so it is available", async () => {
         // Mocking that the call to the ILS was not successful and it returned
         // an error. This means that a patron was not found and so the
@@ -182,6 +254,31 @@ describe("IlsClient", () => {
         const available = await ilsClient.available(username, isBarcode);
 
         expect(available).toEqual(true);
+        expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${ilsToken}`,
+          },
+        });
+      });
+
+      it("throws an error if the ILS cannot be called", async () => {
+        // Mocking that the call to the ILS did not go through and we received
+        // a 500 error. Return a 502 error.
+        axios.get.mockImplementationOnce(() =>
+          Promise.reject(mockedILSIntegrationError)
+        );
+
+        // Getting a 404 from the ILS is okay since it tells us that the
+        // request was valid but nothing was returned. But, if the ILS returns
+        // anything about 500, then throw an error and therefore the
+        // different testing syntax.
+        await expect(ilsClient.available(username, isBarcode)).rejects.toEqual(
+          new ILSIntegrationError(
+            "The ILS could not be requested when validating the username."
+          )
+        );
+
         expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
           headers: {
             "Content-Type": "application/json",
@@ -265,8 +362,20 @@ describe("IlsClient", () => {
     };
     const mockedErrorResponse = {
       response: {
-        httpStatus: 400,
-        name: "some error",
+        status: 404,
+        data: {
+          name: "Record not found",
+        },
+      },
+    };
+    const mockedFailedPatron = {
+      response: {
+        status: 404,
+      },
+    };
+    const mockedILSIntegrationError = {
+      response: {
+        status: 500,
       },
     };
     const address = new Address({
@@ -305,11 +414,11 @@ describe("IlsClient", () => {
 
       // Now mock the POST request to the ILS.
       axios.post.mockImplementationOnce(() =>
-        Promise.reject(mockedErrorResponse)
+        Promise.reject(mockedFailedPatron)
       );
 
       const patron = await ilsClient.createPatron(card);
-      expect(patron).toEqual(mockedErrorResponse);
+      expect(patron).toEqual(mockedFailedPatron.response);
       expect(axios.post).toHaveBeenCalledWith(
         createUrl,
         {
@@ -365,6 +474,18 @@ describe("IlsClient", () => {
             Authorization: `Bearer ${ilsToken}`,
           },
         }
+      );
+    });
+
+    it("fails attemping to call the ILS", async () => {
+      axios.post.mockImplementationOnce(() =>
+        Promise.reject(mockedILSIntegrationError)
+      );
+
+      await expect(ilsClient.createPatron(card)).rejects.toEqual(
+        new ILSIntegrationError(
+          "The ILS could not be requested when attempting to create a patron."
+        )
       );
     });
   });
