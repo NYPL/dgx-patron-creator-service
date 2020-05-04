@@ -209,13 +209,28 @@ describe("IlsClient", () => {
       birthdate: "01/01/1988",
       address,
       policy,
+      ilsClient: IlsClient({}),
     });
-    // Make sure we have a validated card.
-    card.validate();
-    // Mock that the ptype was added to the card.
-    card.setPtype();
 
-    it("returns an ILS-ready patron object", () => {
+    it("returns an ILS-ready patron object", async () => {
+      // We want to mock that we called the ILS and it did not find a
+      // username, so it is valid and the card is valid.
+      const mockedErrorResponse = {
+        response: {
+          status: 404,
+          data: {
+            name: "Record not found",
+          },
+        },
+      };
+      axios.get.mockImplementationOnce(() =>
+        Promise.reject(mockedErrorResponse)
+      );
+
+      // Make sure we have a validated card.
+      await card.validate();
+      // Mock that the ptype was added to the card.
+      card.setPtype();
       const formatted = ilsClient.formatPatronData(card);
 
       expect(formatted.names).toEqual(["First Last"]);
@@ -268,8 +283,8 @@ describe("IlsClient", () => {
       birthdate: "01/01/1988",
       address,
       policy,
+      ilsClient: IlsClient({}),
     });
-    card.validate();
     // Mock that the ptype was added to the card.
     card.setPtype();
 
@@ -281,6 +296,14 @@ describe("IlsClient", () => {
     const expirationDate = new Date(currentYear, currentMonth, currentDay + 90);
 
     it("fails to create a patron", async () => {
+      // We want to mock that we called the ILS and it did not find a
+      // username, so it is valid and the card is valid.
+      axios.get.mockImplementationOnce(() =>
+        Promise.reject(mockedErrorResponse)
+      );
+      await card.validate();
+
+      // Now mock the POST request to the ILS.
       axios.post.mockImplementationOnce(() =>
         Promise.reject(mockedErrorResponse)
       );

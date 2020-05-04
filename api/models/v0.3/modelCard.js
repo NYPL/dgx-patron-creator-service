@@ -17,7 +17,7 @@ const CardValidator = () => {
    *
    * @param {Card object} card
    */
-  const validate = (card) => {
+  const validate = async (card) => {
     if (card.workAddress) {
       // There is a work address so the home address needs to be present,
       // confirmed, and normalized, but it doesn't need to meet the usual
@@ -33,11 +33,8 @@ const CardValidator = () => {
       card = validateAddress(card, "address");
     }
 
-    if (!card.checkValidUsername()) {
-      card.errors["username"] = [
-        `Username has not been validated. Validate username at /validate/username.`,
-      ];
-    }
+    // Will throw an error if the username is not valid.
+    await card.checkValidUsername();
 
     if (card.email && !/\A[^@]+@[^@]+\z/.test(card.email)) {
       card.errors["email"] = ["Email address must be valid"];
@@ -169,7 +166,11 @@ class Card {
    * passes the needed requirements, and once those pass, then validates the
    * card's address and username against the ILS.
    */
-  validate() {
+  async validate() {
+    // if (!this.ilsClient) {
+    //   throw error
+    // }
+
     const validateByPolicy = ["email", "birthdate"];
     // These four values are necessary
     if (!this.name || !this.address || !this.username || !this.pin) {
@@ -192,7 +193,7 @@ class Card {
     }
     // Now that all values have gone through a basic validation process,
     // do the more in-depth validation.
-    const validated = cardValidator.validate(this);
+    const validated = await cardValidator.validate(this);
     if (validated.valid) {
       this.valid = true;
     }
@@ -202,7 +203,8 @@ class Card {
   /**
    * checkValidName()
    * If the current name has been validated or not, return that value.
-   * Otherwise, check the name validity.
+   * Otherwise, check the name validity. This works as an internal cache so it
+   * won't call the Name Validatoin API if it already received a value.
    */
   checkValidName() {
     this.hasValidName =
@@ -228,13 +230,14 @@ class Card {
   /**
    * checkValidUsername()
    * If the current usernamename has been validated or not, return that value.
-   * Otherwise, check the username availability.
+   * Otherwise, check the username availability. This works as an internal
+   * cache so it won't call the ILS API if it already received a value.
    */
-  checkValidUsername() {
+  async checkValidUsername() {
     this.hasValidUsername =
       this.hasValidUsername !== undefined
         ? this.hasValidUsername
-        : this.checkUsernameAvailability();
+        : await this.checkUsernameAvailability();
     return this.hasValidUsername;
   }
 
@@ -322,7 +325,7 @@ class Card {
     let now = new Date();
     let policy = this.policy.policy;
 
-    let [policyYears, policyMonths, policyDays] = this.determinePermanentCard()
+    let policyDays = this.determinePermanentCard()
       ? policy.cardType["standard"]
       : policy.cardType["temporary"];
 
@@ -330,8 +333,8 @@ class Card {
     const currentMonth = now.getMonth();
     const currentDay = now.getDate();
     const expirationDate = new Date(
-      currentYear + policyYears,
-      currentMonth + policyMonths,
+      currentYear,
+      currentMonth,
       currentDay + policyDays
     );
 
@@ -474,10 +477,8 @@ class Card {
       reason = "personal information";
     }
 
-    // The expiration time is an array of [years, months, days]. We only
-    // need the 'days' index value for a temporary card and its message.
-    const expArray = this.policy.policy.cardType["temporary"];
-    const expiration = expArray[2];
+    // Expiration in days.
+    const expiration = this.policy.policy.cardType["temporary"];
     return `Your library card is temporary because your ${reason} could not be
         verified. Visit your local NYPL branch within ${expiration} days to
         upgrade to a standard card.`;

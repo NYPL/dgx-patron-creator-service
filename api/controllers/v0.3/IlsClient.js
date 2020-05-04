@@ -274,9 +274,9 @@ IlsClient.PATRON_AGENCY_FIELD_TAG = "158";
 IlsClient.NOTICE_PREF_FIELD_TAG = "268";
 IlsClient.NOTE_FIELD_TAG = "x";
 // Standard and temporary expiration times
-IlsClient.STANDARD_EXPIRATION_TIME = [3, 0, 0]; // [years, month, days]
-IlsClient.TEMPORARY_EXPIRATION_TIME = [0, 0, 30]; // [years, month, days]
-IlsClient.WEB_APPLICANT_EXPIRATION_TIME = [0, 0, 90]; // [years, month, days]
+IlsClient.STANDARD_EXPIRATION_TIME = 1095; // days
+IlsClient.TEMPORARY_EXPIRATION_TIME = 30; // days
+IlsClient.WEB_APPLICANT_EXPIRATION_TIME = 90; // days
 // Ptypes for various library card offerings
 IlsClient.WEB_APPLICANT_PTYPE = 1;
 IlsClient.NO_PRINT_ADULT_METRO_PTYPE = 2;

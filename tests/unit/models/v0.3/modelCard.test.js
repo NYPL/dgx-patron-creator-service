@@ -7,9 +7,15 @@ const Policy = require('../../../../api/models/v0.3/modelPolicy');
 const Address = require('../../../../api/models/v0.3/modelAddress');
 const NameValidationAPI = require('../../../../api/controllers/v0.3/NameValidationAPI');
 const UsernameValidationAPI = require('../../../../api/controllers/v0.3/UsernameValidationAPI');
+const IlsClient = require('../../../../api/controllers/v0.3/IlsClient');
+const {
+  NoILSClient,
+  ILSIntegrationError,
+} = require('../../../../api/helpers/errors');
 
 jest.mock('../../../../api/controllers/v0.3/NameValidationAPI');
 jest.mock('../../../../api/controllers/v0.3/UsernameValidationAPI');
+jest.mock('../../../../api/controllers/v0.3/IlsClient');
 
 const basicCard = {
   name: 'First Last',
@@ -70,6 +76,7 @@ describe('Card', () => {
     // Clear all instances and calls to constructor and all methods:
     NameValidationAPI.mockClear();
     UsernameValidationAPI.mockClear();
+    IlsClient.mockClear();
   });
 
   describe('Init', () => {
@@ -130,30 +137,68 @@ describe('Card', () => {
   });
 
   describe('checkValidUsername', () => {
-    it('should return whatever value is already set', () => {
-      const card = new Card(basicCard);
+    const card = new Card(basicCard);
+
+    it('should return whatever value is already set', async () => {
       expect(card.hasValidUsername).toEqual(undefined);
       // mock that it has a valid name
       card.hasValidUsername = true;
-      expect(card.checkValidUsername()).toEqual(true);
+      expect(await card.checkValidUsername()).toEqual(true);
       // mock that it has an invalid name
       card.hasValidUsername = false;
-      expect(card.checkValidUsername()).toEqual(false);
+      expect(await card.checkValidUsername()).toEqual(false);
     });
-    it('should check for username availability', () => {
-      const card = new Card(basicCard);
-      // Mock until UsernameValidationAPI is implemented.
+    it('should check for username availability', async () => {
       card.checkUsernameAvailability = jest.fn().mockReturnValue(true);
+      card.hasValidUsername = undefined;
+      expect(await card.checkValidUsername()).toEqual(true);
+    });
 
-      expect(card.checkValidName()).toEqual(true);
+    it('throws an error if no ilsClient was passed to the Card object, which calls the Username Validation API', async () => {
+      // The current Card object doesn't have an IlsClient. We are mocking
+      // the `checkUsernameAvailability` and throwing an error from there.
+      const noIlsClient = new NoILSClient(
+        'ILS Client not set in Username Validation API.',
+      );
+      // This is just to mock the class.
+      UsernameValidationAPI.mockImplementation(() => ({
+        validate: () => {},
+        responses: {},
+      }));
+      card.checkUsernameAvailability = jest.fn().mockRejectedValue(noIlsClient);
+
+      // Mock that it hasn't been validated yet.
+      card.hasValidUsername = undefined;
+
+      await expect(card.checkValidUsername()).rejects.toEqual(noIlsClient);
+    });
+
+    it('throws an error if the ILS could not be reached', async () => {
+      const iLSIntegrationError = new ILSIntegrationError(
+        'The ILS could not be requested when validating the username.',
+      );
+      // This is just to mock the class.
+      UsernameValidationAPI.mockImplementation(() => ({
+        validate: () => {},
+        responses: {},
+      }));
+      card.checkUsernameAvailability = jest
+        .fn()
+        .mockRejectedValue(iLSIntegrationError);
+
+      // Mock that it hasn't been validated yet.
+      card.hasValidUsername = undefined;
+
+      await expect(card.checkValidUsername()).rejects.toEqual(
+        iLSIntegrationError,
+      );
     });
   });
 
-  // TODO: update when UsernameValidationAPI is complete
   describe('checkUsernameAvailability', () => {
     const card = new Card(basicCard);
 
-    it('fails because the username is not valid', async () => {
+    it('returns an invalid username response', async () => {
       // Mocking that the ILS request returned false and username is invalid.
       UsernameValidationAPI.mockImplementation(() => ({
         validate: () => ({ type: 'invalid-username' }),
@@ -163,7 +208,7 @@ describe('Card', () => {
       expect(await card.checkUsernameAvailability()).toEqual(false);
     });
 
-    it('fails because the username is unavailable', async () => {
+    it('returns an unavailable username response', async () => {
       // Mocking that the ILS request returned false and username is unavailable.
       UsernameValidationAPI.mockImplementation(() => ({
         validate: () => ({ type: 'unavailable-username' }),
@@ -173,7 +218,7 @@ describe('Card', () => {
       expect(await card.checkUsernameAvailability()).toEqual(false);
     });
 
-    it('passes because the name is valid', async () => {
+    it('returns a valid username response', async () => {
       const available = {
         type: 'available-username',
         card_type: 'standard',
@@ -186,6 +231,40 @@ describe('Card', () => {
       }));
 
       expect(await card.checkUsernameAvailability()).toEqual(true);
+    });
+
+    it('throws an error if no ilsClient was passed to the Card object, which calls the Username Validation API', async () => {
+      // The current Card object doesn't have an IlsClient. We are mocking here
+      // that the `validate` function, which calls the ILS, throws an error.
+      const noIlsClient = new NoILSClient(
+        'ILS Client not set in Username Validation API.',
+      );
+      UsernameValidationAPI.mockImplementation(() => ({
+        validate: () => {
+          throw noIlsClient;
+        },
+        responses: {},
+      }));
+
+      await expect(card.checkUsernameAvailability()).rejects.toEqual(
+        noIlsClient,
+      );
+    });
+
+    it('throws an error if the ILS could not be reached', async () => {
+      const iLSIntegrationError = new ILSIntegrationError(
+        'The ILS could not be requested when validating the username.',
+      );
+      UsernameValidationAPI.mockImplementation(() => ({
+        validate: () => {
+          throw iLSIntegrationError;
+        },
+        responses: {},
+      }));
+
+      await expect(card.checkUsernameAvailability()).rejects.toEqual(
+        iLSIntegrationError,
+      );
     });
   });
 
@@ -412,27 +491,33 @@ describe('Card', () => {
       expect(card.ptype).toEqual(undefined);
       expect(card.validForIls()).toEqual(false);
     });
-    it('should return false if the card is valid but there is no ptype', () => {
+    it('should return false if the card is valid but there is no ptype', async () => {
       const card = new Card({
         ...basicCard,
         policy: Policy({ policyType: 'webApplicant' }),
       });
 
+      // Mock a call to the ILS.
+      card.checkUsernameAvailability = jest.fn().mockReturnValue(true);
+
       // This sets the `valid` flag to true but a ptype wasn't set.
-      card.validate();
+      await card.validate();
+
       expect(card.valid).toEqual(true);
       expect(card.ptype).toEqual(undefined);
       expect(card.validForIls()).toEqual(false);
     });
-    it('should return true if the card is valid and there is a ptype', () => {
+    it('should return true if the card is valid and there is a ptype', async () => {
       // Let's create basic inputs.
       const card = new Card({
         ...basicCard,
         policy: Policy({ policyType: 'webApplicant' }),
       });
 
+      // Mock a call to the ILS.
+      card.checkUsernameAvailability = jest.fn().mockReturnValue(true);
       // Let's try to validate the inputs.
-      card.validate();
+      await card.validate();
       // When creating a patron in the ILS, the ptype is set before checking
       // if the card is valid for the ILS. Calling it here directly.
       card.setPtype();

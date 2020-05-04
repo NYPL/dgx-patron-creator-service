@@ -1,5 +1,5 @@
 /* eslint-disable */
-const modelResponse = require("../../models/v0.2/modelResponse");
+const modelResponse = require("../../models/v0.3/modelResponse");
 const UsernameValidationAPI = require("./UsernameValidationAPI");
 const axios = require("axios");
 const isEmpty = require("underscore").isEmpty;
@@ -117,7 +117,7 @@ function collectErrorResponseData(status, type, message, title, debugMessage) {
     type: type || "",
     message: message || "",
     title: title || "",
-    debug_message: debugMessage || "",
+    debugMessage: debugMessage || "",
   };
 }
 
@@ -204,10 +204,22 @@ async function callCreatePatron(req, res) {
   /**
    * Validate username
    */
-  // const { responses, validate } = UsernameValidationAPI({ ilsClient });
-  // let validUsername = await validate(req.body.username);
-  // console.log("validUsername", validUsername);
-  // renderResponse(req, res, 200, validUsername);
+  // const { validate } = UsernameValidationAPI({ ilsClient });
+  // let usernameResponse;
+  // try {
+  //   usernameResponse = await validate(req.body.username);
+  // } catch (error) {
+  //   usernameResponse = modelResponse.errorResponseData(
+  //     collectErrorResponseData(
+  //       error.status,
+  //       "",
+  //       error.message,
+  //       "",
+  //       ""
+  //     ) // eslint-disable-line comma-dangle
+  //   );
+  // }
+  // renderResponse(req, res, usernameResponse.status, usernameResponse);
 
   // A valid username can be available or unavailable.
   // if (validUsername === responses.available ||
@@ -246,9 +258,17 @@ async function callCreatePatron(req, res) {
 
   // TODO - validate address and username in the card but have flag from
   // request stating if the address and username have already been validated
-  let valid = card.validate();
   let response = {};
-  if (valid) {
+  let validCard;
+  try {
+    validCard = await card.validate();
+  } catch (error) {
+    response = modelResponse.errorResponseData(
+      collectErrorResponseData(error.status, "", error.message, "", "") // eslint-disable-line comma-dangle
+    );
+  }
+
+  if (validCard) {
     let resp = await card.createIlsPatron();
     // resp.data.link has the ID of the newly created patron in the form of:
     // "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{patron-id}"
@@ -256,12 +276,14 @@ async function callCreatePatron(req, res) {
       status: resp.status,
       data: resp.data,
     };
-  } else {
-    console.log("not valid", card.errors);
-    response = card.errors;
   }
+  // TODO: if there are minor errrors, return it
+  // } else {
+  //   console.log("not valid", card.errors);
+  //   response = card.errors;
+  // }
 
-  renderResponse(req, res, 200, response);
+  renderResponse(req, res, response.status, response);
 }
 
 /**
@@ -310,7 +332,7 @@ function createPatron(req, res) {
       .json(
         modelResponse.errorResponseData(
           collectErrorResponseData(
-            null,
+            errorStatusCode,
             "invalid-request",
             validationError.message,
             null,

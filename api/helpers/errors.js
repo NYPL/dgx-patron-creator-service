@@ -1,9 +1,11 @@
+/* eslint-disable */
+
 // Thrown when parameter(s) are missing/invalid
 // See https://httpstatuses.com/422
 class InvalidEnvironmentConfiguration extends Error {
   constructor(message) {
     super();
-    this.name = 'InvalidEnvironmentConfiguration';
+    this.name = "InvalidEnvironmentConfiguration";
     this.message = message;
   }
 }
@@ -11,7 +13,7 @@ class InvalidEnvironmentConfiguration extends Error {
 class UnableToCreatePatronWithAxios extends Error {
   constructor(message) {
     super();
-    this.name = 'UnableToCreatePatronWithAxios';
+    this.name = "UnableToCreatePatronWithAxios";
     this.message = message;
   }
 }
@@ -19,9 +21,33 @@ class UnableToCreatePatronWithAxios extends Error {
 class InvalidRequest extends Error {
   constructor(message) {
     super();
-    this.name = 'InvalidRequest';
+    this.name = "InvalidRequest";
     this.message = message;
   }
 }
 
-module.exports = { InvalidEnvironmentConfiguration, InvalidRequest, UnableToCreatePatronWithAxios };
+class NoILSClient extends Error {
+  constructor(message, status) {
+    super();
+    this.name = "NoILSClient";
+    this.message = message;
+    this.status = 500;
+  }
+}
+
+class ILSIntegrationError extends Error {
+  constructor(message, status) {
+    super();
+    this.name = "ILSIntegrationError";
+    this.message = message;
+    this.status = 502;
+  }
+}
+
+module.exports = {
+  InvalidEnvironmentConfiguration,
+  InvalidRequest,
+  UnableToCreatePatronWithAxios,
+  NoILSClient,
+  ILSIntegrationError,
+};

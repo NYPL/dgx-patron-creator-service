@@ -1,6 +1,11 @@
 /* eslint-disable */
 const UsernameValidationApi = require("../../../../api/controllers/v0.3/UsernameValidationAPI");
 const IlsClient = require("../../../../api/controllers/v0.3/IlsClient");
+const {
+  NoILSClient,
+  ILSIntegrationError,
+} = require("../../../../api/helpers/errors");
+
 jest.mock("../../../../api/controllers/v0.3/IlsClient");
 
 describe("UsernameValidationApi", () => {
@@ -64,16 +69,19 @@ describe("UsernameValidationApi", () => {
   });
 
   describe("usernameAvailable", () => {
-    it("returns false if no ilsClient was passed", async () => {
-      const { responses, usernameAvailable } = UsernameValidationApi({});
+    it("throws an error if no ilsClient was passed", async () => {
+      const noIlsClient = new NoILSClient(
+        "ILS Client not set in Username Validation API."
+      );
+      const { usernameAvailable } = UsernameValidationApi({});
 
-      expect(await usernameAvailable("username")).toEqual(false);
+      await expect(usernameAvailable("username")).rejects.toEqual(noIlsClient);
     });
 
     it("returns true if the username is available", async () => {
       // Mocking that the ILS request returned true and username is available.
       IlsClient.mockImplementation(() => ({ available: () => true }));
-      const { responses, usernameAvailable } = UsernameValidationApi({
+      const { usernameAvailable } = UsernameValidationApi({
         ilsClient: IlsClient(),
       });
 
@@ -84,12 +92,31 @@ describe("UsernameValidationApi", () => {
     it("returns false if the username is not available", async () => {
       // Mocking that the ILS request returned true and username is available.
       IlsClient.mockImplementation(() => ({ available: () => false }));
-      const { responses, usernameAvailable } = UsernameValidationApi({
+      const { usernameAvailable } = UsernameValidationApi({
         ilsClient: IlsClient(),
       });
 
       expect(await usernameAvailable("username")).toEqual(false);
       expect(IlsClient).toHaveBeenCalled();
+    });
+
+    it("throws an error if the ILS throws an error", async () => {
+      const integrationError = new ILSIntegrationError(
+        "The ILS could not be requested when validating the username."
+      );
+      // Mocking that the ILS request returned true and username is available.
+      IlsClient.mockImplementation(() => ({
+        available: () => {
+          throw integrationError;
+        },
+      }));
+      const { usernameAvailable } = UsernameValidationApi({
+        ilsClient: IlsClient(),
+      });
+
+      await expect(usernameAvailable("username")).rejects.toEqual(
+        integrationError
+      );
     });
   });
 });
