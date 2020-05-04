@@ -61,7 +61,7 @@ const CardValidator = () => {
    * on policy and ILS verification.
    *
    * @param {Card object} card
-   * @param {string} addressType - "address" or "workAddres"
+   * @param {string} addressType - "address" or "workAddress"
    * @param {boolean} isWorkAddress
    */
   const validateAddress = (card, addressType, workAddress = null) => {
@@ -174,8 +174,8 @@ class Card {
     //   throw error
     // }
 
-    const validateByPolicy = ["email", "birthdate"];
-    // These four values are necessary
+    // These four values are necessary for a Card object:
+    // name, address, username, pin
     if (!this.name || !this.address || !this.username || !this.pin) {
       this.errors["required"] =
         "'name', 'address', 'username', and 'pin' are all required.";
@@ -186,6 +186,7 @@ class Card {
       this.errors["pin"] = "pin must be 4 numbers";
       return { valid: false, errors: this.errors };
     }
+    const validateByPolicy = ["email", "birthdate"];
     // Depending on the policy, some fields are required.
     validateByPolicy.forEach((attr) => {
       if (this.requiredByPolicy(attr) && !this[attr]) {
@@ -207,9 +208,12 @@ class Card {
 
   /**
    * checkValidName()
-   * If the current name has been validated or not, return that value.
-   * Otherwise, check the name validity. This works as an internal cache so it
-   * won't call the Name Validatoin API if it already received a value.
+   * Check if the name is valid. If it valid (true) or not valid (false),
+   * return that value. Otherwise, the name hasn't been checked so check
+   * its validity if name validation is enabled. If name validation is
+   * disabled, then this will always return true when it is first run. This
+   * works as an internal cache so it won't call the Name Validatoin API
+   * if it already received a value.
    */
   checkValidName() {
     this.hasValidName =
@@ -234,9 +238,11 @@ class Card {
 
   /**
    * checkValidUsername()
-   * If the current usernamename has been validated or not, return that value.
-   * Otherwise, check the username availability. This works as an internal
-   * cache so it won't call the ILS API if it already received a value.
+   * Check if the username is available. If it available (true) or
+   * not available (false), return that value. Otherwise, the username
+   * hasn't been checked so check its availability against the
+   * UsernameValidation API. This works as an internal cache so it won't
+   * call the ILS API if it already received a value.
    */
   async checkValidUsername() {
     this.hasValidUsername =
@@ -376,7 +382,6 @@ class Card {
       // works in NYC.
       if (!address.inState(this.policy)) {
         if (isWorkAddress) {
-          // && workAddress.inCity(this.policy)) {
           return false;
         }
 
