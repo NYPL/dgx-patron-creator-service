@@ -22,6 +22,13 @@ const {
 const ROUTE_TAG = "CREATE_PATRON_0.3";
 // This returns a function that generates the error response object.
 const collectErrorResponseData = errorResponseDataWithTag(ROUTE_TAG);
+// The following are global variables that work as caching for the values.
+// Once the ILS key and password are decrypted, they are stored so that the
+// next request doesn't have to deal with decrypting those values. The ILS
+// token is declared when the API returns that value, and the timestamp is
+// then generated. Once all those values are obtained, the ilsClient is created
+// only once and stored. This way, there is one instance of the client to make
+// calls to the ILS for either the validation or create endpoints.
 let ilsClientKey;
 let ilsClientPassword;
 let ilsToken;
