@@ -14,32 +14,47 @@ describe("IlsClient", () => {
   });
 
   // The preference object being sent to the ILS is in the form of:
-  // { fieldTag: '44', content: 's' }
+  // { patronCodes: { pcode1: "s" } }
   describe("ecommunicationsPref", () => {
     const ilsClient = IlsClient({});
 
     // The not subscribed content string is '-'.
     it("returns a not subscribed preference", () => {
       const subscribed = false;
-      const pref = ilsClient.ecommunicationsPref(subscribed);
+      let patronCodes = {};
+      patronCodes = ilsClient.ecommunicationsPref(subscribed, patronCodes);
 
-      expect(pref.fieldTag).toEqual(IlsClient.ECOMMUNICATIONS_PREF_FIELD_TAG);
-      expect(pref.fieldTag).toEqual("44");
-      expect(pref.content).toEqual(
+      expect(patronCodes.pcode1).toEqual(
         IlsClient.NOT_SUBSCRIBED_ECOMMUNICATIONS_PREF
       );
-      expect(pref.content).toEqual("-");
+      expect(patronCodes.pcode1).toEqual("-");
+      expect(patronCodes).toEqual({ pcode1: "-" });
     });
 
     // The subscribed content string is 's'.
     it("returns a subscribed preference", () => {
       const subscribed = true;
-      const pref = ilsClient.ecommunicationsPref(subscribed);
+      let patronCodes = {};
+      patronCodes = ilsClient.ecommunicationsPref(subscribed, patronCodes);
 
-      expect(pref.fieldTag).toEqual(IlsClient.ECOMMUNICATIONS_PREF_FIELD_TAG);
-      expect(pref.fieldTag).toEqual("44");
-      expect(pref.content).toEqual(IlsClient.SUBSCRIBED_ECOMMUNICATIONS_PREF);
-      expect(pref.content).toEqual("s");
+      expect(patronCodes.pcode1).toEqual(
+        IlsClient.SUBSCRIBED_ECOMMUNICATIONS_PREF
+      );
+      expect(patronCodes.pcode1).toEqual("s");
+      expect(patronCodes).toEqual({ pcode1: "s" });
+    });
+
+    it("merges any existing patronCode values", () => {
+      const subscribed = true;
+      let patronCodes = { pcode2: "some value", pcode3: "another value" };
+
+      patronCodes = ilsClient.ecommunicationsPref(subscribed, patronCodes);
+
+      expect(patronCodes).toEqual({
+        pcode1: "s",
+        pcode2: "some value",
+        pcode3: "another value",
+      });
     });
   });
 
@@ -343,6 +358,8 @@ describe("IlsClient", () => {
           type: "a",
         },
       ]);
+      // The patron is not subscribe to e-communications by default.
+      expect(formatted.patronCodes).toEqual({ pcode1: "-" });
       // Username is special and goes in a varField
       expect(formatted.varFields).toEqual([
         { fieldTag: "u", content: "username" },
@@ -432,6 +449,8 @@ describe("IlsClient", () => {
           ],
           birthDate: "1988-01-01",
           expirationDate: expirationDate.toISOString().slice(0, 10),
+          // The patron is not subscribe to e-communications by default.
+          patronCodes: { pcode1: "-" },
           names: ["First Last"],
           patronType: 1,
           pin: "1234",
@@ -465,6 +484,7 @@ describe("IlsClient", () => {
           ],
           birthDate: "1988-01-01",
           expirationDate: expirationDate.toISOString().slice(0, 10),
+          patronCodes: { pcode1: "-" },
           names: ["First Last"],
           patronType: 1,
           pin: "1234",

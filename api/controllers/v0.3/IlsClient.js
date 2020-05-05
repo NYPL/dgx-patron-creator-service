@@ -197,6 +197,7 @@ const IlsClient = (args) => {
     // Addresses should be in a list.
     let addresses = [];
     let varFields = [];
+    let patronCodes = {};
 
     let address = formatAddress(patron.address);
     addresses.push(address);
@@ -209,19 +210,18 @@ const IlsClient = (args) => {
       fieldTag: IlsClient.USERNAME_FIELD_TAG,
       content: patron.username,
     };
-    let ecommunicationsVarField = ecommunicationsPref(
-      patron.ecommunicationsPref
-    );
-
     varFields.push(usernameVarField);
-    // TODO: Figure out with ILS team how to send this field.
-    // varFields.push(ecommunicationsVarField);
+
+    // E-communications value has a key of pcode1 in the patronCodes object.
+    // Merging any other pcode values and overwriting patronCodes.
+    patronCodes = ecommunicationsPref(patron.ecommunicationsPref, patronCodes);
 
     let fields = {
       names: [patron.name],
       addresses: addresses,
       pin: patron.pin,
       patronType: patron.ptype,
+      patronCodes,
       expirationDate: patron.expirationDate.toISOString().slice(0, 10),
       varFields,
     };
@@ -242,20 +242,29 @@ const IlsClient = (args) => {
   /**
    * ecommunicationsPref(ecommunicationsPrefValue)
    * Opt-in/opt-out of marketing email. The request value is a boolean which
-   * must be converted to a string. The values are 's' for subscribed and
-   * '-' for not subscribed.
+   * must be converted to a string. The values are 's' for subscribed (true
+   * in the request) and '-' for not subscribed (false in the request).
    *
-   * @param {string} ecommunicationsPrefValue
+   * "pcode1" is always the NYPL library-defined patron data field
+   * specifically for e-communications subscriptions. There is also a value
+   * for unsubscribing, but since we are creating patrons only, that value
+   * is not useful.
+   *
+   * This merges any existing values in the "patronCodes" object and
+   * returns it.
+   *
+   * @param {boolean} ecommunicationsPrefValue
+   * @param {object} patronCodes
    */
-  const ecommunicationsPref = (ecommunicationsPrefValue) => {
+  const ecommunicationsPref = (
+    ecommunicationsPrefValue = false,
+    patronCodes
+  ) => {
     let value = ecommunicationsPrefValue
       ? IlsClient.SUBSCRIBED_ECOMMUNICATIONS_PREF
       : IlsClient.NOT_SUBSCRIBED_ECOMMUNICATIONS_PREF;
 
-    return {
-      fieldTag: IlsClient.ECOMMUNICATIONS_PREF_FIELD_TAG,
-      content: value,
-    };
+    return { ...patronCodes, pcode1: value };
   };
 
   return {
@@ -274,8 +283,6 @@ IlsClient.BIRTHDATE_FIELD_TAG = "51";
 // Barcode AND username are indexed on this tag.
 IlsClient.BARCODE_FIELD_TAG = "b";
 IlsClient.PIN_FIELD_TAG = "=";
-// Opt-in/out of Marketing's email subscription service ('s' = subscribed; '-' = not subscribed)
-IlsClient.ECOMMUNICATIONS_PREF_FIELD_TAG = "44";
 IlsClient.PTYPE_FIELD_TAG = "47";
 IlsClient.ADDRESS_FIELD_TAG = "a";
 IlsClient.WORK_ADDRESS_FIELD_TAG = "h";
@@ -324,6 +331,10 @@ IlsClient.DEFAULT_PATRON_AGENCY = "202";
 IlsClient.DEFAULT_NOTICE_PREF = "z";
 IlsClient.DEFAULT_NOTE = `Patron's work/school address is ADDRESS2[ph].
                     Out-of-state home address is ADDRESS1[pa].`;
+// Opt-in/out of Marketing's email subscription service
+// ('s' = subscribed; '-' = not subscribed)
+// This needs to be sent in the patronCodes object in the pcode1 field
+// { pcode1: 's' } or { pcode1: '-' }
 IlsClient.SUBSCRIBED_ECOMMUNICATIONS_PREF = "s";
 IlsClient.NOT_SUBSCRIBED_ECOMMUNICATIONS_PREF = "-";
 IlsClient.WEB_APPLICANT_AGENCY = "198";
