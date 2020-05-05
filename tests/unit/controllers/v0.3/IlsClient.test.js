@@ -185,8 +185,9 @@ describe("IlsClient", () => {
 
         // Getting a 404 from the ILS is okay since it tells us that the
         // request was valid but nothing was returned. But, if the ILS returns
-        // anything about 500, then throw an error and therefore the
-        // different testing syntax.
+        // anything above 500, then throw an error. The syntax for this test
+        // is now different because of the thrown error, whereas the tests
+        // aboved returned correct values (even from a bad request).
         await expect(ilsClient.available(barcode, isBarcode)).rejects.toEqual(
           new ILSIntegrationError(
             "The ILS could not be requested when validating the barcode."
@@ -271,8 +272,9 @@ describe("IlsClient", () => {
 
         // Getting a 404 from the ILS is okay since it tells us that the
         // request was valid but nothing was returned. But, if the ILS returns
-        // anything about 500, then throw an error and therefore the
-        // different testing syntax.
+        // anything above 500, then throw an error. The syntax for this test
+        // is now different because of the thrown error, whereas the tests
+        // aboved returned correct values (even from a bad request).
         await expect(ilsClient.available(username, isBarcode)).rejects.toEqual(
           new ILSIntegrationError(
             "The ILS could not be requested when validating the username."
