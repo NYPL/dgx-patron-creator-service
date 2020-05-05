@@ -358,7 +358,7 @@ describe("IlsClient", () => {
           type: "a",
         },
       ]);
-      // The patron is not subscribe to e-communications by default.
+      // The patron is not subscribed to e-communications by default.
       expect(formatted.patronCodes).toEqual({ pcode1: "-" });
       // Username is special and goes in a varField
       expect(formatted.varFields).toEqual([
@@ -449,7 +449,7 @@ describe("IlsClient", () => {
           ],
           birthDate: "1988-01-01",
           expirationDate: expirationDate.toISOString().slice(0, 10),
-          // The patron is not subscribe to e-communications by default.
+          // The patron is not subscribed to e-communications by default.
           patronCodes: { pcode1: "-" },
           names: ["First Last"],
           patronType: 1,
