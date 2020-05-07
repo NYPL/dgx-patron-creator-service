@@ -17,7 +17,7 @@ const CardValidator = () => {
    *
    * @param {Card object} card
    */
-  const validate = (card) => {
+  const validate = async (card) => {
     if (card.workAddress) {
       // There is a work address so the home address needs to be present,
       // confirmed, and normalized, but it doesn't need to meet the usual
@@ -33,10 +33,10 @@ const CardValidator = () => {
       card = validateAddress(card, "address");
     }
 
-    if (!card.checkValidUsername()) {
-      card.errors["username"] = [
-        `Username has not been validated. Validate username at /validate/username.`,
-      ];
+    // Will throw an error if the username is not valid.
+    const validUsername = await card.checkValidUsername();
+    if (!validUsername) {
+      card.errors["username"] = ["Username is not available or valid"];
     }
 
     if (card.email && !/\A[^@]+@[^@]+\z/.test(card.email)) {
@@ -141,7 +141,7 @@ class Card {
     this.email = args["email"] || "";
     this.birthdate = this.normalizedBirthdate(args["birthdate"]);
     this.workAddress = args["workAddress"] || "";
-    this.ecommunicationsPref = args["ecommunicationsPref"] || "";
+    this.ecommunicationsPref = args["ecommunicationsPref"] || false;
     this.policy = args["policy"] || "";
     this.isTemporary = false;
     this.errors = {};
@@ -169,16 +169,22 @@ class Card {
    * passes the needed requirements, and once those pass, then validates the
    * card's address and username against the ILS.
    */
-  validate() {
+  async validate() {
+    // if (!this.ilsClient) {
+    //   throw error
+    // }
+
     // These four values are necessary for a Card object:
     // name, address, username, pin
     if (!this.name || !this.address || !this.username || !this.pin) {
-      return false;
+      this.errors["required"] =
+        "'name', 'address', 'username', and 'pin' are all required.";
+      return { valid: false, errors: this.errors };
     }
     // The pin must be a 4 digit string.
     if (!/^\d{4}$/.test(this.pin)) {
       this.errors["pin"] = "pin must be 4 numbers";
-      return false;
+      return { valid: false, errors: this.errors };
     }
     const validateByPolicy = ["email", "birthdate"];
     // Depending on the policy, some fields are required.
@@ -189,15 +195,15 @@ class Card {
     });
     // Nope, some attributes are empty and required by the specific policy.
     if (Object.keys(this.errors).length !== 0) {
-      return false;
+      return { valid: false, errors: this.errors };
     }
     // Now that all values have gone through a basic validation process,
     // do the more in-depth validation.
-    const validated = cardValidator.validate(this);
+    const validated = await cardValidator.validate(this);
     if (validated.valid) {
       this.valid = true;
     }
-    return this.valid;
+    return { valid: this.valid, errors: this.errors };
   }
 
   /**
@@ -205,7 +211,9 @@ class Card {
    * Check if the name is valid. If it valid (true) or not valid (false),
    * return that value. Otherwise, the name hasn't been checked so check
    * its validity if name validation is enabled. If name validation is
-   * disabled, then this will always return true when it is first run.
+   * disabled, then this will always return true when it is first run. This
+   * works as an internal cache so it won't call the Name Validatoin API
+   * if it already received a value.
    */
   checkValidName() {
     this.hasValidName =
@@ -233,13 +241,14 @@ class Card {
    * Check if the username is available. If it available (true) or
    * not available (false), return that value. Otherwise, the username
    * hasn't been checked so check its availability against the
-   * UsernameValidation API.
+   * UsernameValidation API. This works as an internal cache so it won't
+   * call the ILS API if it already received a value.
    */
-  checkValidUsername() {
+  async checkValidUsername() {
     this.hasValidUsername =
       this.hasValidUsername !== undefined
         ? this.hasValidUsername
-        : this.checkUsernameAvailability();
+        : await this.checkUsernameAvailability();
     return this.hasValidUsername;
   }
 
@@ -253,7 +262,11 @@ class Card {
       ilsClient: this.ilsClient,
     });
     let validation = await validate(this.username);
-    return typeof validation === "object" && validation === responses.available;
+
+    return (
+      typeof validation === "object" &&
+      validation.type === responses.available.type
+    );
   }
 
   /**
@@ -327,7 +340,7 @@ class Card {
     let now = new Date();
     let policy = this.policy.policy;
 
-    let [policyYears, policyMonths, policyDays] = this.determinePermanentCard()
+    let policyDays = this.determinePermanentCard()
       ? policy.cardType["standard"]
       : policy.cardType["temporary"];
 
@@ -335,8 +348,8 @@ class Card {
     const currentMonth = now.getMonth();
     const currentDay = now.getDate();
     const expirationDate = new Date(
-      currentYear + policyYears,
-      currentMonth + policyMonths,
+      currentYear,
+      currentMonth,
       currentDay + policyDays
     );
 
@@ -393,7 +406,7 @@ class Card {
    * createIlsPatron()
    * If the current card is valid, then create it against the ILS API.
    */
-  createIlsPatron() {
+  async createIlsPatron() {
     if (this.policy.isRequiredField(this.barcode)) {
       this.setBarcode();
     }
@@ -404,7 +417,8 @@ class Card {
     }
 
     // create the patron
-    const response = this.ilsClient.createPatron(this);
+    const response = await this.ilsClient.createPatron(this);
+
     return response;
   }
 
@@ -478,10 +492,8 @@ class Card {
       reason = "personal information";
     }
 
-    // The expiration time is an array of [years, months, days]. We only
-    // need the 'days' index value for a temporary card and its message.
-    const expArray = this.policy.policy.cardType["temporary"];
-    const expiration = expArray[2];
+    // Expiration in days.
+    const expiration = this.policy.policy.cardType["temporary"];
     return `Your library card is temporary because your ${reason} could not be
         verified. Visit your local NYPL branch within ${expiration} days to
         upgrade to a standard card.`;

@@ -1,4 +1,5 @@
 /* eslint-disable */
+const { NoILSClient, ILSIntegrationError } = require("../../helpers/errors");
 
 /**
  * A class that validates usernames against the ILS.
@@ -43,8 +44,9 @@ const UsernameValidationAPI = (args) => {
     if (!username || !USERNAME_PATTERN.test(username)) {
       return RESPONSES["invalid"];
     } else {
+      let type;
       const available = await usernameAvailable(username);
-      const type = available ? "available" : "unavailable";
+      type = available ? "available" : "unavailable";
       return RESPONSES[type];
     }
   };
@@ -59,16 +61,11 @@ const UsernameValidationAPI = (args) => {
     let available = false;
 
     if (!ilsClient) {
-      return false;
-      // Throw an error.
+      throw new NoILSClient("ILS Client not set in Username Validation API.");
     }
 
-    try {
-      available = await ilsClient.available(username);
-    } catch (e) {
-      // console.log("usernameAvailable catch", e);
-      throw new Error("IntegrationError()");
-    }
+    available = await ilsClient.available(username);
+
     return available;
   };
 

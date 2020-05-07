@@ -1,5 +1,6 @@
 /* eslint-disable */
 const axios = require("axios");
+const { ILSIntegrationError } = require("../../helpers/errors");
 
 /**
  * Helper class to setup API calls to the ILS.
@@ -13,14 +14,6 @@ const IlsClient = (args) => {
   // const ilsClientKey = args["ilsClientKey"] || "";
   // const ilsClientPassword = args["ilsClientPassword"] || "";
   // const ilsTokenTimestamp = args["ilsTokenTimestamps"] || "";
-
-  // TODO: Implement the error classes and codes
-  // const StandardError = (err = "Standard error") => { throw new Error(err) };
-  // const IlsError = () => StandardError("ILS Error");
-  // const NotFoundError = () => IlsError();
-  // const MultipleMatchesError = () => IlsError();
-  // const HttpError = () => IlsError();
-  // const ConnectionTimeoutError = () => HttpError();
 
   /**
    * createPatron(patron)
@@ -55,17 +48,27 @@ const IlsClient = (args) => {
         // }
         return axiosResponse;
       })
-      .catch((axiosError) => {
-        return axiosError;
+      .catch((error) => {
+        const response = error.response;
+
+        if (!(response.status >= 500)) {
+          return response;
+        } else {
+          throw new ILSIntegrationError(
+            "The ILS could not be requested when attempting to create a patron."
+          );
+        }
       });
   };
 
   /**
    * available(barcodeOrUsername, isBarcode)
    * For the /find endpoint in the ILS, a 200 response means that the username
-   * was found and is therefore not available. A 404 response means that the
-   * username was not found and is therefore available. Unfortunately, those
-   * are the responses from the ILS at the moment.
+   * or barcode was found and is therefore not available. A 404 response means
+   * that the username or barcode was not found and is therefore available.
+   * A 409 response means that the ILS found a duplicate and so the username
+   * or barcode is unavailable. These are the responses from the ILS at
+   * the moment.
    *
    * The barcode field tag is denoted as 'b' and the username field tag is
    * denoted as 'u'.
@@ -77,6 +80,7 @@ const IlsClient = (args) => {
     const fieldTag = isBarcode
       ? IlsClient.BARCODE_FIELD_TAG
       : IlsClient.USERNAME_FIELD_TAG;
+    const fieldType = isBarcode ? "barcode" : "username";
     // These two query parameters are required to make a valid GET request.
     const params = `?varFieldTag=${fieldTag}&varFieldContent=${barcodeOrUsername}`;
     let available = false;
@@ -91,10 +95,11 @@ const IlsClient = (args) => {
       .then((response) => {
         const status = response.status;
         const data = response.data;
+        // Example data:
         // {
-        //   "id": 5346889,
+        //   "id": 12345789,
         //   "expirationDate": "2029-10-21",
-        //   "birthDate": "1988-01-19",
+        //   "birthDate": "1988-01-01",
         //   "patronType": 10,
         //   "patronCodes": {
         //     "pcode1": "s",
@@ -106,7 +111,7 @@ const IlsClient = (args) => {
         //   "message": {
         //     "code": "-",
         //     "accountMessages": [
-        //       "edwin.gzmn@gmail.com"
+        //       "email@gmail.com"
         //     ]
         //   },
         //   "blockInfo": {
@@ -114,14 +119,12 @@ const IlsClient = (args) => {
         //   },
         //   "moneyOwed": 2.5
         // }
-
         if (status === 200 && data.id) {
           available = false;
         }
       })
       .catch((error) => {
         const response = error.response;
-
         // The ILS returns a 404 with the record not found...
         // so it's available!
         if (
@@ -129,6 +132,19 @@ const IlsClient = (args) => {
           response.data.name === "Record not found"
         ) {
           available = true;
+        } else if (
+          // But if it returns 409, then a duplicate entry was found
+          // and the field is not available.
+          response.status == 409 &&
+          response.data.name === "Internal server error" &&
+          response.data.description ===
+            "Duplicate patrons found for the specified varFieldTag[b]."
+        ) {
+          available = false;
+        } else if (response.status >= 500) {
+          throw new ILSIntegrationError(
+            `The ILS could not be requested when validating the ${fieldType}.`
+          );
         }
       });
 
@@ -181,6 +197,7 @@ const IlsClient = (args) => {
     // Addresses should be in a list.
     let addresses = [];
     let varFields = [];
+    let patronCodes = {};
 
     let address = formatAddress(patron.address);
     addresses.push(address);
@@ -193,19 +210,18 @@ const IlsClient = (args) => {
       fieldTag: IlsClient.USERNAME_FIELD_TAG,
       content: patron.username,
     };
-    let ecommunicationsVarField = ecommunicationsPref(
-      patron.ecommunicationsPref
-    );
-
     varFields.push(usernameVarField);
-    // TODO: Figure out with ILS team how to send this field.
-    // varFields.push(ecommunicationsVarField);
+
+    // E-communications value has a key of pcode1 in the patronCodes object.
+    // Merging any other pcode values and overwriting patronCodes.
+    patronCodes = ecommunicationsPref(patron.ecommunicationsPref, patronCodes);
 
     let fields = {
       names: [patron.name],
       addresses: addresses,
       pin: patron.pin,
       patronType: patron.ptype,
+      patronCodes,
       expirationDate: patron.expirationDate.toISOString().slice(0, 10),
       varFields,
     };
@@ -226,20 +242,29 @@ const IlsClient = (args) => {
   /**
    * ecommunicationsPref(ecommunicationsPrefValue)
    * Opt-in/opt-out of marketing email. The request value is a boolean which
-   * must be converted to a string. The values are 's' for subscribed and
-   * '-' for not subscribed.
+   * must be converted to a string. The values are 's' for subscribed (true
+   * in the request) and '-' for not subscribed (false in the request).
    *
-   * @param {string} ecommunicationsPrefValue
+   * "pcode1" is always the NYPL library-defined patron data field
+   * specifically for e-communications subscriptions. There is also a value
+   * for unsubscribing, but since we are creating patrons only, that value
+   * is not useful.
+   *
+   * This merges any existing values in the "patronCodes" object and
+   * returns it.
+   *
+   * @param {boolean} ecommunicationsPrefValue
+   * @param {object} patronCodes
    */
-  const ecommunicationsPref = (ecommunicationsPrefValue) => {
+  const ecommunicationsPref = (
+    ecommunicationsPrefValue = false,
+    patronCodes
+  ) => {
     let value = ecommunicationsPrefValue
       ? IlsClient.SUBSCRIBED_ECOMMUNICATIONS_PREF
       : IlsClient.NOT_SUBSCRIBED_ECOMMUNICATIONS_PREF;
 
-    return {
-      fieldTag: IlsClient.ECOMMUNICATIONS_PREF_FIELD_TAG,
-      content: value,
-    };
+    return { ...patronCodes, pcode1: value };
   };
 
   return {
@@ -258,8 +283,6 @@ IlsClient.BIRTHDATE_FIELD_TAG = "51";
 // Barcode AND username are indexed on this tag.
 IlsClient.BARCODE_FIELD_TAG = "b";
 IlsClient.PIN_FIELD_TAG = "=";
-// Opt-in/out of Marketing's email subscription service ('s' = subscribed; '-' = not subscribed)
-IlsClient.ECOMMUNICATIONS_PREF_FIELD_TAG = "44";
 IlsClient.PTYPE_FIELD_TAG = "47";
 IlsClient.ADDRESS_FIELD_TAG = "a";
 IlsClient.WORK_ADDRESS_FIELD_TAG = "h";
@@ -274,9 +297,9 @@ IlsClient.PATRON_AGENCY_FIELD_TAG = "158";
 IlsClient.NOTICE_PREF_FIELD_TAG = "268";
 IlsClient.NOTE_FIELD_TAG = "x";
 // Standard and temporary expiration times
-IlsClient.STANDARD_EXPIRATION_TIME = [3, 0, 0]; // [years, month, days]
-IlsClient.TEMPORARY_EXPIRATION_TIME = [0, 0, 30]; // [years, month, days]
-IlsClient.WEB_APPLICANT_EXPIRATION_TIME = [0, 0, 90]; // [years, month, days]
+IlsClient.STANDARD_EXPIRATION_TIME = 1095; // days
+IlsClient.TEMPORARY_EXPIRATION_TIME = 30; // days
+IlsClient.WEB_APPLICANT_EXPIRATION_TIME = 90; // days
 // Ptypes for various library card offerings
 IlsClient.WEB_APPLICANT_PTYPE = 1;
 IlsClient.NO_PRINT_ADULT_METRO_PTYPE = 2;
@@ -308,6 +331,10 @@ IlsClient.DEFAULT_PATRON_AGENCY = "202";
 IlsClient.DEFAULT_NOTICE_PREF = "z";
 IlsClient.DEFAULT_NOTE = `Patron's work/school address is ADDRESS2[ph].
                     Out-of-state home address is ADDRESS1[pa].`;
+// Opt-in/out of Marketing's email subscription service
+// ('s' = subscribed; '-' = not subscribed)
+// This needs to be sent in the patronCodes object in the pcode1 field
+// { pcode1: 's' } or { pcode1: '-' }
 IlsClient.SUBSCRIBED_ECOMMUNICATIONS_PREF = "s";
 IlsClient.NOT_SUBSCRIBED_ECOMMUNICATIONS_PREF = "-";
 IlsClient.WEB_APPLICANT_AGENCY = "198";

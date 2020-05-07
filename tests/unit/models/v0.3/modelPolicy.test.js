@@ -38,7 +38,7 @@ describe('Policy', () => {
         'default',
       ]);
       // The type is for 3 years in an array of [years, months, days]
-      expect(policy.policyField('cardType').standard).toEqual([3, 0, 0]);
+      expect(policy.policyField('cardType').standard).toEqual(1095);
       expect(policy.policyField('requiredFields')).toEqual([
         'email',
         'barcode',
@@ -153,7 +153,7 @@ describe('Policy', () => {
       expect(policy.policyField('agency')).toEqual('198');
       expect(Object.keys(policy.policyField('ptype'))).toEqual(['default']);
       // The card type is for 90 days in an array of [years, months, days]
-      expect(policy.policyField('cardType').standard).toEqual([0, 0, 90]);
+      expect(policy.policyField('cardType').standard).toEqual(90);
       expect(policy.policyField('requiredFields')).toEqual(['birthdate']);
       expect(policy.policyField('serviceArea')).toEqual(undefined);
       expect(policy.policyField('minimumAge')).toEqual(13);
