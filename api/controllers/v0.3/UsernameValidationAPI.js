@@ -58,13 +58,14 @@ const UsernameValidationAPI = (args) => {
    * @param {string} username
    */
   const usernameAvailable = async (username) => {
+    const isBarcode = false;
     let available = false;
 
     if (!ilsClient) {
       throw new NoILSClient("ILS Client not set in Username Validation API.");
     }
 
-    available = await ilsClient.available(username);
+    available = await ilsClient.available(username, isBarcode);
 
     return available;
   };

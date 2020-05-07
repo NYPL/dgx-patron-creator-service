@@ -283,7 +283,8 @@ async function createPatron(req, res) {
     });
 
   let address = new Address(req.body.address);
-  const policy = Policy({ policyType: "webApplicant" });
+  // TODO: What should the default policy be?
+  const policy = Policy({ policyType: req.body.policyType || "simplye" });
   const card = new Card({
     name: req.body.name, // from req
     address: address, // created above
@@ -335,7 +336,13 @@ async function createPatron(req, res) {
         // There was an error hitting the ILS to create the patron. Catch
         // and return the error.
         response = modelResponse.errorResponseData(
-          collectErrorResponseData(error.status, "", error.message, "", "") // eslint-disable-line comma-dangle
+          collectErrorResponseData(
+            error.status || 400,
+            "",
+            error.message,
+            "",
+            ""
+          ) // eslint-disable-line comma-dangle
         );
       }
     }
