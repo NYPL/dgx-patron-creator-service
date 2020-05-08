@@ -319,6 +319,11 @@ class Card {
   async setBarcode() {
     const barcode = new Barcode({ ilsClient: this.ilsClient });
     this.barcode = await barcode.getNextAvailableBarcode();
+
+    // Throw an error so no attempt to create the patron in the ILS is made.
+    if (!this.barcode) {
+      throw new Error("Could not generate a new barcode. Please try again.");
+    }
   }
 
   /**
@@ -426,9 +431,19 @@ class Card {
     }
 
     // For patrons with the `simplye` policy type, the barcode is required,
-    // so let's create one.
+    // so let's create one. If no barcode is created, an error will be thrown
+    // an the patron won't be created in the ILS.
     if (this.policy.isRequiredField("barcode")) {
-      await this.setBarcode();
+      try {
+        await this.setBarcode();
+      } catch (error) {
+        // Could not generate a new barcode so return that as the response.
+        // TODO: Throw a better error.
+        return {
+          status: 400,
+          data: error.message,
+        };
+      }
     }
 
     // Now create the patron in the ILS.

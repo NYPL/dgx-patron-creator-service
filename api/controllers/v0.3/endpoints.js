@@ -310,7 +310,7 @@ async function createPatron(req, res) {
     // attempting to validate the username or address, catch that error here
     // and return it.
     response = modelResponse.errorResponseData(
-      collectErrorResponseData(error.status, "", error.message, "", "") // eslint-disable-line comma-dangle
+      collectErrorResponseData(error.status || 400, "", error.message, "", "") // eslint-disable-line comma-dangle
     );
   }
 
