@@ -1,5 +1,5 @@
 /* eslint-disable */
-const db = require("../../../db");
+const BarcodeDb = require("../../../db");
 const luhn = require("../../helpers/luhnValidations");
 
 /**
@@ -8,6 +8,9 @@ const luhn = require("../../helpers/luhnValidations");
 class Barcode {
   constructor(args) {
     this.ilsClient = args["ilsClient"];
+    // This will return the instance of the class that's
+    // already connected to the database.
+    this.db = BarcodeDb();
   }
 
   /**
@@ -67,7 +70,7 @@ class Barcode {
     try {
       query =
         "select barcode from barcodes where used=false order by barcodes asc limit 1;";
-      result = await db.query(query);
+      result = await this.db.query(query);
       barcode = result.rows[0].barcode;
       newBarcode = false;
     } catch (error) {
@@ -75,7 +78,7 @@ class Barcode {
       // a new barcode.
       query =
         "select barcode from barcodes where used=true order by barcodes asc limit 1;";
-      result = await db.query(query);
+      result = await this.db.query(query);
       // Remove the last digit from the existing barcode since we need a
       // 13-digit number to pass through the luhn-algorithm.
       barcode = Math.floor(parseInt(result.rows[0].barcode, 10) / 10);
@@ -172,7 +175,7 @@ class Barcode {
    * Close the pool connection to the database.
    */
   async release() {
-    await db.release();
+    await this.db.release();
   }
 
   /**
@@ -187,7 +190,7 @@ class Barcode {
     // used in the database. If either of those tasks cause an issue, it will
     // be caught.
     const query = `UPDATE barcodes SET used=${used} WHERE barcode='${barcode}' where used=${!used};`;
-    let result = await db.query(query);
+    let result = await this.db.query(query);
 
     if (result.rows[0].used !== 1) {
       if (used) {
@@ -224,7 +227,7 @@ class Barcode {
   async addBarcode(barcode, used = false) {
     const query = `INSERT INTO barcodes (barcode, used) VALUES ('${barcode}', ${used});`;
     try {
-      await db.query(query);
+      await this.db.query(query);
     } catch (error) {
       // The barcode we thought was new and unused has since been created.
       // Throw an error so a new barcode is attempted.

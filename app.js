@@ -12,6 +12,18 @@ const app = express();
 const pathName = `${process.cwd()}/config/deploy_${app.get('env')}.env`;
 require('dotenv').config({ path: pathName });
 
+const BarcodeDb = require('./db');
+
+// Initialize the connection to the database.
+const db = BarcodeDb({
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_DATABASE,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
+});
+db.init();
+
 // Below are the middlewares for response headers
 /**
  * allowCrossDomain(req, res, next)
