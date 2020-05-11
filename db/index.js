@@ -1,4 +1,6 @@
-const { Pool } = require('pg');
+/* eslint-disable */
+
+const { Pool } = require("pg");
 
 const pool = new Pool({
   user: process.env.DB_USER,
@@ -22,12 +24,12 @@ async function createTable() {
     );`;
   try {
     const res = await pool.query(query);
-    if (res.command === 'CREATE') {
+    if (res.command === "CREATE") {
       console.log("database table 'barcodes' created");
     }
   } catch (error) {
     if (error.message === 'relation "barcodes" already exists') {
-      console.log('database table barcodes already exists, continuing');
+      console.log("database table barcodes already exists, continuing");
     }
   }
 }
@@ -38,13 +40,13 @@ async function createTable() {
  * to set from where new barcodes will be created.
  */
 async function initInsert() {
-  const text = 'INSERT INTO barcodes (barcode, used) VALUES ($1, $2);';
-  const values = ['99999989999999', 'true'];
+  const text = "INSERT INTO barcodes (barcode, used) VALUES ($1, $2);";
+  const values = ["28888055432443", "true"];
 
   try {
     await pool.query(text, values);
   } catch (error) {
-    console.log('barcodes table already has the initial value');
+    console.log("barcodes table already has the initial value");
   }
 }
 

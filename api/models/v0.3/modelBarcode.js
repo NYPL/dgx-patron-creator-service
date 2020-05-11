@@ -1,5 +1,6 @@
 /* eslint-disable */
 const db = require("../../../db");
+const luhn = require("../../helpers/luhnValidations");
 
 /**
  * Creates Barcode objects.
@@ -70,12 +71,18 @@ class Barcode {
       barcode = result.rows[0].barcode;
       newBarcode = false;
     } catch (error) {
-      // There are no unused barcodes so get the lowest barcode that was
-      // used and subtract one from it. This is the next new available one.
+      // There are no unused barcodes so get the lowest barcode to generate
+      // a new barcode.
       query =
         "select barcode from barcodes where used=true order by barcodes asc limit 1;";
       result = await db.query(query);
-      barcode = `${parseInt(result.rows[0].barcode, 10) - 1}`;
+      // Remove the last digit from the existing barcode since we need a
+      // 13-digit number to pass through the luhn-algorithm.
+      barcode = Math.floor(parseInt(result.rows[0].barcode, 10) / 10);
+      // Subtract one for the next barcode.
+      barcode -= 1;
+      // Pass the value and get a 14-digit barcode.
+      barcode = luhn.calculate(barcode);
       newBarcode = true;
     }
 
@@ -170,32 +177,32 @@ class Barcode {
 
   /**
    * markUsed(barcode, used)
-   * Set a barcode to used or not used in the database.
+   * Set a barcode to used or unused in the database.
    * @param {string} barcode
    * @param {boolean} used
    */
-  async markUsed(barcode, used = false) {
-    // A barcode from the database is attempted and available in the ILS. If
-    // the patron wants to use it, set it to used, but if it was already taken
-    // while the request was in process, then try a new barcode.
-    if (used === true) {
-      const alreadyUsed = `select used from barcodes where barcode='${barcode}';`;
-      let result = await db.query(alreadyUsed);
-      if (result.rows[0].used) {
+  async markUsed(barcode, used) {
+    // When setting a barcode to used, we expect it to be unused in the database.
+    // Likewise, when setting a barcode to unused, we expect the value to be
+    // used in the database. If either of those tasks cause an issue, it will
+    // be caught.
+    const query = `UPDATE barcodes SET used=${used} WHERE barcode='${barcode}' where used=${!used};`;
+    let result = await db.query(query);
+
+    if (result.rows[0].used !== 1) {
+      if (used) {
+        // While attempting to set a barcode to used, it was already used,
+        // so attempt a new barcode instead.
         throw new Error(
           "The barcode to be marked as used was already set as used. Try a new barcode."
         );
+      } else {
+        // While attempting to free a barcode and set it to unused, it was
+        // already set to unused.
+        throw new Error(
+          "The barcode to be marked as unused was already set as unused."
+        );
       }
-    }
-
-    // Continue updating the existing barcode's `used` value.
-    const query = `UPDATE barcodes SET used=${used} WHERE barcode='${barcode}';`;
-    try {
-      await db.query(query);
-    } catch (error) {
-      throw new Error(
-        `Couldn't update barcode ${barcode} as used in the database.`
-      );
     }
   }
 

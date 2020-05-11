@@ -450,8 +450,9 @@ class Card {
     try {
       response = await this.ilsClient.createPatron(this);
     } catch (error) {
-      // We want to catch the error here just to free up the barcode in the
-      // database, but continue to throw the same error as an API response.
+      // We want to catch the error from creating a patron here to be able to
+      // free up the barcode in the database. Continue to send the same error
+      // as an API response.
       await this.freeBarcode(this.barcode);
       throw error;
     }
