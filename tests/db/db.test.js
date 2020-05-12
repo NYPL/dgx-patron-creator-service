@@ -29,6 +29,7 @@ describe("Barcodes Database", () => {
   it("should test", async () => {
     const result = await db.query("select * from barcodes;");
 
+    console.log(result);
     expect(result.rowCount).toEqual(1);
     expect(result.rows[0].barcode).toEqual("28888055432443");
   });
