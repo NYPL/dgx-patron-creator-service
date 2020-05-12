@@ -29,8 +29,22 @@ describe("Barcodes Database", () => {
   it("should test", async () => {
     const result = await db.query("select * from barcodes;");
 
-    console.log(result);
     expect(result.rowCount).toEqual(1);
     expect(result.rows[0].barcode).toEqual("28888055432443");
   });
+
+  // describe("init", () => {
+  //   it("should call createTable and initInsert functions", async () => {
+  //     const barcode = new Barcode({ ilsClient: IlsClient() });
+
+  //     console.log(barcode);
+  //     const createTableSpy = jest.spyOn(barcode, "createTable");
+  //     const initInsertSpy = jest.spyOn(barcode, "initInsert");
+
+  //     await barcode.init();
+
+  //     expect(createTableSpy).toHaveBeenCalled();
+  //     expect(initInsertSpy).toHaveBeenCalled();
+  //   });
+  // });
 });

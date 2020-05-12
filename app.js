@@ -15,6 +15,8 @@ require('dotenv').config({ path: pathName });
 const BarcodeDb = require('./db');
 
 // Initialize the connection to the database.
+// This is done here so we can have one instance and one connection to the
+// database for however many times the lambda is used for.
 const db = BarcodeDb({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
@@ -22,6 +24,8 @@ const db = BarcodeDb({
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT,
 });
+// Once we get the database class instance, initialize it by creating the
+// table and inserting the seed data if it's not in the database already.
 db.init();
 
 // Below are the middlewares for response headers

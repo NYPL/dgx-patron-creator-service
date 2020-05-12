@@ -12,10 +12,12 @@ const {
   NoILSClient,
   ILSIntegrationError,
 } = require('../../../../api/helpers/errors');
+const Barcode = require('../../../../api/models/v0.3/modelBarcode');
 
 jest.mock('../../../../api/controllers/v0.3/NameValidationAPI');
 jest.mock('../../../../api/controllers/v0.3/UsernameValidationAPI');
 jest.mock('../../../../api/controllers/v0.3/IlsClient');
+jest.mock('../../../../api/models/v0.3/modelBarcode');
 
 const basicCard = {
   name: 'First Last',
@@ -115,7 +117,6 @@ describe('Card', () => {
     });
   });
 
-  // TODO: update when NameValidationAPI is complete
   describe('checkNameValidity', () => {
     const card = new Card(basicCard);
 
@@ -529,8 +530,55 @@ describe('Card', () => {
     });
   });
 
-  // TODO when barcode API is ready
-  describe('setBarcode', () => {});
+  describe('setBarcode', () => {
+    beforeEach(() => {
+      Barcode.mockClear();
+    });
+    it('should set the barcode in the card object', async () => {
+      Barcode.mockImplementation(() => ({
+        getNextAvailableBarcode: () => '1234',
+      }));
+
+      const card = new Card(basicCard);
+
+      await card.setBarcode();
+
+      expect(card.barcode).toEqual('1234');
+    });
+
+    it('should throw an error if a barcode could not be generated', async () => {
+      Barcode.mockImplementation(() => ({
+        getNextAvailableBarcode: () => undefined,
+      }));
+
+      const card = new Card(basicCard);
+
+      await expect(card.setBarcode()).rejects.toThrow(
+        'Could not generate a new barcode. Please try again.',
+      );
+    });
+  });
+
+  describe('freeBarcode', () => {
+    beforeEach(() => {
+      Barcode.mockClear();
+    });
+    it('should reset the barcode in the card object', async () => {
+      Barcode.mockImplementation(() => ({
+        getNextAvailableBarcode: () => '1234',
+        // Mocking calling the database and marking the barcode as unused.
+        freeBarcode: () => 'ok',
+      }));
+
+      const card = new Card(basicCard);
+
+      await card.setBarcode();
+      expect(card.barcode).toEqual('1234');
+
+      await card.freeBarcode();
+      expect(card.barcode).toEqual('');
+    });
+  });
 
   describe('setPtype', () => {
     const simplyePolicy = Policy();
@@ -667,8 +715,151 @@ describe('Card', () => {
     });
   });
 
-  // TODO when Ils API is implemented.
-  describe('createIlsPatron', () => {});
+  describe('createIlsPatron', () => {
+    beforeEach(() => {
+      IlsClient.mockClear();
+      Barcode.mockClear();
+    });
+
+    it('throws an error because the card is not valid', async () => {
+      const card = new Card({
+        ...basicCard,
+        policy: Policy(),
+      });
+
+      await expect(card.createIlsPatron()).rejects.toThrow(
+        'The card has not been validated or has no ptype.',
+      );
+    });
+
+    it('does not attempt to create a barcode for web applicants', async () => {
+      IlsClient.mockImplementation(() => ({
+        createPatron: () => 'some patron',
+      }));
+      const card = new Card({
+        ...basicCard,
+        policy: Policy({ policyType: 'webApplicant' }),
+        ilsClient: IlsClient({}),
+      });
+
+      // Mocking this for now. Normally, we'd call .validate()
+      card.valid = true;
+      // Set up a spy for card.setBarcode() which shouldn't be called.
+      const spy = jest.spyOn(card, 'setBarcode');
+
+      await card.createIlsPatron();
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('does attempt to create a barcode for simplye applicants', async () => {
+      IlsClient.mockImplementation(() => ({
+        createPatron: () => 'some patron',
+      }));
+      // Mocking that a barcode fails to be generated
+      Barcode.mockImplementation(() => ({
+        getNextAvailableBarcode: () => '1234',
+      }));
+      const card = new Card({
+        ...basicCard,
+        policy: Policy({ policyType: 'simplye' }),
+        ilsClient: IlsClient({}),
+      });
+
+      // Mocking this for now. Normally, we'd call `card.validate()`.
+      card.valid = true;
+      // Set up a spy for card.setBarcode() which shouldn't be called.
+      const spy = jest.spyOn(card, 'setBarcode');
+
+      await card.createIlsPatron();
+      expect(card.barcode).toEqual('1234');
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('does attempt to create a barcode but fails!', async () => {
+      IlsClient.mockImplementation(() => ({
+        createPatron: () => 'some patron',
+      }));
+      // Mocking that a barcode fails to be generated
+      Barcode.mockImplementation(() => ({
+        getNextAvailableBarcode: () => undefined,
+      }));
+      const card = new Card({
+        ...basicCard,
+        policy: Policy({ policyType: 'simplye' }),
+        ilsClient: IlsClient({}),
+      });
+
+      // Mocking this for now. Normally, we'd call .validate()
+      card.valid = true;
+
+      const data = await card.createIlsPatron();
+      expect(data.status).toEqual(400);
+      expect(data.data).toEqual(
+        'Could not generate a new barcode. Please try again.',
+      );
+    });
+
+    it('attempts to create a patron but fails', async () => {
+      const integrationError = new ILSIntegrationError(
+        'The ILS could not be requested when attempting to create a patron.',
+      );
+      // Mock that the ILS fails
+      IlsClient.mockImplementation(() => ({
+        createPatron: () => {
+          throw integrationError;
+        },
+      }));
+      // Mocking that a barcode fails to be generated
+      Barcode.mockImplementation(() => ({
+        getNextAvailableBarcode: () => '1234',
+        freeBarcode: () => true,
+      }));
+      const card = new Card({
+        ...basicCard,
+        policy: Policy({ policyType: 'simplye' }),
+        ilsClient: IlsClient(),
+      });
+
+      // Mocking this for now. Normally, we'd call .validate()
+      card.valid = true;
+      const spy = jest.spyOn(card, 'freeBarcode');
+
+      await expect(card.createIlsPatron()).rejects.toEqual(integrationError);
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('creates a patron', async () => {
+      // Mock that the ILS fails
+      IlsClient.mockImplementation(() => ({
+        createPatron: () => ({
+          status: 200,
+          data: {
+            link: 'ils-response-url',
+          },
+        }),
+      }));
+      // Mocking that a barcode fails to be generated
+      Barcode.mockImplementation(() => ({
+        getNextAvailableBarcode: () => '1234',
+        freeBarcode: () => true,
+      }));
+      const card = new Card({
+        ...basicCard,
+        policy: Policy({ policyType: 'simplye' }),
+        ilsClient: IlsClient(),
+      });
+
+      // Mocking this for now. Normally, we'd call .validate()
+      card.valid = true;
+      const spy = jest.spyOn(card, 'freeBarcode');
+
+      const data = await card.createIlsPatron();
+
+      expect(spy).not.toHaveBeenCalled();
+      expect(data.status).toEqual(200);
+      expect(data.data).toEqual({ link: 'ils-response-url' });
+    });
+  });
 
   describe('checkCardTypePolicy', () => {
     const simplyePolicy = Policy();
@@ -757,7 +948,7 @@ describe('Card', () => {
       policy: simplyePolicy,
     });
 
-    // These are mocked for now
+    // Mocked value
     card.barcode = '123456789';
 
     it('returns an object with basic details', () => {

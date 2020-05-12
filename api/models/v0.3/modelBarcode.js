@@ -15,31 +15,10 @@ class Barcode {
 
   /**
    * getNextAvailableBarcode()
-   * Generates a new barcode in the database from the last one in the database,
+   * Generates a barcode in the database from the last one in the database,
    * and verifies it's available in the ILS. If it is, return it.
    */
   async getNextAvailableBarcode() {
-    let barcode = await this.generateNewBarcode();
-    let tries = 3;
-
-    // Arbitary amount to try.
-    while (!barcode && tries > 0) {
-      barcode = await this.generateNewBarcode();
-      tries -= 1;
-    }
-
-    // TODO: Figure out how to close a db connection if the service will
-    // be a lambda.
-    // this.release();
-
-    return barcode;
-  }
-
-  /**
-   * generateNewBarcode()
-   * Get and check if the next available barcode in the database is available.
-   */
-  async generateNewBarcode() {
     const { barcode, newBarcode } = await this.nextAvailableFromDB();
     // Perhaps this barcode from the database isn't actually available in the
     // ILS. If that's the case, the next available barcode in the ILS is
@@ -49,10 +28,31 @@ class Barcode {
       newBarcode
     );
 
-    if (available) {
-      return finalBarcode;
+    // TODO: Figure out how to close a db connection if the service will
+    // be a lambda.
+    // this.release();
+
+    return available ? finalBarcode : undefined;
+  }
+
+  /**
+   * nextLuhnValidCode(barcode)
+   * Return the next Luhn-valid barcode.
+   *
+   * @param {string} barcode
+   */
+  nextLuhnValidCode(barcode) {
+    if (barcode.length !== 14) {
+      return;
     }
-    return;
+
+    // Remove the last digit from the existing barcode since we need a
+    // 13-digit number to pass through the luhn-algorithm.
+    let newValidBarcode = Math.floor(parseInt(barcode, 10) / 10);
+    // Subtract one for the next barcode so the checksum digit gets added.
+    newValidBarcode -= 1;
+    // Pass the value and get a 14-digit barcode.
+    return luhn.calculate(newValidBarcode);
   }
 
   /**
@@ -79,13 +79,7 @@ class Barcode {
       query =
         "select barcode from barcodes where used=true order by barcodes asc limit 1;";
       result = await this.db.query(query);
-      // Remove the last digit from the existing barcode since we need a
-      // 13-digit number to pass through the luhn-algorithm.
-      barcode = Math.floor(parseInt(result.rows[0].barcode, 10) / 10);
-      // Subtract one for the next barcode.
-      barcode -= 1;
-      // Pass the value and get a 14-digit barcode.
-      barcode = luhn.calculate(barcode);
+      barcode = this.nextLuhnValidCode(result.rows[0].barcode);
       newBarcode = true;
     }
 
@@ -105,7 +99,7 @@ class Barcode {
    * @param {boolean} newBarcode
    * @param {number} tries
    */
-  async availableInIls(barcode, newBarcode, tries = 5) {
+  async availableInIls(barcode, newBarcode, tries = 10) {
     const isBarcode = true;
     let barcodeAvailable = false;
     let barcodeToTry = barcode;
@@ -161,7 +155,7 @@ class Barcode {
 
       // Otherwise, let's try once more with the next barcode in the sequence.
       tries -= 1;
-      barcodeToTry = `${barcodeToTry - 1}`;
+      barcodeToTry = this.nextLuhnValidCode(barcodeToTry);
     }
 
     return {

@@ -1,15 +1,18 @@
 /**
  * Open source luhn-algorithm from https://simplycalc.com/luhn-source.php
- * with modifications.
+ * with modifications. It's a checksum algorithm used for credit card
+ * and other sequence numbers.
  */
 
 /**
- * luhnChecksum
+ * luhnChecksum(num)
  * Implement the Luhn algorithm to calculate the Luhn check digit.
  * Return the check digit.
+ *
+ * @param {number | string} num
  */
 const luhnChecksum = (num) => {
-  const arr = (`${num}`)
+  const arr = `${num}`
     .split('')
     .reverse()
     .map((x) => parseInt(x, 10));
@@ -19,23 +22,27 @@ const luhnChecksum = (num) => {
     0,
   );
   sum += lastDigit;
-  return sum % 10;
+  const checksum = sum % 10;
+  return checksum === 0 ? 0 : 10 - checksum;
 };
 
 /**
- * luhnCalculate
+ * luhnCalculate(patrcode)
  * Return a full code (including check digit), from the specified partial code
  * (without check digit).
+ *
+ * @param {string | number} partcode
  */
 const luhnCalculate = (partcode) => {
-  const checksum = luhnChecksum(`${partcode}0`);
-  const checkDigit = checksum === 0 ? 0 : 10 - checksum;
+  const checkDigit = luhnChecksum(`${partcode}0`);
   return `${partcode}${checkDigit}`;
 };
 
 /**
- * luhnValidate
+ * luhnValidate(fullcode)
  * Return true if specified code (with check digit) is valid.
+ *
+ * @param {string | number} fullcode
  */
 const luhnValidate = (fullcode) => luhnChecksum(fullcode) === 0;
 

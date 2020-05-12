@@ -6,8 +6,6 @@ let database;
 
 class BarcodesDb {
   constructor(args) {
-    console.log("calling database class");
-    console.log(args);
     this.pool = new Pool({
       user: args["user"],
       host: args["host"],

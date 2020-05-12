@@ -334,6 +334,8 @@ class Card {
   async freeBarcode() {
     const barcode = new Barcode({ ilsClient: this.ilsClient });
     await barcode.freeBarcode(this.barcode);
+
+    this.barcode = "";
   }
 
   /**
