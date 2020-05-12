@@ -18,7 +18,6 @@ class BarcodesDb {
   }
 
   async init() {
-    this.client = await this.pool.connect();
     await this.createTable();
     await this.initInsert();
   }
@@ -45,6 +44,7 @@ class BarcodesDb {
         console.log("database table barcodes already exists, continuing");
       }
     }
+    return;
   }
 
   /**
@@ -61,14 +61,15 @@ class BarcodesDb {
     } catch (error) {
       console.log("barcodes table already has the initial value");
     }
+    return;
   }
 
   async query(text, params, callback) {
-    return this.client.query(text, params, callback);
+    return this.pool.query(text, params, callback);
   }
 
   async release() {
-    return this.client.release();
+    await this.pool.end();
   }
 }
 

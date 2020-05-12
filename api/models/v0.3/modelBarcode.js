@@ -192,7 +192,7 @@ class Barcode {
     const query = `UPDATE barcodes SET used=${used} WHERE barcode='${barcode}' where used=${!used};`;
     let result = await this.db.query(query);
 
-    if (result.rows[0].used !== 1) {
+    if (result.rowCount !== 1) {
       if (used) {
         // While attempting to set a barcode to used, it was already used,
         // so attempt a new barcode instead.
