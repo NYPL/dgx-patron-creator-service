@@ -56,6 +56,7 @@ class BarcodesDb {
 
     try {
       await this.pool.query(text, values);
+      console.log("successfully inserted seed barcode");
     } catch (error) {
       console.log("barcodes table already has the initial value");
     }

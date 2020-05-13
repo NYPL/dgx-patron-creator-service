@@ -42,7 +42,7 @@ class Barcode {
    * @param {string} barcode
    */
   nextLuhnValidCode(barcode) {
-    if (barcode.length !== 14) {
+    if (!barcode || barcode.length !== 14) {
       return;
     }
 
@@ -221,13 +221,15 @@ class Barcode {
   async addBarcode(barcode, used = false) {
     const query = `INSERT INTO barcodes (barcode, used) VALUES ('${barcode}', ${used});`;
     try {
-      await this.db.query(query);
+      const result = await this.db.query(query);
+      return result.rowCount;
     } catch (error) {
       // The barcode we thought was new and unused has since been created.
       // Throw an error so a new barcode is attempted.
       if (error.constraint === "barcodes_pkey") {
         throw new Error("Barcode already in database!");
       }
+      throw new Error("Error inserting barcode into the database");
     }
   }
 }
