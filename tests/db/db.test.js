@@ -27,7 +27,9 @@ describe("Barcodes Database", () => {
   });
 
   it("should test", async () => {
-    const result = await db.query("select * from barcodes;");
+    const result = await db.query(
+      "select * from barcodes order by barcodes desc limit 1;"
+    );
 
     expect(result.rowCount).toEqual(1);
     expect(result.rows[0].barcode).toEqual("28888055432443");
