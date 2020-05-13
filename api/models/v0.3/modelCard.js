@@ -314,7 +314,7 @@ class Card {
 
   /**
    * setBarcode()
-   * Sets the current barcode to the next available barcode in the database.
+   * Sets this card's barcode to the next available barcode in the ILS.
    */
   async setBarcode() {
     const barcode = new Barcode({ ilsClient: this.ilsClient });

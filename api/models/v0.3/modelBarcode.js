@@ -57,7 +57,10 @@ class Barcode {
 
   /**
    * nextAvailableFromDB
-   * Query the database for a barcode to use.
+   * Query the database for a barcode to use. It will first attempt to retrieve
+   * an existing barcode that is unused. If none are found, then it will get
+   * the lowest value barcode as a reference to generate a new barcode using
+   * the `nextLuhnValidCode` method.
    */
   async nextAvailableFromDB() {
     let barcode;
