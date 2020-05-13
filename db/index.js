@@ -63,8 +63,27 @@ class BarcodesDb {
     return;
   }
 
+  /**
+   * query
+   * Query the database and return the value.
+   *
+   * @param {string} text
+   * @param {object} params
+   * @param {function} callback
+   */
   async query(text, params, callback) {
     return this.pool.query(text, params, callback);
+  }
+
+  /**
+   * directQuery
+   * Query the database but don't care about the value. This is for testing
+   * and dropping the barcodes table in the test database.
+   *
+   * @param {string} query
+   */
+  async directQuery(query) {
+    await this.pool.query(query);
   }
 
   async release() {

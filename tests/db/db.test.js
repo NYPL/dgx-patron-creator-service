@@ -18,35 +18,61 @@ const db = BarcodeDb({
 });
 
 describe("Barcodes Database", () => {
-  beforeAll(async () => {
-    await db.init();
-  });
-
   afterAll(async () => {
+    // Delete the database table after all the test have run.
+    await db.directQuery("DROP TABLE barcodes;");
     await db.release();
   });
 
-  it("should test", async () => {
-    const result = await db.query(
-      "select * from barcodes order by barcodes desc limit 1;"
-    );
+  describe("init", () => {
+    it("creates a table and inserts seed data on first call", async () => {
+      // Let's drop the table in case it's already there.
+      try {
+        await db.directQuery("DROP TABLE barcodes;");
+      } catch (error) {
+        console.log("The table doesn't already exist, continuing.");
+      }
 
-    expect(result.rowCount).toEqual(1);
-    expect(result.rows[0].barcode).toEqual("28888055432443");
+      // There's no table 'barcodes' to begin with.
+      await expect(db.query("SELECT * FROM barcodes")).rejects.toThrow(
+        'relation "barcodes" does not exist'
+      );
+
+      await db.init();
+
+      // Init creates the table and inserts barcode '28888055432443'.
+      const result = await db.query("SELECT * FROM barcodes");
+      expect(result.rows[0].barcode).toEqual("28888055432443");
+      expect(result.rows[0].used).toEqual(true);
+    });
   });
 
-  // describe("init", () => {
-  //   it("should call createTable and initInsert functions", async () => {
-  //     const barcode = new Barcode({ ilsClient: IlsClient() });
+  // A wrapper function around the postgres `query` method which takes any
+  // sql query and runs it.
+  describe("query", () => {
+    beforeAll(async () => {
+      await db.init();
+    });
 
-  //     console.log(barcode);
-  //     const createTableSpy = jest.spyOn(barcode, "createTable");
-  //     const initInsertSpy = jest.spyOn(barcode, "initInsert");
+    it("should insert data", async () => {
+      const result = await db.query(
+        "INSERT INTO barcodes (barcode, used) VALUES ('28888055432435', false);"
+      );
 
-  //     await barcode.init();
+      expect(result.rowCount).toEqual(1);
+    });
 
-  //     expect(createTableSpy).toHaveBeenCalled();
-  //     expect(initInsertSpy).toHaveBeenCalled();
-  //   });
-  // });
+    it("should retrieve the barcodes", async () => {
+      let result = await db.query("SELECT * FROM barcodes;");
+
+      expect(result.rows.length).toEqual(2);
+
+      result = await db.query(
+        "SELECT barcode, used FROM barcodes WHERE used=false ORDER BY barcodes ASC limit 1;"
+      );
+
+      expect(result.rows[0].barcode).toEqual("28888055432435");
+      expect(result.rows[0].used).toEqual(false);
+    });
+  });
 });

@@ -20,8 +20,7 @@ describe('Barcode', () => {
 
   afterAll(async () => {
     // Delete the database table after all the test have run.
-    // TODO: Not working?
-    await db.query('drop table barcodes;');
+    await db.directQuery('DROP TABLE barcodes;');
     await db.release();
   });
 
@@ -36,7 +35,40 @@ describe('Barcode', () => {
     expect(barcode.db).toBeDefined();
   });
 
-  describe('getNextAvailableBarcode', () => {});
+  // This function internally calls `nextAvailableFromDb` and `availableInIls`
+  // which are tested separately, so those are mocked in this set of tests.
+  // Returning an available barcode depends on whether `availableInIls` finds
+  // and returns a barcode that _is_ available.
+  describe('getNextAvailableBarcode', () => {
+    it("returns undefined if it can't get a barcode", async () => {
+      const barcode = new Barcode({});
+
+      barcode.nextAvailableFromDB = jest
+        .fn()
+        .mockReturnValue({ barcode: '1234', newBarcode: true });
+      barcode.availableInIls = jest
+        .fn()
+        .mockReturnValue({ available: false, finalBarcode: '1234' });
+
+      await expect(barcode.getNextAvailableBarcode()).resolves.toEqual(
+        undefined,
+      );
+    });
+
+    it('returns an available barcode', async () => {
+      const barcode = new Barcode({});
+
+      barcode.nextAvailableFromDB = jest
+        .fn()
+        .mockReturnValue({ barcode: '1234', newBarcode: true });
+      // Mock that this barcode is available!
+      barcode.availableInIls = jest
+        .fn()
+        .mockReturnValue({ available: true, finalBarcode: '1234' });
+
+      await expect(barcode.getNextAvailableBarcode()).resolves.toEqual('1234');
+    });
+  });
 
   describe('nextLuhnValidCode', () => {
     it('should return undefined if the barcode is not 14 digits', () => {
@@ -63,11 +95,11 @@ describe('Barcode', () => {
 
       // It first tries to get the lowest barcode that is unused.
       expect(querySpy).toHaveBeenCalledWith(
-        'select barcode from barcodes where used=false order by barcodes asc limit 1;',
+        'SELECT barcode FROM barcodes WHERE used=false ORDER BY barcodes ASC LIMIT 1;',
       );
       // But there aren't any so get the small used one and make a new barcode.
       expect(querySpy).toHaveBeenCalledWith(
-        'select barcode from barcodes where used=true order by barcodes asc limit 1;',
+        'SELECT barcode FROM barcodes WHERE used=true ORDER BY barcodes ASC LIMIT 1;',
       );
       expect(querySpy).toHaveBeenCalled();
 
@@ -95,7 +127,7 @@ describe('Barcode', () => {
       // Note: These are written in order they are called but jest doesn't
       // care about order.
       expect(querySpy).toHaveBeenCalledWith(
-        'select barcode from barcodes where used=false order by barcodes asc limit 1;',
+        'SELECT barcode FROM barcodes WHERE used=false ORDER BY barcodes ASC LIMIT 1;',
       );
 
       // This barcode was already in the database so "newBarcode" is false.
@@ -104,21 +136,249 @@ describe('Barcode', () => {
     });
   });
 
-  describe('availableInIls', () => {});
+  describe('availableInIls', () => {
+    it('tries x amount of times so call the ILS', async () => {
+      IlsClient.mockImplementation(() => ({
+        available: () => false,
+      }));
+      const ilsClient = IlsClient();
+      const ilsSpy = jest.spyOn(ilsClient, 'available');
+      const barcode = new Barcode({ ilsClient });
+      // Mocking that we return the same barcode because it's not important for
+      // this test. In reality, a new barcode would be generated to hit the
+      // ILS for availability.
+      barcode.nextLuhnValidCode = jest.fn().mockReturnValue('12345');
 
-  describe('release', () => {
-    it('should call the postgres release function', async () => {
+      // The default is 10. The second parameter doesn't matter in this case
+      // since the ILS will return false and we'll try another barcode.
+      // The second parameter is to either add a new barcode into the database
+      // or update an existing one.
+      const available = await barcode.availableInIls('12345', false);
+      expect(available.available).toEqual(false);
+      // Normally this would be different but we're mocking that the
+      // luhn-algorithm returns the same barcode.
+      expect(available.finalBarcode).toEqual('12345');
+      expect(ilsSpy).toHaveBeenCalledTimes(10);
+
+      // Let's only try 5 times
+      const available5 = await barcode.availableInIls('12345', false, 5);
+      expect(available5.available).toEqual(false);
+      // Normally this would be different but we're mocking that the
+      // luhn-algorithm returns the same barcode.
+      expect(available5.finalBarcode).toEqual('12345');
+      // The previous 10 calls are added to the spy, so now we have 15.
+      expect(ilsSpy).toHaveBeenCalledTimes(15);
+    });
+
+    it('adds a new barcode since the ILS says it is available and returns it', async () => {
+      IlsClient.mockImplementation(() => ({
+        available: () => true,
+      }));
       const barcode = new Barcode({ ilsClient: IlsClient() });
-      const spy = jest
-        .spyOn(barcode.db, 'release')
-        .mockImplementation(() => 'release');
+      const addBarcodeSpy = jest.spyOn(barcode, 'addBarcode');
+      const testBarcode = '98765';
 
-      await barcode.release();
-      expect(spy).toHaveBeenCalled();
+      // This barcode is new.
+      const available = await barcode.availableInIls(testBarcode, true);
+      // And it's available in the ILS.
+      expect(available.available).toEqual(true);
+      expect(available.finalBarcode).toEqual(testBarcode);
+
+      // Check that it was added to the database.
+      expect(addBarcodeSpy).toHaveBeenCalled();
+      expect(addBarcodeSpy).toHaveBeenCalledWith(testBarcode, true);
+      // More verification.
+      const result = await db.query(
+        `SELECT * FROM barcodes WHERE barcode='${testBarcode}';`,
+      );
+      expect(result.rows[0].used).toEqual(true);
+      expect(result.rows[0].barcode).toEqual(testBarcode);
+    });
+
+    it('attempts to add a new barcode available in the ILS but fails and tries again with a new barcode', async () => {
+      IlsClient.mockImplementation(() => ({
+        available: () => true,
+      }));
+      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const testBarcode = '9876543';
+      const nextBarcode = '9876542';
+      barcode.addBarcode = jest
+        .fn()
+        .mockRejectedValueOnce(
+          new Error('Error from database attempting to insert.'),
+        )
+        .mockReturnValue(true);
+      barcode.nextLuhnValidCode = jest.fn().mockReturnValue(nextBarcode);
+      const addBarcodeSpy = jest.spyOn(barcode, 'addBarcode');
+
+      // This barcode is new so attempt to add it into the database,
+      // but we're mocking that the database call throws an error. Let's only
+      // try this twice.
+      const available = await barcode.availableInIls(testBarcode, true, 2);
+
+      expect(addBarcodeSpy).toHaveBeenCalledTimes(2);
+      // The first attempt which failed.
+      expect(addBarcodeSpy).toHaveBeenCalledWith(testBarcode, true);
+      // The next attempt which was successful.
+      expect(addBarcodeSpy).toHaveBeenCalledWith(nextBarcode, true);
+
+      // We expect the second barcode attempt to be returned, not the initial.
+      expect(available.available).toEqual(true);
+      expect(available.finalBarcode).not.toEqual(testBarcode);
+      expect(available.finalBarcode).toEqual(nextBarcode);
+    });
+
+    it('updates a existing barcode since the ILS says it is available and returns it', async () => {
+      IlsClient.mockImplementation(() => ({
+        available: () => true,
+      }));
+      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const markUsedSpy = jest.spyOn(barcode, 'markUsed');
+      const testBarcode = '987654';
+
+      // Mock that the barcode already exists in the database.
+      await barcode.addBarcode(testBarcode, false);
+      // It is initially unused.
+      let result = await db.query(
+        `SELECT * FROM barcodes WHERE barcode='${testBarcode}';`,
+      );
+      expect(result.rows[0].used).toEqual(false);
+      expect(result.rows[0].barcode).toEqual(testBarcode);
+
+      // This barcode is not new.
+      const available = await barcode.availableInIls(testBarcode, false);
+      // But it's available in the ILS.
+      expect(available.available).toEqual(true);
+      expect(available.finalBarcode).toEqual(testBarcode);
+
+      // Since this is not a new barcode, instead of inserting it into the
+      // database, update it.
+      expect(markUsedSpy).toHaveBeenCalled();
+      expect(markUsedSpy).toHaveBeenCalledWith(testBarcode, true);
+      // Now it should be marked as used.
+      result = await db.query(
+        `SELECT * FROM barcodes WHERE barcode='${testBarcode}';`,
+      );
+      expect(result.rows[0].used).toEqual(true);
+      expect(result.rows[0].barcode).toEqual(testBarcode);
+    });
+
+    it('attempts to update an existing barcode that is available in the ILS but fails and tries again with a new barcode', async () => {
+      IlsClient.mockImplementation(() => ({
+        available: () => true,
+      }));
+      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const testBarcode = '9876543';
+      const nextBarcode = '9876542';
+      barcode.markUsed = jest
+        .fn()
+        .mockRejectedValueOnce(
+          new Error('Error from database attempting to update.'),
+        )
+        .mockReturnValue(true);
+      barcode.nextLuhnValidCode = jest.fn().mockReturnValue(nextBarcode);
+      const markUsedSpy = jest.spyOn(barcode, 'markUsed');
+      const addBarcodeSpy = jest.spyOn(barcode, 'addBarcode');
+
+      // This barcode is not new so attempt to update it in the database,
+      // but we're mocking that the database call throws an error. Let's only
+      // try this twice.
+      const available = await barcode.availableInIls(testBarcode, false, 2);
+
+      // The existing barcode is available and we tried to update the value
+      // in the database. Something went wrong so we generated a new barcode
+      // which must be added to the database. So `markUsed` is only called once.
+      expect(markUsedSpy).toHaveBeenCalledTimes(1);
+      // The first attempt which failed.
+      expect(markUsedSpy).toHaveBeenCalledWith(testBarcode, true);
+      // For the next attempt, the next generated barcode is added to the database.
+      expect(addBarcodeSpy).toHaveBeenCalledTimes(1);
+      expect(addBarcodeSpy).toHaveBeenCalledWith(nextBarcode, true);
+
+      // We expect the second barcode attempt to be returned, not the initial.
+      expect(available.available).toEqual(true);
+      expect(available.finalBarcode).not.toEqual(testBarcode);
+      expect(available.finalBarcode).toEqual(nextBarcode);
     });
   });
 
-  describe('markUsed', () => {});
+  describe('markUsed', () => {
+    it('updates an existing barcode to used=true', async () => {
+      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcodeNum = '999999999';
+
+      // Insert a barcode and set it to used=false.
+      await barcode.addBarcode(barcodeNum, false);
+
+      let result = await db.query(
+        `SELECT used FROM barcodes WHERE barcode='${barcodeNum}';`,
+      );
+      expect(result.rows[0].used).toEqual(false);
+
+      await barcode.markUsed(barcodeNum, true);
+
+      result = await db.query(
+        `SELECT used FROM barcodes WHERE barcode='${barcodeNum}';`,
+      );
+      expect(result.rows[0].used).toEqual(true);
+    });
+
+    it('updates an existing barcode to used=false', async () => {
+      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcodeNum = '999999998';
+
+      // Insert a barcode and set it to used=true.
+      await barcode.addBarcode(barcodeNum, true);
+
+      let result = await db.query(
+        `SELECT used FROM barcodes WHERE barcode='${barcodeNum}';`,
+      );
+      expect(result.rows[0].used).toEqual(true);
+
+      await barcode.markUsed(barcodeNum, false);
+
+      result = await db.query(
+        `SELECT used FROM barcodes WHERE barcode='${barcodeNum}';`,
+      );
+      expect(result.rows[0].used).toEqual(false);
+    });
+
+    it('fails to update an existing barcode to used=false', async () => {
+      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcodeNum = '999999997';
+
+      // Insert a barcode and set it to used=false.
+      await barcode.addBarcode(barcodeNum, false);
+
+      const result = await db.query(
+        `SELECT used FROM barcodes WHERE barcode='${barcodeNum}';`,
+      );
+      expect(result.rows[0].used).toEqual(false);
+
+      // This barcode has used already set to false!
+      await expect(barcode.markUsed(barcodeNum, false)).rejects.toThrow(
+        'The barcode to be marked as unused was already set as unused.',
+      );
+    });
+
+    it('fails to update an existing barcode to used=true', async () => {
+      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcodeNum = '999999996';
+
+      // Insert a barcode and set it to used=true.
+      await barcode.addBarcode(barcodeNum, true);
+
+      const result = await db.query(
+        `SELECT used FROM barcodes WHERE barcode='${barcodeNum}';`,
+      );
+      expect(result.rows[0].used).toEqual(true);
+
+      // This barcode has used already set to true!
+      await expect(barcode.markUsed(barcodeNum, true)).rejects.toThrow(
+        'The barcode to be marked as used was already set as used.',
+      );
+    });
+  });
 
   describe('freeBarcode', () => {
     it('should call the markUsed function always setting the barcode to false', async () => {

@@ -69,7 +69,7 @@ class Barcode {
     // barcode so we don't need to subtract one from it.
     try {
       query =
-        "select barcode from barcodes where used=false order by barcodes asc limit 1;";
+        "SELECT barcode FROM barcodes WHERE used=false ORDER BY barcodes ASC LIMIT 1;";
       result = await this.db.query(query);
       barcode = result.rows[0].barcode;
       newBarcode = false;
@@ -77,7 +77,7 @@ class Barcode {
       // There are no unused barcodes so get the lowest barcode to generate
       // a new barcode.
       query =
-        "select barcode from barcodes where used=true order by barcodes asc limit 1;";
+        "SELECT barcode FROM barcodes WHERE used=true ORDER BY barcodes ASC LIMIT 1;";
       result = await this.db.query(query);
       barcode = this.nextLuhnValidCode(result.rows[0].barcode);
       newBarcode = true;
@@ -100,6 +100,7 @@ class Barcode {
    * @param {number} tries
    */
   async availableInIls(barcode, newBarcode, tries = 10) {
+    const initialTries = tries;
     const isBarcode = true;
     let barcodeAvailable = false;
     let barcodeToTry = barcode;
@@ -125,7 +126,7 @@ class Barcode {
             // barcode.
             dbError = true;
             barcodeAvailable = false;
-            tries = 5;
+            tries = initialTries;
           }
         } else {
           // The barcode was already in the database so update it as used.
@@ -138,7 +139,7 @@ class Barcode {
             // barcode.
             dbError = true;
             barcodeAvailable = false;
-            tries = 5;
+            tries = initialTries;
             // The previous barcode came from the database as unused, but now
             // we are trying the next barcode and assuming it's a new barcode
             // not already in the database.
@@ -165,14 +166,6 @@ class Barcode {
   }
 
   /**
-   * release()
-   * Close the pool connection to the database.
-   */
-  async release() {
-    await this.db.release();
-  }
-
-  /**
    * markUsed(barcode, used)
    * Set a barcode to used or unused in the database.
    * @param {string} barcode
@@ -183,7 +176,7 @@ class Barcode {
     // Likewise, when setting a barcode to unused, we expect the value to be
     // used in the database. If either of those tasks cause an issue, it will
     // be caught.
-    const query = `UPDATE barcodes SET used=${used} WHERE barcode='${barcode}' where used=${!used};`;
+    const query = `UPDATE barcodes SET used=${used} WHERE barcode='${barcode}' AND used=${!used};`;
     let result = await this.db.query(query);
 
     if (result.rowCount !== 1) {
@@ -231,6 +224,14 @@ class Barcode {
       }
       throw new Error("Error inserting barcode into the database");
     }
+  }
+
+  /**
+   * release()
+   * Close the pool connection to the database.
+   */
+  async release() {
+    await this.db.release();
   }
 }
 
