@@ -134,7 +134,7 @@ const DependentEligibilityAPI = (args) => {
       if (!canCreateDependents) {
         response["eligible"] = false;
         response["description"] =
-          "This patron has reached the limit to create dependent patrons.";
+          "This patron has reached the limit to create dependent accounts.";
       } else {
         response["eligible"] = true;
         response["description"] = "This patron can create dependent accounts.";
