@@ -531,65 +531,63 @@ async function createDependent(req, res) {
       // ilsClientPassword,
     });
 
-  const { isPatronEligible, getPatron } = DependentEligibilityAPI({
+  const {
+    isPatronEligible,
+    getAlreadyFetchedPatron,
+    updateParentWithDependent,
+    formatDependentAddress,
+  } = DependentEligibilityAPI({
     ilsClient,
   });
   let isEligible;
   let parentPatron;
   let response;
 
+  // Check that the patron is eligible
   try {
-    // This account is eligible to create dependents.
     isEligible = await isPatronEligible(req.body.barcode);
   } catch (error) {
     response = modelResponse.errorResponseData(
       collectErrorResponseData(error.status || 500, "", error.message, "", "") // eslint-disable-line comma-dangle
     );
-    // The patron is not eligible so just return the error and don't continue.
+    // There was an error so just return the error and don't continue.
     return renderResponse(req, res, response.status, response);
   }
 
+  // The patron is eligible. Let's get the data.
   if (isEligible.eligible) {
-    parentPatron = getPatron();
+    parentPatron = getAlreadyFetchedPatron();
   } else {
+    // The patron is not eligible so return the error and don't continue.
     response = modelResponse.errorResponseData(
       collectErrorResponseData(200, "", isEligible.description, "", "") // eslint-disable-line comma-dangle
     );
-    // The patron is not eligible so just return the error and don't continue.
     return renderResponse(req, res, response.status, response);
   }
 
-  // console.log("parentPatron", parentPatron);
-  const parentAddressRaw = parentPatron.addresses[0];
-  const line1 = parentAddressRaw.lines[0];
-  const commaIndex = parentAddressRaw.lines[1].indexOf(",");
-  const city = parentAddressRaw.lines[1].slice(0, commaIndex);
-  const stateZip = "New York, NY 10018".slice(commaIndex + 2);
-  const [state, zip] = stateZip.split(" ");
-  const dependentAddress = {
-    line1,
-    city,
-    state,
-    zip,
-    // We are assuming that the parent has a validated address.
-    hasBeenValidated: true,
+  const formattedAddress = formatDependentAddress(parentPatron.addresses[0]);
+  const varField = {
+    fieldTag: "x",
+    content: `DEPENDENT OF ${req.body.barcode}`,
   };
-
-  console.log("dep address", dependentAddress);
-  let address = new Address(dependentAddress);
+  let address = new Address(formattedAddress);
+  // Need to set up policy for a 0-12 child card.
   const policy = Policy({});
   const card = new Card({
     name: req.body.name, // from req
-    address: address, // from parent
+    address, // from parent
     username: req.body.username, // from req
     pin: req.body.pin, // from req
-    email: parentPatron.emails[0], // from parent
+    // If no email was sent in the request, use the parent's email.
+    email: req.body.email || parentPatron.emails[0],
     birthdate: req.body.birthdate, // from req
+
+    // TODO CHECK WITH RISA
     ecommunicationsPref: req.body.ecommunicationsPref, // from req
     policy, //created above
     ilsClient, // created above,
     // The parent's barcode:
-    varFields: [{ fieldTag: "x", content: `DEPENDENT OF ${req.body.barcode}` }],
+    varFields: [varField],
   });
 
   let validCard;
@@ -597,7 +595,6 @@ async function createDependent(req, res) {
 
   try {
     const cardValidation = await card.validate();
-    console.log("VALIDATED!");
     validCard = cardValidation.valid;
     errors = cardValidation.errors;
   } catch (error) {
@@ -623,13 +620,24 @@ async function createDependent(req, res) {
         // Success! resp.data.link has the ID of the newly created patron
         // in the form of:
         // "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{patron-id}"
+
+        // The dependent card was created. Great! But now we need to associate
+        // this new account to the parent's account. So update the parent's
+        // account varFields property to include the barcode of this new
+        // dependent account.
+
+        const resp2 = await updateParentWithDependent(
+          parentPatron,
+          card.barcode
+        );
+
         response = {
           status: resp.status,
           data: resp.data,
         };
       } catch (error) {
-        // There was an error hitting the ILS to create the patron. Catch
-        // and return the error.
+        // There was an error hitting the ILS to create the patron or to update
+        // the parent's account. Catch either error and return it.
         response = modelResponse.errorResponseData(
           collectErrorResponseData(
             error.status || 400,

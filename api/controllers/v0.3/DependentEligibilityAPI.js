@@ -155,13 +155,59 @@ const DependentEligibilityAPI = (args) => {
 
   // Get's a patron after it was fetched from the ILS when running the
   // `isPatronEligible` function.
-  const getPatron = () => patronData;
+  const getAlreadyFetchedPatron = () => patronData;
+
+  const updateParentWithDependent = async (parent, dependentBarcode) => {
+    if (!ilsClient) {
+      throw new NoILSClient(
+        "ILS Client not set in the Dependent Eligibility API."
+      );
+    }
+
+    // Need to find and figure out if they already have dependents. If so
+    // add them to the existing varField.
+    const updatedFields = {
+      varFields: [{ fieldTag: "x", content: `DEPENDENTS ${dependentBarcode}` }],
+    };
+
+    try {
+      const response = await ilsClient.updatePatron(parent.id, updatedFields);
+
+      if (response.status !== 204) {
+        // The record wasn't found.
+        throw new Error("The parent patron couldn't be updated.");
+      }
+
+      // Return the patron object.
+      return response;
+    } catch (error) {
+      throw new ILSIntegrationError(error.message);
+    }
+  };
+
+  const formatDependentAddress = (address) => {
+    const line1 = address.lines[0];
+    const commaIndex = address.lines[1].indexOf(",");
+    const city = address.lines[1].slice(0, commaIndex);
+    const stateZip = address.lines[1].slice(commaIndex + 2);
+    const [state, zip] = stateZip.split(" ");
+    return {
+      line1,
+      city,
+      state,
+      zip,
+      // We are assuming that the parent has a validated address.
+      hasBeenValidated: true,
+    };
+  };
 
   return {
     isPatronEligible,
-    getPatron,
-    // For testing,
+    getAlreadyFetchedPatron,
     getPatronFromILS,
+    updateParentWithDependent,
+    formatDependentAddress,
+    // For testing,
     checkPType,
     checkDependentLimit,
   };

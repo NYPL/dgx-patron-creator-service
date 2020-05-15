@@ -70,6 +70,53 @@ const IlsClient = (args) => {
   };
 
   /**
+   * updatePatron(patron)
+   * First checks if the patron has met all the requirements before calling the
+   * ILS API. If the patron is valid, format the data as the ILS expects it.
+   * Returns the response from the ILS or an error.
+   * Note: the newly created patron's id is in the response object in
+   *  `response.data.link`.
+   *
+   * @param {Card object} patron
+   * @param {object} updatedFields
+   */
+  const updatePatron = async (patronId, updatedFields) => {
+    const putUrl = `${createUrl}/${patronId}`;
+
+    return await axios
+      .put(putUrl, updatedFields, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${ilsToken}`,
+        },
+      })
+      .then((axiosResponse) => {
+        // Expects a 204 no content response.
+        return axiosResponse;
+      })
+      .catch((error) => {
+        const response = error.response;
+
+        // If the request to the ILS is missing a value or a key is of
+        // and incorrect type, i.e. the barcode is sent as an integer
+        // instead of a string.
+        if (response.status === 400) {
+          throw new InvalidRequest(
+            `Invalid request to ILS: ${response.data.description}`
+          );
+        }
+
+        if (!(response.status >= 500)) {
+          return response;
+        } else {
+          throw new ILSIntegrationError(
+            "The ILS could not be requested when attempting to update a patron."
+          );
+        }
+      });
+  };
+
+  /**
    * getPatronFromBarcodeOrUsername(barcodeOrUsername, isBarcode)
    * Hits the /find endpoint in the ILS and returns a patron data object
    * or an error.
@@ -278,6 +325,7 @@ const IlsClient = (args) => {
     createPatron,
     available,
     getPatronFromBarcodeOrUsername,
+    updatePatron,
     // For testing,
     ecommunicationsPref,
     formatPatronData,
