@@ -8,6 +8,45 @@ const { ILSIntegrationError } = require("../../../../api/helpers/errors");
 
 jest.mock("axios");
 
+const mockedSuccessfulResponse = {
+  status: 200,
+  data: {
+    id: "1234",
+    patronType: 10,
+    varFields: [
+      { fieldTag: "u", content: "username" },
+      { fieldTag: "x", content: "some content" },
+    ],
+    // Other ILS patron fields which aren't necessary for testing
+  },
+};
+const mockedErrorResponse = {
+  response: {
+    status: 404,
+    data: {
+      name: "Record not found",
+    },
+  },
+};
+const mockedErrorResponseDup = {
+  response: {
+    status: 409,
+    data: {
+      name: "Internal server error",
+      description: "Duplicate patrons found for the specified varFieldTag[b].",
+    },
+  },
+};
+const mockedILSIntegrationError = {
+  response: {
+    status: 500,
+    data: {
+      name: "Internal server error",
+      description: "Something went wrong in the ILS.",
+    },
+  },
+};
+
 describe("IlsClient", () => {
   beforeEach(() => {
     axios.mockClear();
@@ -81,45 +120,167 @@ describe("IlsClient", () => {
     });
   });
 
-  // Checks a barcode or username availability.
+  describe("getPatronFromBarcodeOrUsername", () => {
+    const findUrl = "ils/find/endpoint";
+    const ilsToken = "ilsToken";
+    const ilsClient = IlsClient({ findUrl, ilsToken });
+
+    it("calls the ILS with the barcode parameters", async () => {
+      const barcode = "999999999";
+      const isBarcode = true;
+
+      // Mocking that the call to the ILS was successful.
+      axios.get.mockImplementationOnce(() =>
+        Promise.resolve(mockedSuccessfulResponse)
+      );
+
+      const barcodeFieldTag = IlsClient.BARCODE_FIELD_TAG;
+      const expectedParams = `?varFieldTag=${barcodeFieldTag}&varFieldContent=${barcode}&fields=patronType,varFields`;
+      const patron = await ilsClient.getPatronFromBarcodeOrUsername(
+        barcode,
+        isBarcode
+      );
+
+      expect(patron.status).toEqual(200);
+      expect(patron.data.id).toEqual("1234");
+      expect(patron.data.patronType).toEqual(10);
+      expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${ilsToken}`,
+        },
+      });
+    });
+
+    it("calls the ILS with the username parameters", async () => {
+      const username = "username1";
+      const isBarcode = false;
+
+      // Mocking that the call to the ILS was successful.
+      axios.get.mockImplementationOnce(() =>
+        Promise.resolve(mockedSuccessfulResponse)
+      );
+
+      const usernameFieldTag = IlsClient.USERNAME_FIELD_TAG;
+      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields`;
+      const patron = await ilsClient.getPatronFromBarcodeOrUsername(
+        username,
+        isBarcode
+      );
+
+      expect(patron.status).toEqual(200);
+      expect(patron.data.id).toEqual("1234");
+      expect(patron.data.patronType).toEqual(10);
+      expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${ilsToken}`,
+        },
+      });
+    });
+
+    it("can't find the patron", async () => {
+      // This is testing the username but the barcode will return the same error.
+      const username = "username1";
+      const isBarcode = false;
+
+      // Mocking that the call to the ILS was not successful.
+      axios.get.mockImplementationOnce(() =>
+        Promise.reject(mockedErrorResponse)
+      );
+
+      const usernameFieldTag = IlsClient.USERNAME_FIELD_TAG;
+      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields`;
+      const patron = await ilsClient.getPatronFromBarcodeOrUsername(
+        username,
+        isBarcode
+      );
+
+      expect(patron.status).toEqual(404);
+      expect(patron.data.id).toBeUndefined();
+      expect(patron.data.name).toEqual("Record not found");
+      expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${ilsToken}`,
+        },
+      });
+    });
+
+    it("found more than one patron with the same username or barcode", async () => {
+      // This is testing the username but the barcode will return the same error.
+      const username = "username1";
+      const isBarcode = false;
+
+      // Mocking that the call to the ILS was not successful.
+      axios.get.mockImplementationOnce(() =>
+        Promise.reject(mockedErrorResponseDup)
+      );
+
+      const usernameFieldTag = IlsClient.USERNAME_FIELD_TAG;
+      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields`;
+      const patron = await ilsClient.getPatronFromBarcodeOrUsername(
+        username,
+        isBarcode
+      );
+
+      expect(patron.status).toEqual(409);
+      expect(patron.data.id).toBeUndefined();
+      expect(patron.data.name).toEqual("Internal server error");
+      expect(patron.data.description).toEqual(
+        "Duplicate patrons found for the specified varFieldTag[b]."
+      );
+      expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${ilsToken}`,
+        },
+      });
+    });
+
+    it("returns an error because the request to the ILS failed", async () => {
+      // This is testing the username but the barcode will return the same error.
+      const username = "username1";
+      const isBarcode = false;
+
+      // Mocking that the call to the ILS was not successful.
+      axios.get.mockImplementationOnce(() =>
+        Promise.reject(mockedILSIntegrationError)
+      );
+
+      const usernameFieldTag = IlsClient.USERNAME_FIELD_TAG;
+      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields`;
+      const patron = await ilsClient.getPatronFromBarcodeOrUsername(
+        username,
+        isBarcode
+      );
+
+      expect(patron.status).toEqual(500);
+      expect(patron.data.id).toBeUndefined();
+      expect(patron.data.name).toEqual("Internal server error");
+      expect(patron.data.description).toEqual(
+        "Something went wrong in the ILS."
+      );
+      expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${ilsToken}`,
+        },
+      });
+    });
+  });
+
+  // Checks a barcode or username availability. Internally, `available`
+  // calls `getPatronFromBarcodeOrUsername` which is tested above.
   describe("available", () => {
     const findUrl = "ils/find/endpoint";
     const ilsToken = "ilsToken";
     const ilsClient = IlsClient({ findUrl, ilsToken });
-    const mockedSuccessfulResponse = {
-      status: 200,
-      data: {
-        id: "1234",
-        // Other ILS patron fields which aren't necessary to test
-        // for availability
-      },
-    };
-    const mockedErrorResponse = {
-      response: {
-        status: 404,
-        data: {
-          name: "Record not found",
-        },
-      },
-    };
-    const mockedErrorResponseDup = {
-      response: {
-        status: 409,
-        data: {
-          name: "Internal server error",
-        },
-      },
-    };
-    const mockedILSIntegrationError = {
-      response: {
-        status: 500,
-      },
-    };
 
     describe("barcode", () => {
       const barcode = "12341234123412";
       const barcodeFieldTag = IlsClient.BARCODE_FIELD_TAG;
-      const expectedParams = `?varFieldTag=${barcodeFieldTag}&varFieldContent=${barcode}`;
+      const expectedParams = `?varFieldTag=${barcodeFieldTag}&varFieldContent=${barcode}&fields=patronType,varFields`;
       const isBarcode = true;
 
       it("checks for barcode availability and finds an existing patron, so it is not available", async () => {
@@ -129,7 +290,6 @@ describe("IlsClient", () => {
         axios.get.mockImplementationOnce(() =>
           Promise.resolve(mockedSuccessfulResponse)
         );
-
         const available = await ilsClient.available(barcode, isBarcode);
 
         expect(available).toEqual(false);
@@ -206,7 +366,7 @@ describe("IlsClient", () => {
     describe("username", () => {
       const username = "username";
       const usernameFieldTag = IlsClient.USERNAME_FIELD_TAG;
-      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}`;
+      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields`;
       const isBarcode = false;
 
       it("checks for username availability and finds an existing patron, so it is not available", async () => {

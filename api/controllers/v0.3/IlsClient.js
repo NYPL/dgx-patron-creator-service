@@ -69,13 +69,9 @@ const IlsClient = (args) => {
   };
 
   /**
-   * available(barcodeOrUsername, isBarcode)
-   * For the /find endpoint in the ILS, a 200 response means that the username
-   * or barcode was found and is therefore not available. A 404 response means
-   * that the username or barcode was not found and is therefore available.
-   * A 409 response means that the ILS found a duplicate and so the username
-   * or barcode is unavailable. These are the responses from the ILS at
-   * the moment.
+   * getPatronFromBarcodeOrUsername(barcodeOrUsername, isBarcode)
+   * Hits the /find endpoint in the ILS and returns a patron data object
+   * or an error.
    *
    * The barcode field tag is denoted as 'b' and the username field tag is
    * denoted as 'u'.
@@ -83,16 +79,20 @@ const IlsClient = (args) => {
    * @param {string} barcodeOrUsername
    * @param {boolean}} isBarcode
    */
-  const available = async (barcodeOrUsername, isBarcode = true) => {
+  const getPatronFromBarcodeOrUsername = async (
+    barcodeOrUsername,
+    isBarcode = true
+  ) => {
     const fieldTag = isBarcode
       ? IlsClient.BARCODE_FIELD_TAG
       : IlsClient.USERNAME_FIELD_TAG;
-    const fieldType = isBarcode ? "barcode" : "username";
     // These two query parameters are required to make a valid GET request.
-    const params = `?varFieldTag=${fieldTag}&varFieldContent=${barcodeOrUsername}`;
-    let available = false;
+    // We only need the `id`, `patronType`, and `varField` fields from the
+    // patron object (`id` is returned by default), so those fields are added
+    // at the end of the endpoint request. This can be optimized later.
+    const params = `?varFieldTag=${fieldTag}&varFieldContent=${barcodeOrUsername}&fields=patronType,varFields`;
 
-    await axios
+    const response = await axios
       .get(`${findUrl}${params}`, {
         headers: {
           "Content-Type": "application/json",
@@ -100,60 +100,61 @@ const IlsClient = (args) => {
         },
       })
       .then((response) => {
-        const status = response.status;
-        const data = response.data;
-        // Example data:
-        // {
-        //   "id": 12345789,
-        //   "expirationDate": "2029-10-21",
-        //   "birthDate": "1988-01-01",
-        //   "patronType": 10,
-        //   "patronCodes": {
-        //     "pcode1": "s",
-        //     "pcode2": "f",
-        //     "pcode3": 5,
-        //     "pcode4": 0
-        //   },
-        //   "homeLibraryCode": "ma",
-        //   "message": {
-        //     "code": "-",
-        //     "accountMessages": [
-        //       "email@gmail.com"
-        //     ]
-        //   },
-        //   "blockInfo": {
-        //     "code": "-"
-        //   },
-        //   "moneyOwed": 2.5
-        // }
-        if (status === 200 && data.id) {
-          available = false;
-        }
+        return response;
       })
       .catch((error) => {
-        const response = error.response;
-        // The ILS returns a 404 with the record not found...
-        // so it's available!
-        if (
-          response.status === 404 &&
-          response.data.name === "Record not found"
-        ) {
-          available = true;
-        } else if (
-          // But if it returns 409, then a duplicate entry was found
-          // and the field is not available.
-          response.status == 409 &&
-          response.data.name === "Internal server error" &&
-          response.data.description ===
-            "Duplicate patrons found for the specified varFieldTag[b]."
-        ) {
-          available = false;
-        } else if (response.status >= 500) {
-          throw new ILSIntegrationError(
-            `The ILS could not be requested when validating the ${fieldType}.`
-          );
-        }
+        return error.response;
       });
+
+    return response;
+  };
+
+  /**
+   * available(barcodeOrUsername, isBarcode)
+   * Makes a call to the ILS to get a patron data object through the
+   * `getPatronFromBarcodeOrUsername` function. A 200 response means that the
+   * username or barcode was found and is therefore not available. A 404
+   * response means that the username or barcode was not found and is
+   * therefore available. A 409 response means that the ILS found a duplicate
+   * and so the username or barcode is unavailable. These are the responses
+   * from the ILS at the moment.
+   *
+   * @param {string} barcodeOrUsername
+   * @param {boolean}} isBarcode
+   */
+  const available = async (barcodeOrUsername, isBarcode = true) => {
+    const fieldType = isBarcode ? "barcode" : "username";
+    let available = false;
+    const response = await getPatronFromBarcodeOrUsername(
+      barcodeOrUsername,
+      isBarcode
+    );
+
+    // Is the response okay? If so, the username or barcode isn't available
+    // since a patron was found.
+    let status = response.status;
+    let data = response.data;
+    if (status === 200 && data.id) {
+      available = false;
+    }
+
+    // The ILS returns a 404 with the record not found... so it's available!
+    if (status === 404 && data.name === "Record not found") {
+      available = true;
+    } else if (
+      // But if it returns 409, then a duplicate entry was found
+      // and the field is not available.
+      response.status == 409 &&
+      response.data.name === "Internal server error" &&
+      response.data.description ===
+        "Duplicate patrons found for the specified varFieldTag[b]."
+    ) {
+      available = false;
+    } else if (response.status >= 500) {
+      throw new ILSIntegrationError(
+        `The ILS could not be requested when validating the ${fieldType}.`
+      );
+    }
 
     return available;
   };
@@ -268,6 +269,7 @@ const IlsClient = (args) => {
   return {
     createPatron,
     available,
+    getPatronFromBarcodeOrUsername,
     // For testing,
     ecommunicationsPref,
     formatPatronData,
@@ -297,34 +299,50 @@ IlsClient.PATRON_AGENCY_FIELD_TAG = "158";
 IlsClient.NOTICE_PREF_FIELD_TAG = "268";
 IlsClient.NOTE_FIELD_TAG = "x";
 // Standard and temporary expiration times
-IlsClient.STANDARD_EXPIRATION_TIME = 1095; // days
+IlsClient.STANDARD_EXPIRATION_TIME = 1095; // days, 3 years
 IlsClient.TEMPORARY_EXPIRATION_TIME = 30; // days
 IlsClient.WEB_APPLICANT_EXPIRATION_TIME = 90; // days
 // Ptypes for various library card offerings
 IlsClient.WEB_APPLICANT_PTYPE = 1;
-IlsClient.NO_PRINT_ADULT_METRO_PTYPE = 2;
-IlsClient.NO_PRINT_ADULT_NYS_PTYPE = 3;
+IlsClient.SIMPLYE_METRO_PTYPE = 2;
+IlsClient.SIMPLYE_NON_METRO_PTYPE = 3;
 IlsClient.ADULT_METRO_PTYPE = 10;
 IlsClient.ADULT_NYS_PTYPE = 11;
 IlsClient.SENIOR_METRO_PTYPE = 20;
 IlsClient.SENIOR_NYS_PTYPE = 21;
+// The following two p-types don't have a code yet.
+// Using 101 for now but MUST be updated.
+IlsClient.DISABLED_METRO_NY_PTYPE = 101;
+IlsClient.HOMEBOUND_NYC_PTYPE = 101;
 IlsClient.TEEN_METRO_PTYPE = 50;
 IlsClient.TEEN_NYS_PTYPE = 51;
 IlsClient.REJECTED_PTYPE = 101;
 IlsClient.ILS_ERROR = "-1";
 IlsClient.PTYPE_TO_TEXT = {
   WEB_APPLICANT_PTYPE: "Web applicant (No Borrowing)",
-  NO_PRINT_ADULT_METRO_PTYPE: "Adult 19-64 Metro (3 Year, No Print Borrowing)",
-  NO_PRINT_ADULT_NYS_PTYPE: "Adult 19-64 NY State (3 Year, No Print Borrowing)",
-  ADULT_METRO_PTYPE: "Adult 19-64 Metro (3 Year)",
-  ADULT_NYS_PTYPE: "Adult 19-64 NY State (3 Year)",
+  ADULT_METRO_PTYPE: "Adult 18-64 Metro (3 Year)",
+  ADULT_NYS_PTYPE: "Adult 18-64 NY State (3 Year)",
   SENIOR_METRO_PTYPE: "Senior, 65+, Metro (3 Year)",
   SENIOR_NYS_PTYPE: "Senior, 65+, NY State (3 Year)",
+  DISABLED_METRO_NY_PTYPE: "Disabled Metro NY (3 Year)",
+  HOMEBOUND_NYC_PTYPE: "Homebound NYC (3 Year)",
+  SIMPLYE_METRO_PTYPE: "SimplyE Metro",
+  SIMPLYE_NON_METRO_PTYPE: "SimplyE Non-Metro",
   TEEN_METRO_PTYPE: "Teen Metro (3 Year)",
   TEEN_NYS_PTYPE: "Teen NY State (3 Year)",
   REJECTED_PTYPE: "Rejected",
   ILS_ERROR: "Unable to create in ILS",
 };
+IlsClient.CAN_CREATE_DEPENDENTS = [
+  IlsClient.ADULT_METRO_PTYPE,
+  IlsClient.ADULT_NYS_PTYPE,
+  IlsClient.SENIOR_METRO_PTYPE,
+  IlsClient.SENIOR_NYS_PTYPE,
+  IlsClient.DISABLED_METRO_NY_PTYPE,
+  IlsClient.HOMEBOUND_NYC_PTYPE,
+  IlsClient.SIMPLYE_METRO_PTYPE,
+  IlsClient.SIMPLYE_NON_METRO_PTYPE,
+];
 // Default values for certain fields
 IlsClient.DEFAULT_HOME_LIB = "";
 IlsClient.DEFAULT_PATRON_AGENCY = "202";

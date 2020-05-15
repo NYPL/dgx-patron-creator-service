@@ -24,12 +24,12 @@ const Policy = (args) => {
       agency: IlsClient.DEFAULT_PATRON_AGENCY,
       ptype: {
         metro: {
-          id: IlsClient.NO_PRINT_ADULT_METRO_PTYPE,
-          desc: IlsClient.PTYPE_TO_TEXT.NO_PRINT_ADULT_METRO_PTYPE,
+          id: IlsClient.SIMPLYE_METRO_PTYPE,
+          desc: IlsClient.PTYPE_TO_TEXT.SIMPLYE_METRO_PTYPE,
         },
         default: {
-          id: IlsClient.NO_PRINT_ADULT_NYS_PTYPE,
-          desc: IlsClient.PTYPE_TO_TEXT.NO_PRINT_ADULT_NYS_PTYPE,
+          id: IlsClient.SIMPLYE_NON_METRO_PTYPE,
+          desc: IlsClient.PTYPE_TO_TEXT.SIMPLYE_NON_METRO_PTYPE,
         },
       },
       cardType: {
