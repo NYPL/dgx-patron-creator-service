@@ -145,6 +145,7 @@ class Card {
     this.ecommunicationsPref = args["ecommunicationsPref"] || "";
     this.policy = args["policy"] || "";
     this.isTemporary = false;
+    this.varFields = args["varFields"] || {};
     this.errors = {};
 
     this.ilsClient = args["ilsClient"];

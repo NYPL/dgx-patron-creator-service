@@ -7,6 +7,7 @@ const IlsClient = require("./IlsClient");
  */
 const DependentEligibilityAPI = (args) => {
   const ilsClient = args["ilsClient"];
+  let patronData;
 
   /**
    * getPatronFromILS(barcode)
@@ -122,6 +123,11 @@ const DependentEligibilityAPI = (args) => {
 
     let response = {};
     const patron = await getPatronFromILS(barcode);
+    // Set the fetched patron data object into the global variable so
+    // it can be accessed by `getPatron`. This is specifically set here and not
+    // in `getPatronFromILS` because we want to make sure that the eligibility
+    // check was ran in order to retrieve a patron.
+    patronData = patron;
     // First, check that they have a valid ptype to be able to create
     // dependent accounts.
     const hasValidPtype = checkPType(patron.patronType);
@@ -147,8 +153,13 @@ const DependentEligibilityAPI = (args) => {
     return response;
   };
 
+  // Get's a patron after it was fetched from the ILS when running the
+  // `isPatronEligible` function.
+  const getPatron = () => patronData;
+
   return {
     isPatronEligible,
+    getPatron,
     // For testing,
     getPatronFromILS,
     checkPType,

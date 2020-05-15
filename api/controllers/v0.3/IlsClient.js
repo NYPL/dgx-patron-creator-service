@@ -29,6 +29,7 @@ const IlsClient = (args) => {
   const createPatron = async (patron) => {
     let ilsPatron = formatPatronData(patron);
 
+    console.log("ilsPatron", ilsPatron);
     return await axios
       .post(createUrl, ilsPatron, {
         headers: {
@@ -87,10 +88,13 @@ const IlsClient = (args) => {
       ? IlsClient.BARCODE_FIELD_TAG
       : IlsClient.USERNAME_FIELD_TAG;
     // These two query parameters are required to make a valid GET request.
-    // We only need the `id`, `patronType`, and `varField` fields from the
-    // patron object (`id` is returned by default), so those fields are added
-    // at the end of the endpoint request. This can be optimized later.
-    const params = `?varFieldTag=${fieldTag}&varFieldContent=${barcodeOrUsername}&fields=patronType,varFields`;
+    // We need the `id`, `patronType`, `varField`, `addresses`, and `emails`
+    // fields from the patron object (`id` is returned by default), so those
+    // fields are added at the end of the endpoint request.
+    // This can be optimized later.
+    const varFieldParams = `varFieldTag=${fieldTag}&varFieldContent=${barcodeOrUsername}`;
+    const otherFields = `&fields=patronType,varFields,addresses,emails`;
+    const params = `?${varFieldParams}${otherFields}`;
 
     const response = await axios
       .get(`${findUrl}${params}`, {
@@ -242,6 +246,10 @@ const IlsClient = (args) => {
     }
     if (patron.birthdate) {
       fields["birthDate"] = patron.birthdate.toISOString().slice(0, 10);
+    }
+
+    if (patron.varFields) {
+      fields["varFields"] = patron.varFields;
     }
 
     return fields;

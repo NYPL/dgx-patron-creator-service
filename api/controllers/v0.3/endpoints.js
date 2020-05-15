@@ -450,8 +450,205 @@ async function checkDependentEligibility(req, res) {
   renderResponse(req, res, status, response);
 }
 
+/**
+ * setupCreateDependent(req, res)
+ * The callback for the "/api/v0.3/patrons/dependents" route. This will make
+ * sure that everything is set up correctly in order to make a request to
+ * the ILS. This includes validating environment variables and decrypting
+ * AWS keys.
+ *
+ * @param {HTTP request} req
+ * @param {HTTP response} res
+ */
+async function setupCreateDependent(req, res) {
+  const hasValidEnvVariables = await checkEnvVariables(
+    req,
+    res,
+    ROUTE_TAG,
+    envVariableNames
+  );
+
+  if (!hasValidEnvVariables) {
+    // `checkEnvVariables` already sent the error response so return the
+    // function so it doesn't continue to process the current request.
+    return;
+  }
+
+  ilsClientKey = process.env.ILS_CLIENT_KEY;
+  // ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
+  ilsClientPassword = process.env.ILS_CLIENT_SECRET;
+  // ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
+
+  Promise.all([ilsClientKey, ilsClientPassword])
+    .then((decryptedValues) => {
+      [ilsClientKey, ilsClientPassword] = decryptedValues;
+      createDependent(req, res);
+    })
+    .catch(() => {
+      const localErrorMessage =
+        "The ILS ClientKey and/or Secret were not decrypted";
+
+      const errorResponseData = modelResponse.errorResponseData(
+        collectErrorResponseData(
+          500,
+          "configuration-error",
+          localErrorMessage,
+          "",
+          ""
+        ) // eslint-disable-line comma-dangle
+      );
+      renderResponse(req, res, 500, errorResponseData);
+    });
+}
+
+/**
+ * createDependent(req, res)
+ *
+ * @param {HTTP request} req
+ * @param {HTTP response} res
+ */
+async function createDependent(req, res) {
+  const timeNow = new Date();
+  // eslint-disable-next-line max-len
+  const ilsTokenExpired =
+    ilsTokenTimestamp && timeNow - ilsTokenTimestamp > 3540000; // 3540000 = 59 minutes; tokens are for 60 minutes
+  if (!ilsToken || ilsTokenExpired) {
+    getIlsToken(req, res, ilsClientKey, ilsClientPassword).then(() => {
+      createDependent(req, res);
+    });
+    return;
+  }
+
+  ilsClient =
+    ilsClient ||
+    IlsClient({
+      createUrl: process.env.ILS_CREATE_PATRON_URL,
+      findUrl: process.env.ILS_FIND_VALUE_URL,
+      ilsToken,
+      tokenUrl: process.env.ILS_CREATE_TOKEN_URL,
+      // ilsTokenTimestamp,
+      // ilsClientKey,
+      // ilsClientPassword,
+    });
+
+  const { isPatronEligible, getPatron } = DependentEligibilityAPI({
+    ilsClient,
+  });
+  let isEligible;
+  let parentPatron;
+  let response;
+
+  try {
+    // This account is eligible to create dependents.
+    isEligible = await isPatronEligible(req.body.barcode);
+  } catch (error) {
+    response = modelResponse.errorResponseData(
+      collectErrorResponseData(error.status || 500, "", error.message, "", "") // eslint-disable-line comma-dangle
+    );
+    // The patron is not eligible so just return the error and don't continue.
+    return renderResponse(req, res, response.status, response);
+  }
+
+  if (isEligible.eligible) {
+    parentPatron = getPatron();
+  } else {
+    response = modelResponse.errorResponseData(
+      collectErrorResponseData(200, "", isEligible.description, "", "") // eslint-disable-line comma-dangle
+    );
+    // The patron is not eligible so just return the error and don't continue.
+    return renderResponse(req, res, response.status, response);
+  }
+
+  // console.log("parentPatron", parentPatron);
+  const parentAddressRaw = parentPatron.addresses[0];
+  const line1 = parentAddressRaw.lines[0];
+  const commaIndex = parentAddressRaw.lines[1].indexOf(",");
+  const city = parentAddressRaw.lines[1].slice(0, commaIndex);
+  const stateZip = "New York, NY 10018".slice(commaIndex + 2);
+  const [state, zip] = stateZip.split(" ");
+  const dependentAddress = {
+    line1,
+    city,
+    state,
+    zip,
+    // We are assuming that the parent has a validated address.
+    hasBeenValidated: true,
+  };
+
+  console.log("dep address", dependentAddress);
+  let address = new Address(dependentAddress);
+  const policy = Policy({});
+  const card = new Card({
+    name: req.body.name, // from req
+    address: address, // from parent
+    username: req.body.username, // from req
+    pin: req.body.pin, // from req
+    email: parentPatron.emails[0], // from parent
+    birthdate: req.body.birthdate, // from req
+    ecommunicationsPref: req.body.ecommunicationsPref, // from req
+    policy, //created above
+    ilsClient, // created above,
+    // The parent's barcode:
+    varFields: [{ fieldTag: "x", content: `DEPENDENT OF ${req.body.barcode}` }],
+  });
+
+  let validCard;
+  let errors;
+
+  try {
+    const cardValidation = await card.validate();
+    console.log("VALIDATED!");
+    validCard = cardValidation.valid;
+    errors = cardValidation.errors;
+  } catch (error) {
+    // If there was a problem hitting the ILS or Service Objects while
+    // attempting to validate the username or address, catch that error here
+    // and return it.
+    response = modelResponse.errorResponseData(
+      collectErrorResponseData(error.status || 400, "", error.message, "", "") // eslint-disable-line comma-dangle
+    );
+  }
+
+  // If there are any errors with the request, such as missing pin, birthdate,
+  // etc., or if the username is unavailable, render that error.
+  if (errors && Object.keys(errors).length !== 0) {
+    response = modelResponse.errorResponseData(
+      collectErrorResponseData(400, "", errors, "", "") // eslint-disable-line comma-dangle
+    );
+  } else {
+    // If the card is valid, attempt to create a patron in the ILS!
+    if (validCard) {
+      try {
+        const resp = await card.createIlsPatron();
+        // Success! resp.data.link has the ID of the newly created patron
+        // in the form of:
+        // "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{patron-id}"
+        response = {
+          status: resp.status,
+          data: resp.data,
+        };
+      } catch (error) {
+        // There was an error hitting the ILS to create the patron. Catch
+        // and return the error.
+        response = modelResponse.errorResponseData(
+          collectErrorResponseData(
+            error.status || 400,
+            "",
+            error.message,
+            "",
+            ""
+          ) // eslint-disable-line comma-dangle
+        );
+      }
+    }
+  }
+
+  renderResponse(req, res, response.status, response);
+}
+
 module.exports = {
   createPatron: setupCreatePatron,
+  createDependent: setupCreateDependent,
   checkUsername: setupCheckUsername,
   checkDependentEligibility: setupDependentEligibility,
 };
