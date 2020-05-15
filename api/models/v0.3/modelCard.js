@@ -2,6 +2,7 @@
 const AddressValidationApi = require("../../controllers/v0.3/AddressValidationAPI");
 const UsernameValidationApi = require("../../controllers/v0.3/UsernameValidationAPI");
 const NameValidationApi = require("../../controllers/v0.3/NameValidationAPI");
+const Barcode = require("./modelBarcode");
 
 /**
  * A validator class to verify a card's address and birthdate. Doesn't
@@ -39,7 +40,7 @@ const CardValidator = () => {
       card.errors["username"] = ["Username is not available or valid"];
     }
 
-    if (card.email && !/\A[^@]+@[^@]+\z/.test(card.email)) {
+    if (card.email && !/^[^@]+@[^@]+$/.test(card.email)) {
       card.errors["email"] = ["Email address must be valid"];
     }
 
@@ -313,11 +314,28 @@ class Card {
 
   /**
    * setBarcode()
-   * Sets the current barcode to the next available.
-   * TODO: implement the Barcode class.
+   * Sets this card's barcode to the next available barcode in the ILS.
    */
-  setBarcode() {
-    return (this.barcode = Barcode.nextAvailable);
+  async setBarcode() {
+    const barcode = new Barcode({ ilsClient: this.ilsClient });
+    this.barcode = await barcode.getNextAvailableBarcode();
+
+    // Throw an error so no attempt to create the patron in the ILS is made.
+    if (!this.barcode) {
+      throw new Error("Could not generate a new barcode. Please try again.");
+    }
+  }
+
+  /**
+   * freeBarcode()
+   * Sets the current barcode's `used` value to false, possibly because
+   * creating a patron in the ILS failed and the barcode is now free to use.
+   */
+  async freeBarcode() {
+    const barcode = new Barcode({ ilsClient: this.ilsClient });
+    await barcode.freeBarcode(this.barcode);
+
+    this.barcode = "";
   }
 
   /**
@@ -407,17 +425,39 @@ class Card {
    * If the current card is valid, then create it against the ILS API.
    */
   async createIlsPatron() {
-    if (this.policy.isRequiredField(this.barcode)) {
-      this.setBarcode();
-    }
+    let response;
     this.setPtype();
 
     if (!this.validForIls()) {
-      throw new Error("Some error with ILS");
+      throw new Error("The card has not been validated or has no ptype.");
     }
 
-    // create the patron
-    const response = await this.ilsClient.createPatron(this);
+    // For patrons with the `simplye` policy type, the barcode is required,
+    // so let's create one. If no barcode is created, an error will be thrown
+    // an the patron won't be created in the ILS.
+    if (this.policy.isRequiredField("barcode")) {
+      try {
+        await this.setBarcode();
+      } catch (error) {
+        // Could not generate a new barcode so return that as the response.
+        // TODO: Throw a better error.
+        return {
+          status: 400,
+          data: error.message,
+        };
+      }
+    }
+
+    // Now create the patron in the ILS.
+    try {
+      response = await this.ilsClient.createPatron(this);
+    } catch (error) {
+      // We want to catch the error from creating a patron here to be able to
+      // free up the barcode in the database. Continue to send the same error
+      // as an API response.
+      await this.freeBarcode(this.barcode);
+      throw error;
+    }
 
     return response;
   }

@@ -1,9 +1,10 @@
 /* eslint-disable */
 const axios = require("axios");
-const { ILSIntegrationError } = require("../../helpers/errors");
+const { ILSIntegrationError, InvalidRequest } = require("../../helpers/errors");
 
 /**
- * Helper class to setup API calls to the ILS.
+ * Helper class to setup API calls to the ILS. Assumes that the patron card
+ * object is already validated.
  */
 const IlsClient = (args) => {
   const createUrl = args["createUrl"] || "";
@@ -26,9 +27,6 @@ const IlsClient = (args) => {
    * @param {Card object} patron
    */
   const createPatron = async (patron) => {
-    if (!patron.validForIls) {
-      throw new Error("IlsError");
-    }
     let ilsPatron = formatPatronData(patron);
 
     return await axios
@@ -50,6 +48,15 @@ const IlsClient = (args) => {
       })
       .catch((error) => {
         const response = error.response;
+
+        // If the request to the ILS is missing a value or a key is of
+        // and incorrect type, i.e. the barcode is sent as an integer
+        // instead of a string.
+        if (response.status === 400) {
+          throw new InvalidRequest(
+            `Invalid request to ILS: ${response.data.description}`
+          );
+        }
 
         if (!(response.status >= 500)) {
           return response;
