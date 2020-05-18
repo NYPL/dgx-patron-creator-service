@@ -639,6 +639,40 @@ describe('Card', () => {
     });
   });
 
+  describe('setAgency', () => {
+    const simplyePolicy = Policy();
+    const simplyeJuvenilePolicy = Policy({ policyType: 'simplyeJuvenile' });
+    const webApplicantPolicy = Policy({ policyType: 'webApplicant' });
+    const addressNY = new Address({ city: 'New York City' });
+
+    it('sets the agency for each policy type', () => {
+      const web = new Card({
+        ...basicCard,
+        address: addressNY,
+        policy: webApplicantPolicy,
+      });
+      const simplye = new Card({
+        ...basicCard,
+        address: addressNY,
+        policy: simplyePolicy,
+      });
+      const simplyeJuvenile = new Card({
+        ...basicCard,
+        address: addressNY,
+        policy: simplyeJuvenilePolicy,
+      });
+
+      web.setAgency();
+      expect(web.agency).toEqual('198');
+
+      simplye.setAgency();
+      expect(simplye.agency).toEqual('202');
+
+      simplyeJuvenile.setAgency();
+      expect(simplyeJuvenile.agency).toEqual('202');
+    });
+  });
+
   describe('setTemporary', () => {
     it('should not be temporary by default and set to temporary when called', () => {
       const card = new Card(basicCard);

@@ -18,7 +18,7 @@ const {
   renderResponse,
   errorResponseDataWithTag,
 } = require("../../helpers/responses");
-const DependentEligibilityAPI = require("./DependentEligibilityAPI");
+const DependentAccountAPI = require("./DependentAccountAPI");
 
 const ROUTE_TAG = "CREATE_PATRON_0.3";
 // This returns a function that generates the error response object.
@@ -432,9 +432,9 @@ async function checkDependentEligibility(req, res) {
       // ilsClientPassword,
     });
 
-  DependentEligibilityAPI;
+  DependentAccountAPI;
 
-  const { isPatronEligible } = DependentEligibilityAPI({ ilsClient });
+  const { isPatronEligible } = DependentAccountAPI({ ilsClient });
   let response;
   try {
     response = await isPatronEligible(req.body.barcode);
@@ -532,17 +532,17 @@ async function createDependent(req, res) {
 
   const {
     isPatronEligible,
-    getAlreadyFetchedPatron,
+    getAlreadyFetchedParentPatron,
     updateParentWithDependent,
     formatDependentAddress,
-  } = DependentEligibilityAPI({
+  } = DependentAccountAPI({
     ilsClient,
   });
   let isEligible;
   let parentPatron;
   let response;
 
-  // Check that the patron is eligible
+  // Check that the patron is eligible to create dependent accounts.
   try {
     isEligible = await isPatronEligible(req.body.barcode);
   } catch (error) {
@@ -553,9 +553,10 @@ async function createDependent(req, res) {
     return renderResponse(req, res, response.status, response);
   }
 
-  // The patron is eligible. Let's get the data.
   if (isEligible.eligible) {
-    parentPatron = getAlreadyFetchedPatron();
+    // The patron is eligible. Let's get the data. The parent account was
+    // stored after calling `isPatronEligible`.
+    parentPatron = getAlreadyFetchedParentPatron();
   } else {
     // The patron is not eligible so return the error and don't continue.
     response = modelResponse.errorResponseData(
@@ -564,24 +565,27 @@ async function createDependent(req, res) {
     return renderResponse(req, res, response.status, response);
   }
 
+  // Reformat the address for a new Address object.
   const formattedAddress = formatDependentAddress(parentPatron.addresses[0]);
+  // This varField is needed for the dependent account to associate it with
+  // its parent account.
   const varField = {
     fieldTag: "x",
     content: `DEPENDENT OF ${req.body.barcode}`,
   };
   let address = new Address(formattedAddress);
+  // This new patron has a new ptype.
   const policy = Policy({ policyType: "simplyeJuvenile" });
   const card = new Card({
     name: req.body.name, // from req
-    address, // from parent
     username: req.body.username, // from req
     pin: req.body.pin, // from req
+    birthdate: req.body.birthdate, // from req
+    address, // from parent
     // If no email was sent in the request, use the parent's email.
     email: req.body.email || parentPatron.emails[0],
-    birthdate: req.body.birthdate, // from req
     policy, //created above
     ilsClient, // created above,
-    // The parent's barcode:
     varFields: [varField],
   });
 
@@ -589,6 +593,8 @@ async function createDependent(req, res) {
   let errors;
 
   try {
+    // The setup is complete, now validate the card to make sure all the
+    // values are in place.
     const cardValidation = await card.validate();
     validCard = cardValidation.valid;
     errors = cardValidation.errors;
@@ -608,10 +614,10 @@ async function createDependent(req, res) {
       collectErrorResponseData(400, "", errors, "", "") // eslint-disable-line comma-dangle
     );
   } else {
-    // If the card is valid, attempt to create a patron in the ILS!
+    // If the card is valid, attempt to create the dependent patron in the ILS!
     if (validCard) {
       try {
-        const resp = await card.createIlsPatron();
+        const newResponse = await card.createIlsPatron();
         // Success! resp.data.link has the ID of the newly created patron
         // in the form of:
         // "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{patron-id}"
@@ -619,23 +625,29 @@ async function createDependent(req, res) {
         // The dependent card was created. Great! But now we need to associate
         // this new account to the parent's account. So update the parent's
         // account varFields property to include the barcode of this new
-        // dependent account.
-
-        const resp2 = await updateParentWithDependent(
+        // dependent account. This value is actually used. If an error is
+        // thrown, it will be caught, but if there are no errors, then assume
+        // that the request went through since the ILS only returns a 204.
+        const updateResponse = await updateParentWithDependent(
           parentPatron,
           card.barcode
         );
 
         response = {
-          status: resp.status,
-          data: resp.data,
+          status: "200",
+          data: {
+            dependent: newResponse.data,
+            // Updating a patron in the ILS simply returns a 204 with no
+            // response in the body. Just return that the parent was updated.
+            parent: { updated: true },
+          },
         };
       } catch (error) {
         // There was an error hitting the ILS to create the patron or to update
         // the parent's account. Catch either error and return it.
         response = modelResponse.errorResponseData(
           collectErrorResponseData(
-            error.status || 400,
+            error.status || 502,
             "",
             error.message,
             "",

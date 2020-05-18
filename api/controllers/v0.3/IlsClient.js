@@ -95,7 +95,6 @@ const IlsClient = (args) => {
       })
       .catch((error) => {
         const response = error.response;
-
         // If the request to the ILS is missing a value or a key is of
         // and incorrect type, i.e. the barcode is sent as an integer
         // instead of a string.
@@ -103,6 +102,11 @@ const IlsClient = (args) => {
           throw new InvalidRequest(
             `Invalid request to ILS: ${response.data.description}`
           );
+        }
+
+        if (response.status === 404) {
+          // Throws 'Patron record not found'.
+          throw new Error(response.data.name);
         }
 
         if (!(response.status >= 500)) {
@@ -312,13 +316,13 @@ const IlsClient = (args) => {
   /**
    * agencyField(agency, fixedFields)
    * Keep any existing fixedFields but add the new one for the agency which
-   * has a key of "86".
+   * has a key of "158".
    *
    * @param {string} agency
    * @param {object} fixedFields
    */
   const agencyField = (agency, fixedFields) => ({
-    "86": {
+    "158": {
       label: "AGENCY",
       value: agency,
     },
@@ -359,6 +363,7 @@ const IlsClient = (args) => {
     getPatronFromBarcodeOrUsername,
     updatePatron,
     // For testing,
+    agencyField,
     ecommunicationsPref,
     formatPatronData,
     formatAddress,

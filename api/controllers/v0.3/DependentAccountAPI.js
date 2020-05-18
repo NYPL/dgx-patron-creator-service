@@ -5,9 +5,57 @@ const IlsClient = require("./IlsClient");
 /**
  *
  */
-const DependentEligibilityAPI = (args) => {
+const DependentAccountAPI = (args) => {
   const ilsClient = args["ilsClient"];
-  let patronData;
+  let parentPatronData;
+
+  /**
+   * isPatronEligible(barcode)
+   * The main function of this class. It gets a patron data object from the ILS
+   * and it verifies it has the correct p-type. If it does, then it checks if
+   * it can create another dependent account. It returns a response stating
+   * whether the patron is eligible or not and a description if they are not.
+   *
+   * @param {string} barcode
+   */
+  const isPatronEligible = async (barcode) => {
+    if (!ilsClient) {
+      throw new NoILSClient(
+        "ILS Client not set in the Dependent Eligibility API."
+      );
+    }
+
+    let response = {};
+    const patron = await getPatronFromILS(barcode);
+    // Set the fetched patron data object into the global variable so
+    // it can be accessed by `getPatron`. This is specifically set here and not
+    // in `getPatronFromILS` because we want to make sure that the eligibility
+    // check was ran in order to retrieve a patron.
+    parentPatronData = patron;
+    // First, check that they have a valid ptype to be able to create
+    // dependent accounts.
+    const hasValidPtype = checkPType(patron.patronType);
+
+    if (hasValidPtype) {
+      // Great, they have a valid ptype. Now check that they have not reached
+      // the dependent account limit.
+      const canCreateDependents = checkDependentLimit(patron.varFields);
+
+      if (!canCreateDependents) {
+        response["eligible"] = false;
+        response["description"] =
+          "This patron has reached the limit to create dependent accounts.";
+      } else {
+        response["eligible"] = true;
+        response["description"] = "This patron can create dependent accounts.";
+      }
+    } else {
+      response["eligible"] = false;
+      response["description"] = "This patron does not have an eligible ptype.";
+    }
+
+    return response;
+  };
 
   /**
    * getPatronFromILS(barcode)
@@ -106,57 +154,25 @@ const DependentEligibilityAPI = (args) => {
   };
 
   /**
-   * isPatronEligible(barcode)
-   * The main function of this class. It gets a patron data object from the ILS
-   * and it verifies it has the correct p-type. If it does, then it checks if
-   * it can create another dependent account. It returns a response stating
-   * whether the patron is eligible or not and a description if they are not.
-   *
-   * @param {string} barcode
+   * getAlreadyFetchedParentPatron
+   * Gets a patron after it was fetched from the ILS when running the
+   * `isPatronEligible` function. This is to reduce calls to the ILS since
+   * the parent patron data is already stored in memory but will be
+   * overidden the next time a new parent patron's data is requested.
    */
-  const isPatronEligible = async (barcode) => {
-    if (!ilsClient) {
-      throw new NoILSClient(
-        "ILS Client not set in the Dependent Eligibility API."
-      );
-    }
+  const getAlreadyFetchedParentPatron = () => parentPatronData;
 
-    let response = {};
-    const patron = await getPatronFromILS(barcode);
-    // Set the fetched patron data object into the global variable so
-    // it can be accessed by `getPatron`. This is specifically set here and not
-    // in `getPatronFromILS` because we want to make sure that the eligibility
-    // check was ran in order to retrieve a patron.
-    patronData = patron;
-    // First, check that they have a valid ptype to be able to create
-    // dependent accounts.
-    const hasValidPtype = checkPType(patron.patronType);
-
-    if (hasValidPtype) {
-      // Great, they have a valid ptype. Now check that they have not reached
-      // the dependent account limit.
-      const canCreateDependents = checkDependentLimit(patron.varFields);
-
-      if (!canCreateDependents) {
-        response["eligible"] = false;
-        response["description"] =
-          "This patron has reached the limit to create dependent accounts.";
-      } else {
-        response["eligible"] = true;
-        response["description"] = "This patron can create dependent accounts.";
-      }
-    } else {
-      response["eligible"] = false;
-      response["description"] = "This patron does not have an eligible ptype.";
-    }
-
-    return response;
-  };
-
-  // Get's a patron after it was fetched from the ILS when running the
-  // `isPatronEligible` function.
-  const getAlreadyFetchedPatron = () => patronData;
-
+  /**
+   * updateParentWithDependent(parent, dependentBarcode)
+   * This updates the field object in the varFields array for a patron. It
+   * specifically will add an object with a `fieldTag` of 'x' and a `content`
+   * of a list of dependent's barcodes. It does the logic to update any
+   * existing string to add a barcode if any exist already. The response
+   * doesn't return anything so if the status is `204`, then it was successful.
+   *
+   * @param {object} parent
+   * @param {string} dependentBarcode
+   */
   const updateParentWithDependent = async (parent, dependentBarcode) => {
     if (!ilsClient) {
       throw new NoILSClient(
@@ -170,53 +186,66 @@ const DependentEligibilityAPI = (args) => {
       );
     }
 
+    const varFields = parent.varFields || [];
     let varField;
     // parent
-    const xFieldTags = parent.varFields.filter((obj) => obj.fieldTag === "x");
+    const xFieldTags = varFields.filter((obj) => obj.fieldTag === "x");
     // No varFields were found, so we can assume the patron doesn't
     // have any dependent accounts yet.
     if (xFieldTags.length === 0) {
       varField = { fieldTag: "x", content: `DEPENDENTS ${dependentBarcode}` };
-    }
-
-    // Check for a varField that has `content` in the form of:
-    // "DEPENDENTS x,x,x"
-    // where `x` is a barcode. First get the varField that has "DEPENDENTS".
-    const dependentsVarField = xFieldTags.find(
-      (obj) => obj.content.indexOf("DEPENDENTS") !== -1
-    );
-
-    // There are varFields with a fieldTag of "x" but none with "DEPENDENTS".
-    // We can assume the patron doesn't have any dependents already.
-    if (!dependentsVarField) {
-      varField = { fieldTag: "x", content: `DEPENDENTS ${dependentBarcode}` };
     } else {
-      dependentsVarField.content += `,${dependentBarcode}`;
-      varField = dependentsVarField;
+      // Check for a varField that has `content` in the form of:
+      // "DEPENDENTS x,x,x"
+      // where `x` is a barcode. First get the varField that has "DEPENDENTS".
+      const dependentsVarField = xFieldTags.find(
+        (obj) => obj.content.indexOf("DEPENDENTS") !== -1
+      );
+
+      // There are varFields with a fieldTag of "x" but none with "DEPENDENTS".
+      // We can assume the patron doesn't have any dependents already.
+      if (!dependentsVarField) {
+        varField = { fieldTag: "x", content: `DEPENDENTS ${dependentBarcode}` };
+      } else {
+        // The value is already there. So now append the new barcode.
+        dependentsVarField.content += `,${dependentBarcode}`;
+        varField = dependentsVarField;
+      }
     }
 
-    // Need to find and figure out if they already have dependents. If so
-    // add them to the existing varField.
+    // This field is hardcoded but we only expect to update a patron's account
+    // if they have a dependent to add.
     const updatedFields = {
       varFields: [varField],
     };
 
-    try {
-      const response = await ilsClient.updatePatron(parent.id, updatedFields);
+    const response = await ilsClient.updatePatron(parent.id, updatedFields);
 
-      if (response.status !== 204) {
-        // The record wasn't found and couldn't be updated.
-        throw new Error("The parent patron couldn't be updated.");
-      }
-
-      // Return the patron object.
-      return response;
-    } catch (error) {
-      throw new ILSIntegrationError(error.message);
+    if (response.status !== 204) {
+      // The record wasn't found and couldn't be updated.
+      throw new Error("The parent patron couldn't be updated.");
     }
+
+    return response;
   };
 
+  /**
+   * formatDependentAddress(address)
+   * A dependent account has the address as its parent account. The address
+   * just needs to be converted into an object for the purposes of creating
+   * a new Address object to run validations for the new dependent. Since
+   * the address is from the parent, it has already been validated and that's
+   * added to this new object.
+   *
+   * @param {object} address
+   */
   const formatDependentAddress = (address) => {
+    if (!address.lines) {
+      return {};
+    } else if (address.lines.length !== 2) {
+      return {};
+    }
+
     const line1 = address.lines[0];
     const commaIndex = address.lines[1].indexOf(",");
     const city = address.lines[1].slice(0, commaIndex);
@@ -234,7 +263,7 @@ const DependentEligibilityAPI = (args) => {
 
   return {
     isPatronEligible,
-    getAlreadyFetchedPatron,
+    getAlreadyFetchedParentPatron,
     getPatronFromILS,
     updateParentWithDependent,
     formatDependentAddress,
@@ -244,4 +273,4 @@ const DependentEligibilityAPI = (args) => {
   };
 };
 
-module.exports = DependentEligibilityAPI;
+module.exports = DependentAccountAPI;
