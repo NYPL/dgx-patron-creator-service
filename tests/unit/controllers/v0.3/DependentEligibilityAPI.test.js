@@ -132,7 +132,7 @@ describe("DependentEligibilityAPI", () => {
 
       expect(response.eligible).toEqual(false);
       expect(response.description).toEqual(
-        "This patron has reached the limit to create dependent account."
+        "This patron has reached the limit to create dependent accounts."
       );
     });
 

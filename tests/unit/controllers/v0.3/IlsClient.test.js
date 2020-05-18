@@ -575,6 +575,8 @@ describe("IlsClient", () => {
     });
     // Mock that the ptype was added to the card.
     card.setPtype();
+    // Mock that the agency was added.
+    card.setAgency();
 
     // Mocking current expiration date.
     const now = new Date();
@@ -615,6 +617,12 @@ describe("IlsClient", () => {
           patronType: 1,
           pin: "1234",
           varFields: [{ content: "username", fieldTag: "u" }],
+          fixedFields: {
+            "86": {
+              label: "AGENCY",
+              value: "198",
+            },
+          },
         },
         {
           headers: {
@@ -649,6 +657,12 @@ describe("IlsClient", () => {
           patronType: 1,
           pin: "1234",
           varFields: [{ content: "username", fieldTag: "u" }],
+          fixedFields: {
+            "86": {
+              label: "AGENCY",
+              value: "198",
+            },
+          },
         },
         {
           headers: {

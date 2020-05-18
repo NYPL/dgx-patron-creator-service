@@ -164,17 +164,48 @@ const DependentEligibilityAPI = (args) => {
       );
     }
 
+    if (!dependentBarcode) {
+      throw new Error(
+        "The dependent account has no barcode. Cannot update parent account."
+      );
+    }
+
+    let varField;
+    // parent
+    const xFieldTags = parent.varFields.filter((obj) => obj.fieldTag === "x");
+    // No varFields were found, so we can assume the patron doesn't
+    // have any dependent accounts yet.
+    if (xFieldTags.length === 0) {
+      varField = { fieldTag: "x", content: `DEPENDENTS ${dependentBarcode}` };
+    }
+
+    // Check for a varField that has `content` in the form of:
+    // "DEPENDENTS x,x,x"
+    // where `x` is a barcode. First get the varField that has "DEPENDENTS".
+    const dependentsVarField = xFieldTags.find(
+      (obj) => obj.content.indexOf("DEPENDENTS") !== -1
+    );
+
+    // There are varFields with a fieldTag of "x" but none with "DEPENDENTS".
+    // We can assume the patron doesn't have any dependents already.
+    if (!dependentsVarField) {
+      varField = { fieldTag: "x", content: `DEPENDENTS ${dependentBarcode}` };
+    } else {
+      dependentsVarField.content += `,${dependentBarcode}`;
+      varField = dependentsVarField;
+    }
+
     // Need to find and figure out if they already have dependents. If so
     // add them to the existing varField.
     const updatedFields = {
-      varFields: [{ fieldTag: "x", content: `DEPENDENTS ${dependentBarcode}` }],
+      varFields: [varField],
     };
 
     try {
       const response = await ilsClient.updatePatron(parent.id, updatedFields);
 
       if (response.status !== 204) {
-        // The record wasn't found.
+        // The record wasn't found and couldn't be updated.
         throw new Error("The parent patron couldn't be updated.");
       }
 

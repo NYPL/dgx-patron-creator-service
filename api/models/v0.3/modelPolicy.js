@@ -58,6 +58,20 @@ const Policy = (args) => {
       requiredFields: ['birthdate'],
       minimumAge: 13,
     },
+    simplyeJuvenile: {
+      agency: IlsClient.DEFAULT_PATRON_AGENCY,
+      ptype: {
+        default: {
+          id: IlsClient.SIMPLYE_JUVENILE,
+          desc: IlsClient.PTYPE_TO_TEXT.SIMPLYE_JUVENILE,
+        },
+      },
+      cardType: {
+        standard: IlsClient.STANDARD_EXPIRATION_TIME,
+        temporary: IlsClient.TEMPORARY_EXPIRATION_TIME,
+      },
+      requiredFields: ['barcode'],
+    },
   };
   const policyType = args && args.policyType ? args.policyType : DEFAULT_POLICY_TYPE;
   const policy = ilsPolicy[policyType];
@@ -107,30 +121,6 @@ const Policy = (args) => {
   };
 
   /**
-   * determineAgency(patronParams)
-   * Determines the agency of a patron based on the current policy.
-   *
-   * @param {object} patronParams
-   */
-  const determineAgency = (patronParams = {}) => {
-    if (isWebApplicant) {
-      if (
-        patronParams
-        && patronParams.patronAgency
-        && parseInt(patronParams.patronAgency, 10) === 199
-      ) {
-        policy.agency = IlsClient.WEB_APPLICANT_NYS_AGENCY;
-      } else {
-        policy.agency = IlsClient.WEB_APPLICANT_AGENCY;
-      }
-    } else {
-      policy.agency = IlsClient.DEFAULT_PATRON_AGENCY;
-    }
-
-    return policy.agency;
-  };
-
-  /**
    * usesAnApprovedPolicy()
    * Checks if the passed policy type as the argument is a valid ILS policy.
    *
@@ -161,7 +151,6 @@ const Policy = (args) => {
     policyField,
     isRequiredField,
     determinePtype,
-    determineAgency,
     usesAnApprovedPolicy,
   };
 };

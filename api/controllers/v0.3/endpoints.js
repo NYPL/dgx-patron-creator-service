@@ -284,7 +284,6 @@ async function createPatron(req, res) {
     });
 
   let address = new Address(req.body.address);
-  // TODO: What should the default policy be?
   const policy = Policy({ policyType: req.body.policyType || "simplye" });
   const card = new Card({
     name: req.body.name, // from req
@@ -571,8 +570,7 @@ async function createDependent(req, res) {
     content: `DEPENDENT OF ${req.body.barcode}`,
   };
   let address = new Address(formattedAddress);
-  // Need to set up policy for a 0-12 child card.
-  const policy = Policy({});
+  const policy = Policy({ policyType: "simplyeJuvenile" });
   const card = new Card({
     name: req.body.name, // from req
     address, // from parent
@@ -581,9 +579,6 @@ async function createDependent(req, res) {
     // If no email was sent in the request, use the parent's email.
     email: req.body.email || parentPatron.emails[0],
     birthdate: req.body.birthdate, // from req
-
-    // TODO CHECK WITH RISA
-    ecommunicationsPref: req.body.ecommunicationsPref, // from req
     policy, //created above
     ilsClient, // created above,
     // The parent's barcode:

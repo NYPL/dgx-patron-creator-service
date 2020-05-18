@@ -29,7 +29,6 @@ const IlsClient = (args) => {
   const createPatron = async (patron) => {
     let ilsPatron = formatPatronData(patron);
 
-    console.log("ilsPatron", ilsPatron);
     return await axios
       .post(createUrl, ilsPatron, {
         headers: {
@@ -81,7 +80,7 @@ const IlsClient = (args) => {
    * @param {object} updatedFields
    */
   const updatePatron = async (patronId, updatedFields) => {
-    const putUrl = `${createUrl}/${patronId}`;
+    const putUrl = `${createUrl}${patronId}`;
 
     return await axios
       .put(putUrl, updatedFields, {
@@ -255,7 +254,10 @@ const IlsClient = (args) => {
   const formatPatronData = (patron) => {
     // Addresses should be in a list.
     let addresses = [];
+    // varFields is an array of objects.
     let varFields = [];
+    // fixedFields is an object containing other objects.
+    let fixedFields = {};
     let patronCodes = {};
 
     let address = formatAddress(patron.address);
@@ -272,13 +274,16 @@ const IlsClient = (args) => {
 
     // Add the existing varfields if any.
     if (patron.varFields && patron.varFields.length) {
-      varFields.concat(patron.varFields);
+      varFields.push(...patron.varFields);
     }
     varFields.push(usernameVarField);
 
     // E-communications value has a key of pcode1 in the patronCodes object.
     // Merging any other pcode values and overwriting patronCodes.
     patronCodes = ecommunicationsPref(patron.ecommunicationsPref, patronCodes);
+
+    // Add agency fixedField
+    fixedFields = agencyField(patron.agency, fixedFields);
 
     let fields = {
       names: [patron.name],
@@ -288,6 +293,7 @@ const IlsClient = (args) => {
       patronCodes,
       expirationDate: patron.expirationDate.toISOString().slice(0, 10),
       varFields,
+      fixedFields,
     };
 
     if (patron.barcode) {
@@ -300,12 +306,24 @@ const IlsClient = (args) => {
       fields["birthDate"] = patron.birthdate.toISOString().slice(0, 10);
     }
 
-    if (patron.varFields) {
-      fields["varFields"] = varFields;
-    }
-
     return fields;
   };
+
+  /**
+   * agencyField(agency, fixedFields)
+   * Keep any existing fixedFields but add the new one for the agency which
+   * has a key of "86".
+   *
+   * @param {string} agency
+   * @param {object} fixedFields
+   */
+  const agencyField = (agency, fixedFields) => ({
+    "86": {
+      label: "AGENCY",
+      value: agency,
+    },
+    ...fixedFields,
+  });
 
   /**
    * ecommunicationsPref(ecommunicationsPrefValue)
@@ -378,6 +396,9 @@ IlsClient.ADULT_METRO_PTYPE = 10;
 IlsClient.ADULT_NYS_PTYPE = 11;
 IlsClient.SENIOR_METRO_PTYPE = 20;
 IlsClient.SENIOR_NYS_PTYPE = 21;
+IlsClient.SIMPLYE_JUVENILE = 4;
+IlsClient.SIMPLYE_JUVENILE_ONLY = 5;
+IlsClient.SIMPLYE_YOUNG_ADULT = 6;
 // The following two p-types don't have a code yet.
 // Using 101 for now but MUST be updated.
 IlsClient.DISABLED_METRO_NY_PTYPE = 101;
@@ -396,6 +417,9 @@ IlsClient.PTYPE_TO_TEXT = {
   HOMEBOUND_NYC_PTYPE: "Homebound NYC (3 Year)",
   SIMPLYE_METRO_PTYPE: "SimplyE Metro",
   SIMPLYE_NON_METRO_PTYPE: "SimplyE Non-Metro",
+  SIMPLYE_JUVENILE: "SimplyE Juvenile",
+  SIMPLYE_JUVENILE_ONLY: "SimplyE Juvenile Only",
+  SIMPLYE_YOUNG_ADULT: "SimplyE Young Adult",
   TEEN_METRO_PTYPE: "Teen Metro (3 Year)",
   TEEN_NYS_PTYPE: "Teen NY State (3 Year)",
   REJECTED_PTYPE: "Rejected",

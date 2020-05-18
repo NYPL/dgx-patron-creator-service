@@ -157,6 +157,7 @@ class Card {
     this.hasValidName = undefined;
     this.hasValidUsername = undefined;
     this.expirationDate = undefined;
+    this.agency = undefined;
     this.valid = false;
 
     this.nameValidationDisabled = true;
@@ -199,6 +200,7 @@ class Card {
     if (Object.keys(this.errors).length !== 0) {
       return { valid: false, errors: this.errors };
     }
+
     // Now that all values have gone through a basic validation process,
     // do the more in-depth validation.
     const validated = await cardValidator.validate(this);
@@ -348,6 +350,14 @@ class Card {
   }
 
   /**
+   * setAgency()
+   * Sets the agency for the current card based on the current policy.
+   */
+  setAgency() {
+    this.agency = this.policy.policy.agency;
+  }
+
+  /**
    * setTemporary()
    * Sets the current card to temporary.
    */
@@ -428,6 +438,7 @@ class Card {
   async createIlsPatron() {
     let response;
     this.setPtype();
+    this.setAgency();
 
     if (!this.validForIls()) {
       throw new Error("The card has not been validated or has no ptype.");
@@ -453,10 +464,12 @@ class Card {
     try {
       response = await this.ilsClient.createPatron(this);
     } catch (error) {
-      // We want to catch the error from creating a patron here to be able to
-      // free up the barcode in the database. Continue to send the same error
-      // as an API response.
-      await this.freeBarcode(this.barcode);
+      if (this.policy.isRequiredField("barcode")) {
+        // We want to catch the error from creating a patron here to be able to
+        // free up the barcode in the database. Continue to send the same error
+        // as an API response.
+        await this.freeBarcode(this.barcode);
+      }
       throw error;
     }
 
