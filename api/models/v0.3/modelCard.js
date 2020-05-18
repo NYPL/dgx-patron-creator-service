@@ -142,7 +142,7 @@ class Card {
     this.email = args["email"] || "";
     this.birthdate = this.normalizedBirthdate(args["birthdate"]);
     this.workAddress = args["workAddress"] || "";
-    this.ecommunicationsPref = args["ecommunicationsPref"] || "";
+    this.ecommunicationsPref = args["ecommunicationsPref"] || false;
     this.policy = args["policy"] || "";
     this.isTemporary = false;
     this.varFields = args["varFields"] || {};
