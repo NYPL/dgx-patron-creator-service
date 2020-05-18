@@ -272,9 +272,11 @@ const IlsClient = (args) => {
       patron.ecommunicationsPref
     );
 
+    // Add the existing varfields if any.
+    if (patron.varFields && patron.varFields.length) {
+      varFields.concat(patron.varFields);
+    }
     varFields.push(usernameVarField);
-    // TODO: Figure out with ILS team how to send this field.
-    // varFields.push(ecommunicationsVarField);
 
     let fields = {
       names: [patron.name],
@@ -296,7 +298,7 @@ const IlsClient = (args) => {
     }
 
     if (patron.varFields) {
-      fields["varFields"] = patron.varFields;
+      fields["varFields"] = varFields;
     }
 
     return fields;
