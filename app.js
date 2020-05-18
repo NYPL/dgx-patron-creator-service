@@ -162,6 +162,9 @@ router.route('/v0.2/patrons/').post(createPatronV0_2.createPatron);
 // Still supporting older v0.1 validation endpoints
 router.route('/v0.3/validations/username').post(createPatronV0_3.checkUsername);
 // router.route('/v0.3/validations/address').post(createPatronV0_3.checkAddress);
+router
+  .route('/v0.3/patrons/dependent-eligibility')
+  .get(createPatronV0_3.checkDependentEligibility);
 router.route('/v0.3/patrons/').post(createPatronV0_3.createPatron);
 
 // Do not listen to connections in Lambda environment

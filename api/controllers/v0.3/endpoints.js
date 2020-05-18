@@ -18,6 +18,7 @@ const {
   renderResponse,
   errorResponseDataWithTag,
 } = require("../../helpers/responses");
+const DependentEligibilityAPI = require("./DependentEligibilityAPI");
 
 const ROUTE_TAG = "CREATE_PATRON_0.3";
 // This returns a function that generates the error response object.
@@ -351,7 +352,106 @@ async function createPatron(req, res) {
   renderResponse(req, res, response.status, response);
 }
 
+/**
+ * setupDependentEligibility(req, res)
+ * The callback for the "/api/v0.3/validations/username" route. This will make
+ * sure that everything is set up correctly in order to make a request to
+ * the ILS. This includes validating environment variables and decrypting
+ * AWS keys.
+ *
+ * @param {HTTP request} req
+ * @param {HTTP response} res
+ */
+async function setupDependentEligibility(req, res) {
+  const hasValidEnvVariables = await checkEnvVariables(
+    req,
+    res,
+    ROUTE_TAG,
+    envVariableNames
+  );
+
+  if (!hasValidEnvVariables) {
+    // `checkEnvVariables` already sent the error response so return the
+    // function so it doesn't continue to process the current request.
+    return;
+  }
+
+  ilsClientKey = process.env.ILS_CLIENT_KEY;
+  // ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
+  ilsClientPassword = process.env.ILS_CLIENT_SECRET;
+  // ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
+
+  Promise.all([ilsClientKey, ilsClientPassword])
+    .then((decryptedValues) => {
+      [ilsClientKey, ilsClientPassword] = decryptedValues;
+      checkDependentEligibility(req, res);
+    })
+    .catch(() => {
+      const localErrorMessage =
+        "The ILS ClientKey and/or Secret were not decrypted";
+
+      const errorResponseData = modelResponse.errorResponseData(
+        collectErrorResponseData(
+          500,
+          "configuration-error",
+          localErrorMessage,
+          "",
+          ""
+        ) // eslint-disable-line comma-dangle
+      );
+      renderResponse(req, res, 500, errorResponseData);
+    });
+}
+
+/**
+ * checkDependentEligibility(req, res)
+ *
+ * @param {HTTP request} req
+ * @param {HTTP response} res
+ */
+async function checkDependentEligibility(req, res) {
+  const timeNow = new Date();
+  // eslint-disable-next-line max-len
+  const ilsTokenExpired =
+    ilsTokenTimestamp && timeNow - ilsTokenTimestamp > 3540000; // 3540000 = 59 minutes; tokens are for 60 minutes
+  if (!ilsToken || ilsTokenExpired) {
+    getIlsToken(req, res, ilsClientKey, ilsClientPassword).then(() => {
+      checkDependentEligibility(req, res);
+    });
+    return;
+  }
+
+  ilsClient =
+    ilsClient ||
+    IlsClient({
+      createUrl: process.env.ILS_CREATE_PATRON_URL,
+      findUrl: process.env.ILS_FIND_VALUE_URL,
+      ilsToken,
+      tokenUrl: process.env.ILS_CREATE_TOKEN_URL,
+      // ilsTokenTimestamp,
+      // ilsClientKey,
+      // ilsClientPassword,
+    });
+
+  DependentEligibilityAPI;
+
+  const { isPatronEligible } = DependentEligibilityAPI({ ilsClient });
+  let response;
+  try {
+    response = await isPatronEligible(req.body.barcode);
+    status = 200;
+  } catch (error) {
+    response = modelResponse.errorResponseData(
+      collectErrorResponseData(error.status, "", error.message, "", "") // eslint-disable-line comma-dangle
+    );
+    status = response.status;
+  }
+
+  renderResponse(req, res, status, response);
+}
+
 module.exports = {
   createPatron: setupCreatePatron,
   checkUsername: setupCheckUsername,
+  checkDependentEligibility: setupDependentEligibility,
 };
