@@ -31,6 +31,10 @@ const DependentAccountAPI = (args) => {
       );
     }
 
+    if (!barcode) {
+      throw new Error("Invalid Request: No barcode passed");
+    }
+
     let response = {};
     const patron = await getPatronFromILS(barcode);
     // Set the fetched patron data object into the global variable so

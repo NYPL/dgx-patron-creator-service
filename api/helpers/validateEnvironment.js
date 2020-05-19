@@ -42,9 +42,6 @@ function validateEnvironmentAndRequest(req, res, envVariableNames) {
     validateEnvVariable(res, envVariableName);
   });
 
-  if (!req.body || isEmpty(req.body)) {
-    throw new InvalidRequest('The request body is empty.');
-  }
   // Check if we get all the required information from the client
   const requiredFields = [];
   const missingFields = modelDebug.checkMissingRequiredField(requiredFields);
