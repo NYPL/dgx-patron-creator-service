@@ -84,9 +84,7 @@ paths:
       parameters:
         - name: barcode_and_input
           in: body
-          description: >-
-            The 14-digit barcode of the existing parent patron and the
-            dependent's account information
+          description: The 14-digit barcode of the existing parent patron and the dependent's account information
           required: true
           schema:
             $ref: '#/definitions/PatronsDependentsDataV03'
@@ -143,9 +141,7 @@ paths:
       tags:
         - validations
       summary: Create a Patron username validation
-      description: >-
-        Makes a call to NYPL's Simplified Card Creator API for patron username
-        validation.
+      description: Makes a call to NYPL's Simplified Card Creator API for patron username validation.
       operationId: username
       parameters:
         - name: username
@@ -176,9 +172,7 @@ paths:
       tags:
         - validations
       summary: Create a Patron address validation
-      description: >-
-        Makes a call to NYPL's Simplified Card Creator API for patron address
-        validation.
+      description: Makes a call to NYPL's Simplified Card Creator API for patron address validation.
       operationId: address
       parameters:
         - name: address_data
@@ -290,10 +284,7 @@ definitions:
         example: '6367028'
       message:
         type: string
-        example: >-
-          Your library card is temporary because your address could not be
-          verified. Visit your local NYPL branch within 30 days to upgrade to a
-          standard card.
+        example: Your library card is temporary because your address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.
       detail:
         type: object
         example: {}
@@ -562,7 +553,9 @@ definitions:
         type: boolean
         example: true
       decription:
-        type: string
+        type: array
+        items:
+          type: string
         example:
           - This patron can create dependent accounts.
   PatronsDependentsResponseV03:
@@ -578,8 +571,7 @@ definitions:
             properties:
               link:
                 type: string
-                example: >-
-                  https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{newly-created-dependent-id}
+                example: 'https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{newly-created-dependent-id}'
           parent:
             type: object
             properties:
