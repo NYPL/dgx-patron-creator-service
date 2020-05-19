@@ -839,9 +839,12 @@
           "example": true
         },
         "decription": {
-          "type": "string",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
           "example": ["This patron can create dependent accounts."]
-        },
+        }
       }
     },
     "PatronsDependentsResponseV03": {
@@ -1006,7 +1009,7 @@
           "type": "object",
           "example": {
             "username": ["Username is not available or valid"]
-          },
+          }
         },
         "detail": {
           "type": "object",
@@ -1022,7 +1025,7 @@
               "type": "string"
             }
           }
-        },
+        }
       }
     },
     "500ErrorResponseV02": {
@@ -1074,7 +1077,7 @@
               "type": "string"
             }
           }
-        },
+        }
       }
     },
     "UsernameData": {
