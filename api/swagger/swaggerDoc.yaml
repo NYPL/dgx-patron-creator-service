@@ -73,6 +73,70 @@ paths:
       security:
         - api_auth:
             - 'openid write:patron offline_access api'
+  /v0.3/patrons/dependents:
+    x-swagger-router-controller: patrons
+    post:
+      tags:
+        - patrons
+      summary: Create a dependent juvenile account
+      description: Create a dependent juvenile account based off a parent's patron account
+      operationId: patrons_dependentsV03
+      parameters:
+        - name: barcode_and_input
+          in: body
+          description: >-
+            The 14-digit barcode of the existing parent patron and the
+            dependent's account information
+          required: true
+          schema:
+            $ref: '#/definitions/PatronsDependentsDataV03'
+      responses:
+        '200':
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/PatronsDependentsResponseV03'
+        '400':
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/400ErrorResponseV03'
+        '502':
+          description: ILS Integration Error
+          schema:
+            $ref: '#/definitions/502ILSIntegrationErrorV03'
+      security:
+        - api_auth:
+            - 'openid write:patron offline_access api'
+  /v0.3/patrons/dependent-eligibility:
+    x-swagger-router-controller: patrons
+    get:
+      tags:
+        - patrons
+      summary: Check Patron's account creation eligibility
+      description: Check if a patron is eligible to create dependent juvenile accounts.
+      operationId: patrons_eligibilityV03
+      parameters:
+        - name: barcode
+          in: body
+          description: The 14-digit barcode of the existing patron
+          required: true
+          schema:
+            $ref: '#/definitions/PatronsEligibilityDataV03'
+      responses:
+        '200':
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/PatronsEligibilityResponseV03'
+        '400':
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/400ErrorResponseV03'
+        '502':
+          description: ILS Integration Error
+          schema:
+            $ref: '#/definitions/502ILSIntegrationErrorV03'
+      security:
+        - api_auth:
+            - 'openid write:patron offline_access api'
   /v0.1/validations/username:
     x-swagger-router-controller: validations/username
     post:
@@ -361,6 +425,32 @@ definitions:
         example:
           title: Not found.
           debug: 'Invalid endpoint: [POST] /v2/validate/address'
+  PatronsEligibilityDataV03:
+    required:
+      - barcode
+    properties:
+      barcode:
+        type: string
+        example: '12345678912345'
+  PatronsDependentsDataV03:
+    required:
+      - barcode
+      - name
+      - username
+      - pin
+    properties:
+      barcode:
+        type: string
+        example: '12345678912345'
+      name:
+        type: string
+        example: 'Dependent First name, Last Name'
+      username:
+        type: string
+        example: dependentUsername1
+      pin:
+        type: string
+        example: '1234'
   PatronsCreatorDataV02:
     required:
       - names
@@ -465,6 +555,37 @@ definitions:
       count:
         type: number
         example: 1
+  PatronsEligibilityResponseV03:
+    type: object
+    properties:
+      eligible:
+        type: boolean
+        example: true
+      decription:
+        type: string
+        example:
+          - This patron can create dependent accounts.
+  PatronsDependentsResponseV03:
+    type: object
+    properties:
+      status:
+        type: number
+        example: 200
+      data:
+        properties:
+          dependent:
+            type: object
+            properties:
+              link:
+                type: string
+                example: >-
+                  https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{newly-created-dependent-id}
+          parent:
+            type: object
+            properties:
+              updated:
+                type: boolean
+                example: true
   PatronsCreatorResponseModelV02:
     required:
       - names
@@ -549,6 +670,29 @@ definitions:
       detail:
         type: object
         example: {}
+  400ErrorResponseV03:
+    properties:
+      status:
+        type: number
+        example: 400
+      type:
+        type: string
+        example: invalid-request
+      message:
+        type: object
+        example:
+          username:
+            - Username is not available or valid
+      detail:
+        type: object
+        example:
+          title: ''
+          debug: ''
+        properties:
+          title:
+            type: string
+          debug:
+            type: string
   500ErrorResponseV02:
     properties:
       status_code_from_ils:
@@ -563,6 +707,27 @@ definitions:
       detail:
         type: object
         example: {}
+  502ILSIntegrationErrorV03:
+    properties:
+      status:
+        type: number
+        example: 502
+      type:
+        type: string
+        example: ''
+      message:
+        type: number
+        example: The ILS could not be requested.
+      detail:
+        type: object
+        example:
+          title: ''
+          debug: ''
+        properties:
+          title:
+            type: string
+          debug:
+            type: string
   UsernameData:
     required:
       - username
