@@ -436,12 +436,13 @@ async function checkDependentEligibility(req, res) {
 
   const { isPatronEligible } = DependentAccountAPI({ ilsClient });
   let response;
+  const parentBarcode = req.query.barcode;
   try {
-    response = await isPatronEligible(req.body.barcode);
+    response = await isPatronEligible(parentBarcode);
     status = 200;
   } catch (error) {
     response = modelResponse.errorResponseData(
-      collectErrorResponseData(error.status, "", error.message, "", "") // eslint-disable-line comma-dangle
+      collectErrorResponseData(error.status || 400, "", error.message, "", "") // eslint-disable-line comma-dangle
     );
     status = response.status;
   }
