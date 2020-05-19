@@ -52,7 +52,7 @@ class BarcodesDb {
    */
   async initInsert() {
     const text = "INSERT INTO barcodes (barcode, used) VALUES ($1, $2);";
-    const values = ["28888055432443", "true"];
+    const values = ["28888055432138", "true"];
 
     try {
       await this.pool.query(text, values);
