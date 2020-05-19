@@ -634,7 +634,7 @@ async function createDependent(req, res) {
         );
 
         response = {
-          status: "200",
+          status: 200,
           data: {
             dependent: newResponse.data,
             // Updating a patron in the ILS simply returns a 204 with no

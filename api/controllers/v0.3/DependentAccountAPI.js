@@ -2,8 +2,14 @@
 const { NoILSClient, ILSIntegrationError } = require("../../helpers/errors");
 const IlsClient = require("./IlsClient");
 
+// A parent patron is only allowed to create three dependent juvenile accounts.
+const DEPENDENT_LIMIT = 3;
+
 /**
- *
+ * DependentAccountAPI
+ * A class with the main purpose to check a patron's eligibility to create
+ * dependent juvenile cards and to update a patron account with the information
+ * of the dependent juvenile cards.
  */
 const DependentAccountAPI = (args) => {
   const ilsClient = args["ilsClient"];
@@ -30,15 +36,15 @@ const DependentAccountAPI = (args) => {
     // Set the fetched patron data object into the global variable so
     // it can be accessed by `getPatron`. This is specifically set here and not
     // in `getPatronFromILS` because we want to make sure that the eligibility
-    // check was ran in order to retrieve a patron.
+    // check was run in order to retrieve a patron.
     parentPatronData = patron;
-    // First, check that they have a valid ptype to be able to create
-    // dependent accounts.
-    const hasValidPtype = checkPType(patron.patronType);
+    // First, check that they have an eligible ptype that allows them to
+    // create dependent accounts.
+    const hasEligiblePtype = checkPType(patron.patronType);
 
-    if (hasValidPtype) {
-      // Great, they have a valid ptype. Now check that they have not reached
-      // the dependent account limit.
+    if (hasEligiblePtype) {
+      // Great, they have an eligible ptype. Now check that they have not
+      // reached the dependent account limit.
       const canCreateDependents = checkDependentLimit(patron.varFields);
 
       if (!canCreateDependents) {
@@ -88,7 +94,7 @@ const DependentAccountAPI = (args) => {
 
   /**
    * checkPType(patronType)
-   * Checks if the input p-type is a valid p-type that can create
+   * Checks if the input p-type is an eligible p-type that can create
    * dependent accounts in the ILS.
    *
    * @param {number} patronType
@@ -98,19 +104,19 @@ const DependentAccountAPI = (args) => {
 
   /**
    * checkDependentLimit(varFields)
-   * This function assumes that the patron has a valid p-type, and so can
+   * This function assumes that the patron has an eligible p-type, and so can
    * create dependent accounts. Dependent accounts will be found in the
    * varField array of a patron data object as an object with a fieldTag of "x".
    * A varField object comes in the form of
    *   { fieldtag: "", content: ""}
    * This checks specificially if `content` has "DEPENDENTS" in the string. If
    * it does, it then checks to see how many barcodes are in the string based
-   * on how many commas there are to separate the barcodes. If three barcodes
-   * are found, then the patron has reached their limit. Otherwise, they have
-   * one or two dependents and can create another. If the object with the
-   * fieldTag of "x" isn't found, or if it is found but it has other content,
-   * then we assume they don't have any dependents. They already have a
-   * valid p-type so let them create dependents.
+   * on how many commas there are to separate the barcodes. If the limit of
+   * barcodes are found (DEPENDENT_LIMIT), then the patron has reached their
+   * limit. Otherwise, they have one or two dependents and can create another.
+   * If the object with the fieldTag of "x" isn't found, or if it is found but
+   * it has other content, then we assume they don't have any dependents.
+   * They already have an eligible p-type so let them create dependents.
    *
    * @param {array} varFields
    */
@@ -146,8 +152,8 @@ const DependentAccountAPI = (args) => {
     // accounts there are.
     const totalAccounts = dependentAccounts.split(",").length;
 
-    // The limit is 3. If they reached the limit, they can't create anymore.
-    if (totalAccounts === 3) {
+    // If they reached the limit, they can't create anymore.
+    if (totalAccounts === DEPENDENT_LIMIT) {
       return false;
     }
     return true;
@@ -231,7 +237,7 @@ const DependentAccountAPI = (args) => {
 
   /**
    * formatDependentAddress(address)
-   * A dependent account has the address as its parent account. The address
+   * A dependent account has the same address as its parent account. The address
    * just needs to be converted into an object for the purposes of creating
    * a new Address object to run validations for the new dependent. Since
    * the address is from the parent, it has already been validated and that's
