@@ -6,6 +6,7 @@ let database;
 
 class BarcodesDb {
   constructor(args) {
+    console.log("db args", args);
     this.pool = new Pool({
       user: args["user"],
       host: args["host"],
@@ -38,6 +39,7 @@ class BarcodesDb {
         console.log("database table 'barcodes' created");
       }
     } catch (error) {
+      console.log(error);
       if (error.message === 'relation "barcodes" already exists') {
         console.log("database table barcodes already exists, continuing");
       }
