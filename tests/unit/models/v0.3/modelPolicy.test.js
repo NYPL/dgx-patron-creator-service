@@ -3,10 +3,14 @@ const { Card } = require('../../../../api/models/v0.3/modelCard');
 const Address = require('../../../../api/models/v0.3/modelAddress');
 
 describe('Policy', () => {
-  it('should return the two valid types', () => {
+  it('should return the three valid types', () => {
     const policy = Policy();
 
-    expect(policy.validTypes).toEqual(['simplye', 'webApplicant']);
+    expect(policy.validTypes).toEqual([
+      'simplye',
+      'webApplicant',
+      'simplyeJuvenile',
+    ]);
   });
 
   it('validates that the policy type is an approved type', () => {
@@ -127,16 +131,6 @@ describe('Policy', () => {
       expect(ptype).toEqual(nysPtype);
       expect(ptype).toEqual(3);
     });
-
-    it("doesn't update the agency for non-web applicants", () => {
-      const agency = policy.determineAgency();
-      const agency2 = policy.determineAgency({ patronAgency: '199' });
-
-      // The agency always stays as 202 which is the default patron agency.
-      expect(agency).toEqual('202');
-      expect(agency2).toEqual('202');
-      expect(policy.policyField('agency')).toEqual('202');
-    });
   });
 
   describe('Web Applicant', () => {
@@ -197,21 +191,6 @@ describe('Policy', () => {
       // The ptype value is '1':
       expect(ptype).toEqual(1);
       expect(ptypeNoPatron).toEqual(1);
-    });
-
-    it('updates the agency for web applicants', () => {
-      // Initial agency is "web applicant agency"
-      expect(policy.policyField('agency')).toEqual('198');
-
-      // The agency stays the same without any `patronAgency` param passed in.
-      const sameAgency = policy.determineAgency();
-      expect(sameAgency).toEqual('198');
-      expect(policy.policyField('agency')).toEqual('198');
-
-      // Now the agency should be updated to `web applicant NY State agency`.
-      const nysAgency = policy.determineAgency({ patronAgency: '199' });
-      expect(nysAgency).toEqual('199');
-      expect(policy.policyField('agency')).toEqual('199');
     });
   });
 });

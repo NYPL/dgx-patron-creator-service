@@ -44,7 +44,7 @@ class Address {
    */
   strToBool(str) {
     if (!str) {
-      return null; // Is this right? prev was nil
+      return false;
     }
 
     const vals = ["true", "false"];

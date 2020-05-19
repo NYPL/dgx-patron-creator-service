@@ -69,6 +69,57 @@ const IlsClient = (args) => {
   };
 
   /**
+   * updatePatron(patron)
+   * First checks if the patron has met all the requirements before calling the
+   * ILS API. If the patron is valid, format the data as the ILS expects it.
+   * Returns the response from the ILS or an error.
+   * Note: the newly created patron's id is in the response object in
+   *  `response.data.link`.
+   *
+   * @param {Card object} patron
+   * @param {object} updatedFields
+   */
+  const updatePatron = async (patronId, updatedFields) => {
+    const putUrl = `${createUrl}${patronId}`;
+
+    return await axios
+      .put(putUrl, updatedFields, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${ilsToken}`,
+        },
+      })
+      .then((axiosResponse) => {
+        // Expects a 204 no content response.
+        return axiosResponse;
+      })
+      .catch((error) => {
+        const response = error.response;
+        // If the request to the ILS is missing a value or a key is of
+        // and incorrect type, i.e. the barcode is sent as an integer
+        // instead of a string.
+        if (response.status === 400) {
+          throw new InvalidRequest(
+            `Invalid request to ILS: ${response.data.description}`
+          );
+        }
+
+        if (response.status === 404) {
+          // Throws 'Patron record not found'.
+          throw new Error(response.data.name);
+        }
+
+        if (!(response.status >= 500)) {
+          return response;
+        } else {
+          throw new ILSIntegrationError(
+            "The ILS could not be requested when attempting to update a patron."
+          );
+        }
+      });
+  };
+
+  /**
    * getPatronFromBarcodeOrUsername(barcodeOrUsername, isBarcode)
    * Hits the /find endpoint in the ILS and returns a patron data object
    * or an error.
@@ -87,10 +138,13 @@ const IlsClient = (args) => {
       ? IlsClient.BARCODE_FIELD_TAG
       : IlsClient.USERNAME_FIELD_TAG;
     // These two query parameters are required to make a valid GET request.
-    // We only need the `id`, `patronType`, and `varField` fields from the
-    // patron object (`id` is returned by default), so those fields are added
-    // at the end of the endpoint request. This can be optimized later.
-    const params = `?varFieldTag=${fieldTag}&varFieldContent=${barcodeOrUsername}&fields=patronType,varFields`;
+    // We need the `id`, `patronType`, `varField`, `addresses`, and `emails`
+    // fields from the patron object (`id` is returned by default), so those
+    // fields are added at the end of the endpoint request.
+    // This can be optimized later.
+    const varFieldParams = `varFieldTag=${fieldTag}&varFieldContent=${barcodeOrUsername}`;
+    const otherFields = `&fields=patronType,varFields,addresses,emails`;
+    const params = `?${varFieldParams}${otherFields}`;
 
     const response = await axios
       .get(`${findUrl}${params}`, {
@@ -204,7 +258,10 @@ const IlsClient = (args) => {
   const formatPatronData = (patron) => {
     // Addresses should be in a list.
     let addresses = [];
+    // varFields is an array of objects.
     let varFields = [];
+    // fixedFields is an object containing other objects.
+    let fixedFields = {};
     let patronCodes = {};
 
     let address = formatAddress(patron.address);
@@ -218,11 +275,19 @@ const IlsClient = (args) => {
       fieldTag: IlsClient.USERNAME_FIELD_TAG,
       content: patron.username,
     };
+
+    // Add the existing varfields if any.
+    if (patron.varFields && patron.varFields.length) {
+      varFields.push(...patron.varFields);
+    }
     varFields.push(usernameVarField);
 
     // E-communications value has a key of pcode1 in the patronCodes object.
     // Merging any other pcode values and overwriting patronCodes.
     patronCodes = ecommunicationsPref(patron.ecommunicationsPref, patronCodes);
+
+    // Add agency fixedField
+    fixedFields = agencyField(patron.agency, fixedFields);
 
     let fields = {
       names: [patron.name],
@@ -232,6 +297,7 @@ const IlsClient = (args) => {
       patronCodes,
       expirationDate: patron.expirationDate.toISOString().slice(0, 10),
       varFields,
+      fixedFields,
     };
 
     if (patron.barcode) {
@@ -246,6 +312,22 @@ const IlsClient = (args) => {
 
     return fields;
   };
+
+  /**
+   * agencyField(agency, fixedFields)
+   * Keep any existing fixedFields but add the new one for the agency which
+   * has a key of "158".
+   *
+   * @param {string} agency
+   * @param {object} fixedFields
+   */
+  const agencyField = (agency, fixedFields) => ({
+    "158": {
+      label: "AGENCY",
+      value: agency,
+    },
+    ...fixedFields,
+  });
 
   /**
    * ecommunicationsPref(ecommunicationsPrefValue)
@@ -279,7 +361,9 @@ const IlsClient = (args) => {
     createPatron,
     available,
     getPatronFromBarcodeOrUsername,
+    updatePatron,
     // For testing,
+    agencyField,
     ecommunicationsPref,
     formatPatronData,
     formatAddress,
@@ -317,6 +401,9 @@ IlsClient.ADULT_METRO_PTYPE = 10;
 IlsClient.ADULT_NYS_PTYPE = 11;
 IlsClient.SENIOR_METRO_PTYPE = 20;
 IlsClient.SENIOR_NYS_PTYPE = 21;
+IlsClient.SIMPLYE_JUVENILE = 4;
+IlsClient.SIMPLYE_JUVENILE_ONLY = 5;
+IlsClient.SIMPLYE_YOUNG_ADULT = 6;
 // The following two p-types don't have a code yet.
 // Using 101 for now but MUST be updated.
 IlsClient.DISABLED_METRO_NY_PTYPE = 101;
@@ -335,6 +422,9 @@ IlsClient.PTYPE_TO_TEXT = {
   HOMEBOUND_NYC_PTYPE: "Homebound NYC (3 Year)",
   SIMPLYE_METRO_PTYPE: "SimplyE Metro",
   SIMPLYE_NON_METRO_PTYPE: "SimplyE Non-Metro",
+  SIMPLYE_JUVENILE: "SimplyE Juvenile",
+  SIMPLYE_JUVENILE_ONLY: "SimplyE Juvenile Only",
+  SIMPLYE_YOUNG_ADULT: "SimplyE Young Adult",
   TEEN_METRO_PTYPE: "Teen Metro (3 Year)",
   TEEN_NYS_PTYPE: "Teen NY State (3 Year)",
   REJECTED_PTYPE: "Rejected",

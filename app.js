@@ -165,6 +165,7 @@ router.route('/v0.3/validations/username').post(createPatronV0_3.checkUsername);
 router
   .route('/v0.3/patrons/dependent-eligibility')
   .get(createPatronV0_3.checkDependentEligibility);
+router.route('/v0.3/patrons/dependents').post(createPatronV0_3.createDependent);
 router.route('/v0.3/patrons/').post(createPatronV0_3.createPatron);
 
 // Do not listen to connections in Lambda environment
