@@ -6,10 +6,27 @@ const createPatronV0_1 = require('./api/controllers/v0.1/createPatron.js'); // e
 const validations = require('./api/controllers/v0.1/validations.js');
 const createPatronV0_2 = require('./api/controllers/v0.2/createPatron.js'); // eslint-disable-line camelcase
 const apiDoc = require('./api/controllers/apiDoc.js');
+const createPatronV0_3 = require('./api/controllers/v0.3/endpoints.js'); // eslint-disable-line camelcase
 
 const app = express();
 const pathName = `${process.cwd()}/config/deploy_${app.get('env')}.env`;
 require('dotenv').config({ path: pathName });
+
+const BarcodeDb = require('./db');
+
+// Initialize the connection to the database.
+// This is done here so we can have one instance and one connection to the
+// database for however many times the lambda is used for.
+const db = BarcodeDb({
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_DATABASE,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
+});
+// Once we get the database class instance, initialize it by creating the
+// table and inserting the seed data if it's not in the database already.
+db.init();
 
 // Below are the middlewares for response headers
 /**
@@ -141,6 +158,15 @@ router.route('/v0.1/validations/address').post(validations.checkAddress);
 
 // New validation will be part of the `patrons` endpoint.
 router.route('/v0.2/patrons/').post(createPatronV0_2.createPatron);
+
+// Still supporting older v0.1 validation endpoints
+router.route('/v0.3/validations/username').post(createPatronV0_3.checkUsername);
+// router.route('/v0.3/validations/address').post(createPatronV0_3.checkAddress);
+router
+  .route('/v0.3/patrons/dependent-eligibility')
+  .get(createPatronV0_3.checkDependentEligibility);
+router.route('/v0.3/patrons/dependents').post(createPatronV0_3.createDependent);
+router.route('/v0.3/patrons/').post(createPatronV0_3.createPatron);
 
 // Do not listen to connections in Lambda environment
 if (!process.env.AWS_LAMBDA_FUNCTION_NAME) {

@@ -1,5 +1,20 @@
 ## Change Log
 
+### v0.5.0
+
+#### Add
+
+- Added endpoints `/validations/username`, `/patrons/dependent-eligibility`, `/patrons/dependents`, and `/patrons` all under the v0.3 version.
+- Added a Postgres database connection to create barcodes and associate it with a new account when its sent to the ILS.
+- Added a Lunh algorithm helper file to create valid barcodes.
+- Added a v0.3 models folder with models for Address, Barcode, Card, and Policy. These are needed to create new and different types of patrons in the ILS.
+- Added a v0.3 controllers folder with different types of API helper files. The main controller file is `/api/controllers/v0.3/endpoints` which supports all the endpoints under v0.3.
+- Added an IlsClient controller to call the ILS to create, find, and update patrons.
+- Added a Dependent Account API controller to check for a patron's eligibility to create dependent juvenile cards and to create dependent accounts.
+- Added a Username Validation API controller to find a patron by username in the ILS and return whether that username is valid and available in the ILS.
+- Added an Address Validation API controller but not it's not complete as the Service Objects API still needs to be implemented.
+- Added test to cover all of the added code.
+
 ### v0.4.0
 
 #### Add
