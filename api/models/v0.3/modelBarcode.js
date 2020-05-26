@@ -20,9 +20,17 @@ class Barcode {
    */
   async getNextAvailableBarcode() {
     const { barcode, newBarcode } = await this.nextAvailableFromDB();
-    // Perhaps this barcode from the database isn't actually available in the
-    // ILS. If that's the case, the next available barcode in the ILS is
-    // returned. Otherwise, the initial barcode is the "finalBarcode".
+
+    // If no barcode could be generated from the database, return.
+    if (!barcode) {
+      return;
+    }
+
+    // If the barcode obtained from the database above is available in the ILS,
+    // return it as `finalBarcode`. But if the barcode from the database
+    // isn't actually available in the ILS, then a new barcode is generated
+    // and checked for its availability in the ILS. This will be `finalBarcode`
+    // and will be different than the barcode obtained above from the database.
     const { available, finalBarcode } = await this.availableInIls(
       barcode,
       newBarcode
@@ -47,11 +55,11 @@ class Barcode {
     }
 
     // Remove the last digit from the existing barcode since we need a
-    // 13-digit number to pass through the luhn-algorithm.
+    // 13-digit number to pass through the Luhn-algorithm.
     let newValidBarcode = Math.floor(parseInt(barcode, 10) / 10);
-    // Subtract one for the next barcode so the checksum digit gets added.
-    newValidBarcode -= 1;
-    // Pass the value and get a 14-digit barcode.
+    // Add one to get the next valid value.
+    newValidBarcode += 1;
+    // Pass the 13-digit value and get a new and valid 14-digit barcode.
     return luhn.calculate(newValidBarcode);
   }
 
@@ -59,7 +67,7 @@ class Barcode {
    * nextAvailableFromDB
    * Query the database for a barcode to use. It will first attempt to retrieve
    * an existing barcode that is unused. If none are found, then it will get
-   * the lowest value barcode as a reference to generate a new barcode using
+   * the highest value barcode as a reference to generate a new barcode using
    * the `nextLuhnValidCode` method.
    */
   async nextAvailableFromDB() {
@@ -69,7 +77,7 @@ class Barcode {
     let newBarcode;
 
     // First try getting a barcode that is unused. This is not a "new"
-    // barcode so we don't need to subtract one from it.
+    // barcode so we don't need to manipulate it.
     try {
       query =
         "SELECT barcode FROM barcodes WHERE used=false ORDER BY barcodes ASC LIMIT 1;";
@@ -77,10 +85,10 @@ class Barcode {
       barcode = result.rows[0].barcode;
       newBarcode = false;
     } catch (error) {
-      // There are no unused barcodes so get the lowest barcode to generate
-      // a new barcode.
+      // There are no unused barcodes so get the biggest barcode value to
+      // generate a new barcode from.
       query =
-        "SELECT barcode FROM barcodes WHERE used=true ORDER BY barcodes ASC LIMIT 1;";
+        "SELECT barcode FROM barcodes WHERE used=true ORDER BY barcodes DESC LIMIT 1;";
       result = await this.db.query(query);
       barcode = this.nextLuhnValidCode(result.rows[0].barcode);
       newBarcode = true;

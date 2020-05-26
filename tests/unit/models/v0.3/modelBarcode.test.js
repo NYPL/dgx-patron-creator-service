@@ -82,7 +82,7 @@ describe('Barcode', () => {
       const barcode = new Barcode({ ilsClient: IlsClient() });
 
       const nextBarcode = barcode.nextLuhnValidCode('28888055432138');
-      expect(nextBarcode).toEqual('28888055432120');
+      expect(nextBarcode).toEqual('28888055432146');
     });
   });
 
@@ -97,9 +97,9 @@ describe('Barcode', () => {
       expect(querySpy).toHaveBeenCalledWith(
         'SELECT barcode FROM barcodes WHERE used=false ORDER BY barcodes ASC LIMIT 1;',
       );
-      // But there aren't any so get the small used one and make a new barcode.
+      // But there aren't any so get the largest used one and make a new barcode.
       expect(querySpy).toHaveBeenCalledWith(
-        'SELECT barcode FROM barcodes WHERE used=true ORDER BY barcodes ASC LIMIT 1;',
+        'SELECT barcode FROM barcodes WHERE used=true ORDER BY barcodes DESC LIMIT 1;',
       );
       expect(querySpy).toHaveBeenCalled();
 
@@ -108,7 +108,7 @@ describe('Barcode', () => {
 
       // The next available barcode after 28888055432138 which is
       // already in the database is:
-      expect(nextBarcode.barcode).toEqual('28888055432120');
+      expect(nextBarcode.barcode).toEqual('28888055432146');
       expect(nextBarcode.newBarcode).toEqual(true);
     });
 
