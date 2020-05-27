@@ -250,7 +250,8 @@ const IlsClient = (args) => {
    *   patronType: 1,
    *   expirationDate: '2020-07-29',
    *   varFields: [ { fieldTag: 'u', content: 'mikeolson' } ],
-   *   birthDate: '1988-01-01'
+   *   birthDate: '1988-01-01',
+   *   homeLibraryCode: 'eb',
    * }
    *
    * @param {Card object} patron
@@ -298,6 +299,7 @@ const IlsClient = (args) => {
       expirationDate: patron.expirationDate.toISOString().slice(0, 10),
       varFields,
       fixedFields,
+      homeLibraryCode: patron.homeLibraryCode,
     };
 
     if (patron.barcode) {
