@@ -18,17 +18,18 @@ const UsernameValidationAPI = (args) => {
   const RESPONSES = {
     invalid: {
       type: INVALID_USERNAME_TYPE,
-      card_type: null,
-      message: "Username must be 5-25 alphanumeric characters (A-z0-9).",
+      cardType: null,
+      message:
+        "Usernames should be 5-25 characters, letters or numbers only. Please revise your username.",
     },
     unavailable: {
       type: UNAVAILABLE_USERNAME_TYPE,
-      card_type: null,
+      cardType: null,
       message: "This username is unavailable. Please try another.",
     },
     available: {
       type: AVAILABLE_USERNAME_TYPE,
-      card_type: STANDARD_CARD_TYPE,
+      cardType: STANDARD_CARD_TYPE,
       message: "This username is available.",
     },
   };

@@ -3,6 +3,7 @@ const AddressValidationApi = require("../../controllers/v0.3/AddressValidationAP
 const UsernameValidationApi = require("../../controllers/v0.3/UsernameValidationAPI");
 const NameValidationApi = require("../../controllers/v0.3/NameValidationAPI");
 const Barcode = require("./modelBarcode");
+const { DatabaseError } = require("../../helpers/errors");
 
 /**
  * A validator class to verify a card's address and birthdate. Doesn't
@@ -36,12 +37,12 @@ const CardValidator = () => {
 
     // Will throw an error if the username is not valid.
     const validUsername = await card.checkValidUsername();
-    if (!validUsername) {
-      card.errors["username"] = ["Username is not available or valid"];
+    if (!validUsername.available) {
+      card.errors["username"] = validUsername.response.message;
     }
 
     if (card.email && !/^[^@]+@[^@]+$/.test(card.email)) {
-      card.errors["email"] = ["Email address must be valid"];
+      card.errors["email"] = "Email address must be valid";
     }
 
     if (card.birthdate) {
@@ -72,14 +73,14 @@ const CardValidator = () => {
       // Check card.policy for address limitations.
       if (card.cardDenied(validAddress, workAddress)) {
         const message = Card.RESPONSES["cardDenied"]["message"];
-        card.errors[addressType].push(message);
+        card.errors[addressType] = message;
       } else if (validAddress.addressForTemporaryCard(workAddress)) {
         card.setTemporary();
       }
       // Reset the card's address type input to the validated version.
       card[addressType] = validAddress;
     } else {
-      card.errors[addressType].push(UNVALIDATED_ADDRESS_ERROR);
+      card.errors[addressType] = UNVALIDATED_ADDRESS_ERROR;
     }
 
     return card;
@@ -186,7 +187,8 @@ class Card {
     }
     // The pin must be a 4 digit string.
     if (!/^\d{4}$/.test(this.pin)) {
-      this.errors["pin"] = "pin must be 4 numbers";
+      this.errors["pin"] =
+        "PIN should be 4 numeric characters only. Please revise your PIN.";
       return { valid: false, errors: this.errors };
     }
     const validateByPolicy = ["email", "birthdate"];
@@ -265,12 +267,14 @@ class Card {
     const { responses, validate } = UsernameValidationApi({
       ilsClient: this.ilsClient,
     });
-    let validation = await validate(this.username);
+    let userNameResponse = await validate(this.username);
 
-    return (
-      typeof validation === "object" &&
-      validation.type === responses.available.type
-    );
+    return {
+      available:
+        typeof userNameResponse === "object" &&
+        userNameResponse.type === responses.available.type,
+      response: userNameResponse,
+    };
   }
 
   /**
@@ -325,7 +329,9 @@ class Card {
 
     // Throw an error so no attempt to create the patron in the ILS is made.
     if (!this.barcode) {
-      throw new Error("Could not generate a new barcode. Please try again.");
+      throw new DatabaseError(
+        "Could not generate a new barcode. Please try again."
+      );
     }
   }
 
@@ -393,7 +399,7 @@ class Card {
 
     // False if patron provides a home address that is not residential
     // False if patron does not have a recognized name
-    // False if patron policy is not the default (:simplye)
+    // False if patron policy is not the default (simplye)
     return (
       this.address.isResidential && this.hasValidName && this.policy.isDefault
     );

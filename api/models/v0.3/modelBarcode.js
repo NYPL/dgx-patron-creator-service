@@ -1,6 +1,7 @@
 /* eslint-disable */
 const BarcodeDb = require("../../../db");
 const luhn = require("../../helpers/luhnValidations");
+const { DatabaseError } = require("../../helpers/errors");
 
 /**
  * Creates Barcode objects.
@@ -194,13 +195,13 @@ class Barcode {
       if (used) {
         // While attempting to set a barcode to used, it was already used,
         // so attempt a new barcode instead.
-        throw new Error(
+        throw new DatabaseError(
           "The barcode to be marked as used was already set as used. Try a new barcode."
         );
       } else {
         // While attempting to free a barcode and set it to unused, it was
         // already set to unused.
-        throw new Error(
+        throw new DatabaseError(
           "The barcode to be marked as unused was already set as unused."
         );
       }
@@ -231,9 +232,9 @@ class Barcode {
       // The barcode we thought was new and unused has since been created.
       // Throw an error so a new barcode is attempted.
       if (error.constraint === "barcodes_pkey") {
-        throw new Error("Barcode already in database!");
+        throw new DatabaseError("Barcode already in database!");
       }
-      throw new Error("Error inserting barcode into the database");
+      throw new DatabaseError("Error inserting barcode into the database");
     }
   }
 

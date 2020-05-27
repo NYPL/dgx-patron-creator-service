@@ -89,9 +89,9 @@ const IlsClient = (args) => {
           Authorization: `Bearer ${ilsToken}`,
         },
       })
-      .then((axiosResponse) => {
+      .then((response) => {
         // Expects a 204 no content response.
-        return axiosResponse;
+        return response;
       })
       .catch((error) => {
         const response = error.response;
@@ -106,7 +106,7 @@ const IlsClient = (args) => {
 
         if (response.status === 404) {
           // Throws 'Patron record not found'.
-          throw new Error(response.data.name);
+          throw new ILSIntegrationError(response.data.name);
         }
 
         if (!(response.status >= 500)) {
@@ -143,7 +143,7 @@ const IlsClient = (args) => {
     // fields are added at the end of the endpoint request.
     // This can be optimized later.
     const varFieldParams = `varFieldTag=${fieldTag}&varFieldContent=${barcodeOrUsername}`;
-    const otherFields = `&fields=patronType,varFields,addresses,emails`;
+    const otherFields = `&fields=patronType,varFields,addresses,emails,expirationDate`;
     const params = `?${varFieldParams}${otherFields}`;
 
     const response = await axios

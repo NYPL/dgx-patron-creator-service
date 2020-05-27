@@ -445,12 +445,18 @@ async function checkDependentEligibility(req, res) {
     status = 200;
   } catch (error) {
     response = modelResponse.errorResponseData(
-      collectErrorResponseData(error.status || 400, "", error.message, "", "") // eslint-disable-line comma-dangle
+      collectErrorResponseData(
+        error.status || 400,
+        error.type || "",
+        error.message,
+        "",
+        ""
+      ) // eslint-disable-line comma-dangle
     );
     status = response.status;
   }
 
-  renderResponse(req, res, status, response);
+  renderResponse(req, res, status, { status, ...response });
 }
 
 /**
@@ -636,16 +642,21 @@ async function createDependent(req, res) {
           parentPatron,
           card.barcode
         );
+        const { link } = newResponse.data;
 
         response = {
           status: 200,
           data: {
             dependent: {
-              ...newResponse.data,
+              id: parseInt(link.split("/").pop(), 10),
+              username: card.username,
+              name: card.name,
               barcode: card.barcode,
+              pin: card.pin,
             },
             // Updating a patron in the ILS simply returns a 204 with no
-            // response in the body. Just return that the parent was updated.
+            // response in the body.
+            // Return the parent's barcode and its dependents.
             parent: {
               updated: true,
               barcode: req.body.barcode,

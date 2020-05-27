@@ -114,11 +114,9 @@ paths:
       operationId: patrons_eligibilityV03
       parameters:
         - name: barcode
-          in: body
+          in: query
           description: The 14-digit barcode of the existing patron
-          required: true
-          schema:
-            $ref: '#/definitions/PatronsEligibilityDataV03'
+          type: string
       responses:
         '200':
           description: Successful operation
@@ -127,7 +125,7 @@ paths:
         '400':
           description: Invalid request
           schema:
-            $ref: '#/definitions/400ErrorResponseV03'
+            $ref: '#/definitions/400BarcodeErrorResponseV03'
         '502':
           description: ILS Integration Error
           schema:
@@ -549,15 +547,14 @@ definitions:
   PatronsEligibilityResponseV03:
     type: object
     properties:
+      status:
+        type: number
+        example: 200
       eligible:
         type: boolean
-        example: true
       decription:
-        type: array
-        items:
-          type: string
-        example:
-          - This patron can create dependent accounts.
+        type: string
+        example: This patron can create dependent accounts.
   PatronsDependentsResponseV03:
     type: object
     properties:
@@ -569,15 +566,33 @@ definitions:
           dependent:
             type: object
             properties:
-              link:
+              id:
+                type: number
+                example: 12345
+              username:
                 type: string
-                example: 'https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{newly-created-dependent-id}'
+                example: username12
+              name:
+                type: string
+                example: 'First name, last name'
+              barcode:
+                type: string
+                example: '28888888888888'
+              pin:
+                type: string
+                example: '1234'
           parent:
             type: object
             properties:
               updated:
                 type: boolean
                 example: true
+              barcode:
+                type: string
+                example: '28888888888886'
+              dependents:
+                type: string
+                example: 'DEPENDENTS 28888888888887,28888888888888'
   PatronsCreatorResponseModelV02:
     required:
       - names
@@ -672,9 +687,28 @@ definitions:
         example: invalid-request
       message:
         type: object
+        example: Some value is wrong
+      detail:
+        type: object
         example:
-          username:
-            - Username is not available or valid
+          title: ''
+          debug: ''
+        properties:
+          title:
+            type: string
+          debug:
+            type: string
+  400BarcodeErrorResponseV03:
+    properties:
+      status:
+        type: number
+        example: 400
+      type:
+        type: string
+        example: invalid-request
+      message:
+        type: object
+        example: The barcode passed is not 14-digits.
       detail:
         type: object
         example:
@@ -706,7 +740,7 @@ definitions:
         example: 502
       type:
         type: string
-        example: ''
+        example: remote-integration-failure
       message:
         type: number
         example: The ILS could not be requested.

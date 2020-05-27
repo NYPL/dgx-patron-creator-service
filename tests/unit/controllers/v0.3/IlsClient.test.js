@@ -200,7 +200,7 @@ describe("IlsClient", () => {
       );
 
       const barcodeFieldTag = IlsClient.BARCODE_FIELD_TAG;
-      const expectedParams = `?varFieldTag=${barcodeFieldTag}&varFieldContent=${barcode}&fields=patronType,varFields,addresses,emails`;
+      const expectedParams = `?varFieldTag=${barcodeFieldTag}&varFieldContent=${barcode}&fields=patronType,varFields,addresses,emails,expirationDate`;
       const patron = await ilsClient.getPatronFromBarcodeOrUsername(
         barcode,
         isBarcode
@@ -227,7 +227,7 @@ describe("IlsClient", () => {
       );
 
       const usernameFieldTag = IlsClient.USERNAME_FIELD_TAG;
-      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,addresses,emails`;
+      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,addresses,emails,expirationDate`;
       const patron = await ilsClient.getPatronFromBarcodeOrUsername(
         username,
         isBarcode
@@ -255,7 +255,7 @@ describe("IlsClient", () => {
       );
 
       const usernameFieldTag = IlsClient.USERNAME_FIELD_TAG;
-      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,addresses,emails`;
+      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,addresses,emails,expirationDate`;
       const patron = await ilsClient.getPatronFromBarcodeOrUsername(
         username,
         isBarcode
@@ -283,7 +283,7 @@ describe("IlsClient", () => {
       );
 
       const usernameFieldTag = IlsClient.USERNAME_FIELD_TAG;
-      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,addresses,emails`;
+      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,addresses,emails,expirationDate`;
       const patron = await ilsClient.getPatronFromBarcodeOrUsername(
         username,
         isBarcode
@@ -314,7 +314,7 @@ describe("IlsClient", () => {
       );
 
       const usernameFieldTag = IlsClient.USERNAME_FIELD_TAG;
-      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,addresses,emails`;
+      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,addresses,emails,expirationDate`;
       const patron = await ilsClient.getPatronFromBarcodeOrUsername(
         username,
         isBarcode
@@ -345,7 +345,7 @@ describe("IlsClient", () => {
     describe("barcode", () => {
       const barcode = "12341234123412";
       const barcodeFieldTag = IlsClient.BARCODE_FIELD_TAG;
-      const expectedParams = `?varFieldTag=${barcodeFieldTag}&varFieldContent=${barcode}&fields=patronType,varFields,addresses,emails`;
+      const expectedParams = `?varFieldTag=${barcodeFieldTag}&varFieldContent=${barcode}&fields=patronType,varFields,addresses,emails,expirationDate`;
       const isBarcode = true;
 
       it("checks for barcode availability and finds an existing patron, so it is not available", async () => {
@@ -431,7 +431,7 @@ describe("IlsClient", () => {
     describe("username", () => {
       const username = "username";
       const usernameFieldTag = IlsClient.USERNAME_FIELD_TAG;
-      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,addresses,emails`;
+      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,addresses,emails,expirationDate`;
       const isBarcode = false;
 
       it("checks for username availability and finds an existing patron, so it is not available", async () => {

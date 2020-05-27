@@ -175,12 +175,9 @@
         "parameters": [
           {
             "name": "barcode",
-            "in": "body",
+            "in": "query",
             "description": "The 14-digit barcode of the existing patron",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/PatronsEligibilityDataV03"
-            }
+            "type": "string"
           }
         ],
         "responses": {
@@ -193,7 +190,7 @@
           "400": {
             "description": "Invalid request",
             "schema": {
-              "$ref": "#/definitions/400ErrorResponseV03"
+              "$ref": "#/definitions/400BarcodeErrorResponseV03"
             }
           },
           "502": {
@@ -834,16 +831,16 @@
     "PatronsEligibilityResponseV03": {
       "type": "object",
       "properties": {
+        "status": {
+          "type": "number",
+          "example": 200
+        },
         "eligible": {
-          "type": "boolean",
-          "example": true
+          "type": "boolean"
         },
         "decription": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "example": ["This patron can create dependent accounts."]
+          "type": "string",
+          "example": "This patron can create dependent accounts."
         }
       }
     },
@@ -1007,9 +1004,38 @@
         },
         "message": {
           "type": "object",
+          "example": "Some value is wrong"
+        },
+        "detail": {
+          "type": "object",
           "example": {
-            "username": ["Username is not available or valid"]
+            "title": "",
+            "debug": ""
+          },
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "debug": {
+              "type": "string"
+            }
           }
+        }
+      }
+    },
+    "400BarcodeErrorResponseV03": {
+      "properties": {
+        "status": {
+          "type": "number",
+          "example": 400
+        },
+        "type": {
+          "type": "string",
+          "example": "invalid-request"
+        },
+        "message": {
+          "type": "object",
+          "example": "The barcode passed is not 14-digits."
         },
         "detail": {
           "type": "object",
@@ -1057,7 +1083,7 @@
         },
         "type": {
           "type": "string",
-          "example": ""
+          "example": "remote-integration-failure"
         },
         "message": {
           "type": "number",
