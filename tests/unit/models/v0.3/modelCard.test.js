@@ -86,6 +86,13 @@ describe('Card', () => {
       const card = new Card(basicCard);
       expect(card.isTemporary).toEqual(false);
     });
+
+    it("should set homeLibraryCard to 'eb' by default", () => {
+      // `basicCard` does not have a homeLibraryCard value.
+      const card = new Card(basicCard);
+
+      expect(card.homeLibraryCode).toEqual('eb');
+    });
   });
 
   describe('validate', () => {});

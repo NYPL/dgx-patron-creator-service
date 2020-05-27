@@ -648,6 +648,7 @@ describe("IlsClient", () => {
           expirationDate: expirationDate.toISOString().slice(0, 10),
           // The patron is not subscribed to e-communications by default.
           patronCodes: { pcode1: "-" },
+          homeLibraryCode: "eb",
           names: ["First Last"],
           patronType: 1,
           pin: "1234",
@@ -688,6 +689,7 @@ describe("IlsClient", () => {
           birthDate: "1988-01-01",
           expirationDate: expirationDate.toISOString().slice(0, 10),
           patronCodes: { pcode1: "-" },
+          homeLibraryCode: "eb",
           names: ["First Last"],
           patronType: 1,
           pin: "1234",
