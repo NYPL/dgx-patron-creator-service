@@ -295,6 +295,10 @@ async function createPatron(req, res) {
     ecommunicationsPref: req.body.ecommunicationsPref, // from req
     policy, //created above
     ilsClient, // created above
+    // SimplyE will always set the home library to the `eb` code. Eventually,
+    // the web app will pass a `homeLibraryCode` parameter with a patron's
+    // home library. For now, `eb` is hardcoded.
+    homeLibraryCode: req.body.homeLibraryCode || "eb",
   });
 
   let response = {};
