@@ -89,9 +89,23 @@ describe('Card', () => {
 
     it("should set homeLibraryCard to 'eb' by default", () => {
       // `basicCard` does not have a homeLibraryCard value.
-      const card = new Card(basicCard);
+      let card = new Card(basicCard);
 
       expect(card.homeLibraryCode).toEqual('eb');
+
+      // but if you set one, it'll be used
+      card = new Card({
+        name: 'First Last',
+        address: new Address({ line1: '476th 5th Ave.', city: 'New York' }),
+        username: 'username',
+        pin: '1234',
+        // required for web applicants
+        birthdate: '01/01/1988',
+        // random library code
+        homeLibraryCode: 'aa',
+      });
+
+      expect(card.homeLibraryCode).toEqual('aa');
     });
   });
 
