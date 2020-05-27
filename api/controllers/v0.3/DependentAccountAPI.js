@@ -170,7 +170,41 @@ const DependentAccountAPI = (args) => {
    * the parent patron data is already stored in memory but will be
    * overidden the next time a new parent patron's data is requested.
    */
-  const getAlreadyFetchedParentPatron = () => parentPatronData;
+  const getAlreadyFetchedParentPatron = () => {
+    if (!parentPatronData) {
+      return;
+    }
+
+    const varFields = parentPatronData.varFields || [];
+    let dependents;
+    const xFieldTags = varFields.filter((obj) => obj.fieldTag === "x");
+    // No varFields were found, so we can assume the patron doesn't
+    // have any dependent accounts yet.
+    if (xFieldTags.length === 0) {
+      dependents = "DEPENDENTS ";
+    } else {
+      // Check for a varField that has `content` in the form of:
+      // "DEPENDENTS x,x,x"
+      // where `x` is a barcode. First get the varField that has "DEPENDENTS".
+      const dependentsVarField = xFieldTags.find(
+        (obj) => obj.content.indexOf("DEPENDENTS") !== -1
+      );
+
+      // There are varFields with a fieldTag of "x" but none with "DEPENDENTS".
+      // We can assume the patron doesn't have any dependents already.
+      if (!dependentsVarField) {
+        dependents = "DEPENDENTS ";
+      } else {
+        // The value is already there so return it.
+        dependents = dependentsVarField.content;
+      }
+    }
+
+    return {
+      ...parentPatronData,
+      dependents,
+    };
+  };
 
   /**
    * updateParentWithDependent(parent, dependentBarcode)

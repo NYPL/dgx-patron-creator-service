@@ -8,7 +8,7 @@ jest.mock("../../../../api/controllers/v0.3/IlsClient");
 const mockedSuccessfulResponse = {
   status: 200,
   data: {
-    id: "1234",
+    id: "1233",
     patronType: 10,
     varFields: [
       { fieldTag: "u", content: "username" },
@@ -20,7 +20,7 @@ const mockedSuccessfulResponse = {
 const mockedSuccessfulResponseLimitReached = {
   status: 200,
   data: {
-    id: "1234",
+    id: "1233",
     patronType: 10,
     varFields: [
       { fieldTag: "u", content: "username" },
@@ -32,7 +32,7 @@ const mockedSuccessfulResponseLimitReached = {
 const mockedSuccessfulResponseBadPType = {
   status: 200,
   data: {
-    id: "1234",
+    id: "1233",
     patronType: 1,
     varFields: [
       { fieldTag: "u", content: "username" },
@@ -94,7 +94,7 @@ describe("DependentAccountAPI", () => {
       const { isPatronEligible } = DependentAccountAPI({
         ilsClient: IlsClient(),
       });
-      const barcode = "1234";
+      const barcode = "1233";
 
       await expect(isPatronEligible(barcode)).rejects.toThrow(
         "The patron couldn't be found."
@@ -108,7 +108,7 @@ describe("DependentAccountAPI", () => {
       const { isPatronEligible } = DependentAccountAPI({
         ilsClient: IlsClient(),
       });
-      const barcode = "1234";
+      const barcode = "1233";
 
       const response = await isPatronEligible(barcode);
 
@@ -126,7 +126,7 @@ describe("DependentAccountAPI", () => {
       const { isPatronEligible } = DependentAccountAPI({
         ilsClient: IlsClient(),
       });
-      const barcode = "1234";
+      const barcode = "1233";
 
       const response = await isPatronEligible(barcode);
 
@@ -143,7 +143,7 @@ describe("DependentAccountAPI", () => {
       const { isPatronEligible } = DependentAccountAPI({
         ilsClient: IlsClient(),
       });
-      const barcode = "1234";
+      const barcode = "1233";
 
       const response = await isPatronEligible(barcode);
 
@@ -178,7 +178,7 @@ describe("DependentAccountAPI", () => {
       expect(spy).toHaveBeenCalledTimes(1);
       expect(spy).toHaveBeenCalledWith(barcode);
       expect(patron).toEqual({
-        id: "1234",
+        id: "1233",
         patronType: 10,
         varFields: [
           { fieldTag: "u", content: "username" },
@@ -403,17 +403,20 @@ describe("DependentAccountAPI", () => {
       } = DependentAccountAPI({
         ilsClient: IlsClient(),
       });
-      const barcode = "1234";
+      const barcode = "1233";
 
       await isPatronEligible(barcode);
 
       expect(getAlreadyFetchedParentPatron()).toEqual({
-        id: "1234",
+        id: "1233",
         patronType: 10,
         varFields: [
           { fieldTag: "u", content: "username" },
           { fieldTag: "x", content: "DEPENDENTS 1234" },
         ],
+        // The dependents content is also extracted and added a separate
+        // property for easy access.
+        dependents: "DEPENDENTS 1234",
       });
     });
   });

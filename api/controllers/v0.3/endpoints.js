@@ -330,7 +330,10 @@ async function createPatron(req, res) {
         // "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{patron-id}"
         response = {
           status: resp.status,
-          data: resp.data,
+          data: {
+            ...resp.data,
+            barcode: card.barcode,
+          },
         };
       } catch (error) {
         // There was an error hitting the ILS to create the patron. Catch
@@ -637,10 +640,17 @@ async function createDependent(req, res) {
         response = {
           status: 200,
           data: {
-            dependent: newResponse.data,
+            dependent: {
+              ...newResponse.data,
+              barcode: card.barcode,
+            },
             // Updating a patron in the ILS simply returns a 204 with no
             // response in the body. Just return that the parent was updated.
-            parent: { updated: true },
+            parent: {
+              updated: true,
+              barcode: req.body.barcode,
+              dependents: `${parentPatron.dependents},${card.barcode}`,
+            },
           },
         };
       } catch (error) {
