@@ -77,7 +77,7 @@ function getIlsToken(req, res, username, password) {
       const errorResponseData = modelResponse.errorResponseData(
         collectErrorResponseData(
           503,
-          "",
+          "ils-integration-error",
           `The ILS is not currently available. ${ilsError}`,
           "",
           ""
@@ -182,7 +182,13 @@ async function checkUsername(req, res) {
     status = 200;
   } catch (error) {
     usernameResponse = modelResponse.errorResponseData(
-      collectErrorResponseData(error.status, "", error.message, "", "") // eslint-disable-line comma-dangle
+      collectErrorResponseData(
+        error.status,
+        error.type || "",
+        error.message,
+        "",
+        ""
+      ) // eslint-disable-line comma-dangle
     );
     status = usernameResponse.status;
   }
@@ -314,7 +320,13 @@ async function createPatron(req, res) {
     // attempting to validate the username or address, catch that error here
     // and return it.
     response = modelResponse.errorResponseData(
-      collectErrorResponseData(error.status || 400, "", error.message, "", "") // eslint-disable-line comma-dangle
+      collectErrorResponseData(
+        error.status || 400,
+        error.type || "",
+        error.message,
+        "",
+        ""
+      ) // eslint-disable-line comma-dangle
     );
   }
 
@@ -322,7 +334,7 @@ async function createPatron(req, res) {
   // etc., or if the username is unavailable, render that error.
   if (errors && Object.keys(errors).length !== 0) {
     response = modelResponse.errorResponseData(
-      collectErrorResponseData(400, "", errors, "", "") // eslint-disable-line comma-dangle
+      collectErrorResponseData(400, "invalid-request", errors, "", "") // eslint-disable-line comma-dangle
     );
   } else {
     // If the card is valid, attempt to create a patron in the ILS!
@@ -345,7 +357,7 @@ async function createPatron(req, res) {
         response = modelResponse.errorResponseData(
           collectErrorResponseData(
             error.status || 400,
-            "",
+            error.type || "",
             error.message,
             "",
             ""
@@ -689,7 +701,7 @@ async function createDependent(req, res) {
         response = modelResponse.errorResponseData(
           collectErrorResponseData(
             error.status || 502,
-            "",
+            error.type || "",
             error.message,
             "",
             ""

@@ -109,12 +109,12 @@ describe("DependentAccountAPI", () => {
       await expect(isPatronEligible()).rejects.toThrow("No barcode passed.");
     });
 
-    it("returns an error if a barcode is not 14-digits", async () => {
+    it("returns an error if a barcode is not 14 digits", async () => {
       const { isPatronEligible } = DependentAccountAPI({ ilsClient: {} });
       const barcode = "1234567891234";
 
       await expect(isPatronEligible(barcode)).rejects.toThrow(
-        "The barcode passed is not 14-digits."
+        "The barcode passed is not 14 digits."
       );
     });
 
