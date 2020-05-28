@@ -561,7 +561,13 @@ async function createDependent(req, res) {
     isEligible = await isPatronEligible(req.body.barcode);
   } catch (error) {
     response = modelResponse.errorResponseData(
-      collectErrorResponseData(error.status || 500, "", error.message, "", "") // eslint-disable-line comma-dangle
+      collectErrorResponseData(
+        error.status || 500,
+        error.type || "",
+        error.message,
+        "",
+        ""
+      ) // eslint-disable-line comma-dangle
     );
     // There was an error so just return the error and don't continue.
     return renderResponse(req, res, response.status, response);
@@ -571,12 +577,6 @@ async function createDependent(req, res) {
     // The patron is eligible. Let's get the data. The parent account was
     // stored after calling `isPatronEligible`.
     parentPatron = getAlreadyFetchedParentPatron();
-  } else {
-    // The patron is not eligible so return the error and don't continue.
-    response = modelResponse.errorResponseData(
-      collectErrorResponseData(200, "", isEligible.description, "", "") // eslint-disable-line comma-dangle
-    );
-    return renderResponse(req, res, response.status, response);
   }
 
   // Reformat the address for a new Address object.

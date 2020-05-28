@@ -32,7 +32,15 @@ const UsernameValidationAPI = (args) => {
       message: "This username is available.",
     },
   };
-
+  class BadUsername extends Error {
+    constructor(type, message) {
+      super();
+      this.type = type;
+      this.name = "BadUsername";
+      this.message = message;
+      this.status = 400;
+    }
+  }
   /**
    * validate(username)
    * Checks if the username is valid and available and returns and object
@@ -42,12 +50,16 @@ const UsernameValidationAPI = (args) => {
    */
   const validate = async (username) => {
     if (!username || !USERNAME_PATTERN.test(username)) {
-      return RESPONSES["invalid"];
+      const invalid = RESPONSES["invalid"];
+      throw new BadUsername(invalid.type, invalid.message);
     } else {
       let type;
       const available = await usernameAvailable(username);
-      type = available ? "available" : "unavailable";
-      return RESPONSES[type];
+      if (!available) {
+        const unavailable = RESPONSES["unavailable"];
+        throw new BadUsername(unavailable.type, unavailable.message);
+      }
+      return RESPONSES["available"];
     }
   };
 
