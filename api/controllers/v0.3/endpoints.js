@@ -661,6 +661,11 @@ async function createDependent(req, res) {
         response = {
           status: 200,
           data: {
+            // This is data from the newly created dependent juvenile account.
+            // The `id` is from the ILS response in its `link` property, but
+            // we need to parse it and get the last value from the link which
+            // looks like
+            // "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{patron-id}"
             dependent: {
               id: parseInt(link.split("/").pop(), 10),
               username: card.username,
@@ -670,7 +675,7 @@ async function createDependent(req, res) {
             },
             // Updating a patron in the ILS simply returns a 204 with no
             // response in the body.
-            // Return the parent's barcode and its dependents.
+            // Return the parent's barcode and a list of its dependents.
             parent: {
               updated: true,
               barcode: req.body.barcode,

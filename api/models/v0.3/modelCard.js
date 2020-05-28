@@ -188,25 +188,19 @@ class Card {
       throw new MissingRequiredValues(
         "'name', 'address', 'username', and 'pin' are all required."
       );
-      // return { valid: false, errors: this.errors };
     }
-    // The pin must be a 4 digit string.
+    // The pin must be a 4 digit string. Throw an error if it's incorrect.
     if (!/^\d{4}$/.test(this.pin)) {
       throw new IncorrectPin();
-      // return { valid: false, errors: this.errors };
     }
     const validateByPolicy = ["email", "birthdate"];
-    // Depending on the policy, some fields are required.
+    // Depending on the policy, some fields are required. Throw an error
+    // if a required field is missing.
     validateByPolicy.forEach((attr) => {
       if (this.requiredByPolicy(attr) && !this[attr]) {
         throw new MissingRequiredValues(`${attr} cannot be empty`);
       }
     });
-    // Nope, some attributes are empty and required by the specific policy.
-    // if (Object.keys(this.errors).length !== 0) {
-    //   return { valid: false, errors: this.errors };
-    // }
-
     // Now that all values have gone through a basic validation process,
     // do the more in-depth validation.
     const validated = await cardValidator.validate(this);
