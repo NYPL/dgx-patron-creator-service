@@ -1,3 +1,5 @@
+const logger = require('./Logger');
+
 /**
  * renderResponse(req, res, status, message)
  * Render the response from the ILS API.
@@ -39,8 +41,7 @@ function errorResponseDataWithTag(routeTag) {
     title,
     debugMessage,
   ) {
-    // logger.error(
-    console.error(
+    logger.error(
       `status_code: ${status}, `
         + `type: ${type}, `
         + `message: ${message}, `
