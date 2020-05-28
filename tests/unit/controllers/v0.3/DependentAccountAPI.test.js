@@ -142,10 +142,7 @@ describe("DependentAccountAPI", () => {
       });
       const barcode = "12333333333333";
 
-      const response = await isPatronEligible(barcode);
-
-      expect(response.eligible).toEqual(false);
-      expect(response.description).toEqual(
+      await expect(isPatronEligible(barcode)).rejects.toThrow(
         "Your card has expired. Please try applying again."
       );
     });
@@ -159,10 +156,7 @@ describe("DependentAccountAPI", () => {
       });
       const barcode = "12333333333333";
 
-      const response = await isPatronEligible(barcode);
-
-      expect(response.eligible).toEqual(false);
-      expect(response.description).toEqual(
+      await expect(isPatronEligible(barcode)).rejects.toThrow(
         "You don’t have the correct card type to make child accounts. Please contact gethelp@nypl.org if you believe this is in error."
       );
     });
@@ -177,10 +171,7 @@ describe("DependentAccountAPI", () => {
       });
       const barcode = "12333333333333";
 
-      const response = await isPatronEligible(barcode);
-
-      expect(response.eligible).toEqual(false);
-      expect(response.description).toEqual(
+      await expect(isPatronEligible(barcode)).rejects.toThrow(
         "You have reached the limit of dependent cards you can receive via online application."
       );
     });

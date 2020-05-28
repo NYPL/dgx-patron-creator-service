@@ -3,7 +3,11 @@ const AddressValidationApi = require("../../controllers/v0.3/AddressValidationAP
 const UsernameValidationApi = require("../../controllers/v0.3/UsernameValidationAPI");
 const NameValidationApi = require("../../controllers/v0.3/NameValidationAPI");
 const Barcode = require("./modelBarcode");
-const { DatabaseError } = require("../../helpers/errors");
+const {
+  DatabaseError,
+  MissingRequiredValues,
+  IncorrectPin,
+} = require("../../helpers/errors");
 
 /**
  * A validator class to verify a card's address and birthdate. Doesn't
@@ -178,34 +182,30 @@ class Card {
    * card's address and username against the ILS.
    */
   async validate() {
-    // if (!this.ilsClient) {
-    //   throw error
-    // }
-
     // These four values are necessary for a Card object:
     // name, address, username, pin
     if (!this.name || !this.address || !this.username || !this.pin) {
-      this.errors["required"] =
-        "'name', 'address', 'username', and 'pin' are all required.";
-      return { valid: false, errors: this.errors };
+      throw new MissingRequiredValues(
+        "'name', 'address', 'username', and 'pin' are all required."
+      );
+      // return { valid: false, errors: this.errors };
     }
     // The pin must be a 4 digit string.
     if (!/^\d{4}$/.test(this.pin)) {
-      this.errors["pin"] =
-        "PIN should be 4 numeric characters only. Please revise your PIN.";
-      return { valid: false, errors: this.errors };
+      throw new IncorrectPin();
+      // return { valid: false, errors: this.errors };
     }
     const validateByPolicy = ["email", "birthdate"];
     // Depending on the policy, some fields are required.
     validateByPolicy.forEach((attr) => {
       if (this.requiredByPolicy(attr) && !this[attr]) {
-        this.errors[attr] = `${attr} cannot be empty`;
+        throw new MissingRequiredValues(`${attr} cannot be empty`);
       }
     });
     // Nope, some attributes are empty and required by the specific policy.
-    if (Object.keys(this.errors).length !== 0) {
-      return { valid: false, errors: this.errors };
-    }
+    // if (Object.keys(this.errors).length !== 0) {
+    //   return { valid: false, errors: this.errors };
+    // }
 
     // Now that all values have gone through a basic validation process,
     // do the more in-depth validation.

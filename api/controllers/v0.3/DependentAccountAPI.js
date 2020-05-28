@@ -5,6 +5,8 @@ const {
   PatronNotFound,
   InvalidRequest,
   NoBarcode,
+  ExpiredAccount,
+  NotEligibleCard,
 } = require("../../helpers/errors");
 const IlsClient = require("./IlsClient");
 
@@ -56,10 +58,7 @@ const DependentAccountAPI = (args) => {
     const hasExpiredAccount = checkAccountExpiration(patron.expirationDate);
 
     if (hasExpiredAccount) {
-      return {
-        eligible: false,
-        description: "Your card has expired. Please try applying again.",
-      };
+      throw new ExpiredAccount();
     }
 
     // Now, check that they have an eligible ptype that allows them to
@@ -72,17 +71,17 @@ const DependentAccountAPI = (args) => {
       const canCreateDependents = checkDependentLimit(patron.varFields);
 
       if (!canCreateDependents) {
-        response["eligible"] = false;
-        response["description"] =
-          "You have reached the limit of dependent cards you can receive via online application.";
+        throw new NotEligibleCard(
+          "You have reached the limit of dependent cards you can receive via online application."
+        );
       } else {
         response["eligible"] = true;
         response["description"] = "This patron can create dependent accounts.";
       }
     } else {
-      response["eligible"] = false;
-      response["description"] =
-        "You don’t have the correct card type to make child accounts. Please contact gethelp@nypl.org if you believe this is in error.";
+      throw new NotEligibleCard(
+        "You don’t have the correct card type to make child accounts. Please contact gethelp@nypl.org if you believe this is in error."
+      );
     }
 
     return response;

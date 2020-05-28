@@ -1,12 +1,11 @@
 /* eslint-disable */
-const { NoILSClient, ILSIntegrationError } = require("../../helpers/errors");
+const { NoILSClient } = require("../../helpers/errors");
 
 /**
  * A class that validates usernames against the ILS.
  */
 const UsernameValidationAPI = (args) => {
   const ilsClient = args["ilsClient"];
-  // class IntegrationError < StandardError; end
   const USERNAME_PATTERN = /^[a-zA-Z0-9]{5,25}$/;
   const AVAILABLE_USERNAME_TYPE = "available-username";
   const UNAVAILABLE_USERNAME_TYPE = "unavailable-username";

@@ -76,6 +76,46 @@ class DatabaseError extends Error {
   }
 }
 
+class MissingRequiredValues extends Error {
+  constructor(message) {
+    super();
+    this.type = "missing-required-values";
+    this.name = "MissingRequiredValues";
+    this.message = message;
+    this.status = 400;
+  }
+}
+class IncorrectPin extends Error {
+  constructor() {
+    super();
+    this.type = "incorrect-pin";
+    this.name = "MissingRequiredValues";
+    this.message =
+      "PIN should be 4 numeric characters only. Please revise your PIN.";
+    this.status = 400;
+  }
+}
+
+class ExpiredAccount extends Error {
+  constructor() {
+    super();
+    this.type = "expired-account";
+    this.name = "ExpiredAccount";
+    this.message = "Your card has expired. Please try applying again.";
+    this.status = 400;
+  }
+}
+
+class NotEligibleCard extends Error {
+  constructor(message) {
+    super();
+    this.type = "not-eligible-card";
+    this.name = "NotEligibleCard";
+    this.message = message;
+    this.status = 400;
+  }
+}
+
 module.exports = {
   InvalidEnvironmentConfiguration,
   InvalidRequest,
@@ -85,4 +125,8 @@ module.exports = {
   PatronNotFound,
   NoBarcode,
   DatabaseError,
+  MissingRequiredValues,
+  IncorrectPin,
+  ExpiredAccount,
+  NotEligibleCard,
 };

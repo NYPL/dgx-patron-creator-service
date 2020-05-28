@@ -705,10 +705,10 @@ definitions:
         example: 400
       type:
         type: string
-        example: invalid-request
+        example: not-eligible-card
       message:
         type: object
-        example: The barcode passed is not 14-digits.
+        example: You have reached the limit of dependent cards you can receive via online application.
       detail:
         type: object
         example:

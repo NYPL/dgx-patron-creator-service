@@ -856,9 +856,25 @@
             "dependent": {
               "type": "object",
               "properties": {
-                "link": {
+                "id": {
+                  "type": "number",
+                  "example": 12345
+                },
+                "username": {
                   "type": "string",
-                  "example": "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{newly-created-dependent-id}"
+                  "example": "username12"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "First name, last name"
+                },
+                "barcode": {
+                  "type": "string",
+                  "example": "28888888888888"
+                },
+                "pin": {
+                  "type": "string",
+                  "example": "1234"
                 }
               }
             },
@@ -868,6 +884,14 @@
                 "updated": {
                   "type": "boolean",
                   "example": true
+                },
+                "barcode": {
+                  "type": "string",
+                  "example": "28888888888886"
+                },
+                "dependents": {
+                  "type": "string",
+                  "example": "DEPENDENTS 28888888888887,28888888888888"
                 }
               }
             }
@@ -1031,11 +1055,11 @@
         },
         "type": {
           "type": "string",
-          "example": "invalid-request"
+          "example": "not-eligible-card"
         },
         "message": {
           "type": "object",
-          "example": "The barcode passed is not 14-digits."
+          "example": "You have reached the limit of dependent cards you can receive via online application."
         },
         "detail": {
           "type": "object",
