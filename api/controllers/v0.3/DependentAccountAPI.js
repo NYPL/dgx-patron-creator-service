@@ -42,8 +42,10 @@ const DependentAccountAPI = (args) => {
     if (!barcode) {
       throw new InvalidRequest("No barcode passed.");
     }
-    if (barcode.length !== 14) {
-      throw new InvalidRequest("The barcode passed is not 14 digits.");
+    if (barcode.length < 14 || barcode.length > 16) {
+      throw new InvalidRequest(
+        "The barcode passed is not a 14-digit or 16-digit number."
+      );
     }
 
     let response = {};

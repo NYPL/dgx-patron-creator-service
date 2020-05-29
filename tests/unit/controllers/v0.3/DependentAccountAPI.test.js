@@ -114,7 +114,7 @@ describe("DependentAccountAPI", () => {
       const barcode = "1234567891234";
 
       await expect(isPatronEligible(barcode)).rejects.toThrow(
-        "The barcode passed is not 14 digits."
+        "The barcode passed is not a 14-digit or 16-digit number."
       );
     });
 
