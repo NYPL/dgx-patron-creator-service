@@ -128,7 +128,7 @@ describe("DependentAccountAPI", () => {
       const barcode = "12333333333333";
 
       await expect(isPatronEligible(barcode)).rejects.toThrow(
-        "The patron couldn't be found."
+        "The patron couldn't be found in the ILS with the barcode or username."
       );
     });
 
@@ -236,7 +236,7 @@ describe("DependentAccountAPI", () => {
       let { getPatronFromILS } = DependentAccountAPI({ ilsClient });
 
       await expect(getPatronFromILS(barcode)).rejects.toThrow(
-        "The patron couldn't be found."
+        "The patron couldn't be found in the ILS with the barcode or username."
       );
 
       expect(spy).toHaveBeenCalledTimes(1);
@@ -252,7 +252,7 @@ describe("DependentAccountAPI", () => {
       let { getPatronFromILS } = DependentAccountAPI({ ilsClient });
 
       await expect(getPatronFromILS(barcode)).rejects.toThrow(
-        "The patron couldn't be found."
+        "The patron couldn't be found in the ILS with the barcode or username."
       );
 
       expect(spy).toHaveBeenCalledTimes(1);

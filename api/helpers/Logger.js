@@ -68,13 +68,13 @@ if (process.env.NODE_ENV !== 'test') {
   );
 }
 
-const logger = new (winston.Logger)({
+const logger = new winston.Logger({
   levels: nyplLogLevels.levels,
   transports: loggerTransports,
   exitOnError: false,
 });
 
 // set the logger output level to one specified in the environment config
-logger.level = process.env.LOG_LEVEL;
+logger.level = process.env.LOG_LEVEL || 'debug';
 
 module.exports = logger;
