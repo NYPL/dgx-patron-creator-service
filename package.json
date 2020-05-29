@@ -47,7 +47,7 @@
     "swagger-express-mw": "0.7.0",
     "swagger-tools": "0.10.1",
     "underscore": "1.9.1",
-    "winston": "^2.4.0"
+    "winston": "3.2.1"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.9.5",
