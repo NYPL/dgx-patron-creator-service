@@ -233,10 +233,31 @@ const IlsClient = (args) => {
     const type = isWorkAddress
       ? IlsClient.WORK_ADDRESS_FIELD_TAG // 'h'
       : IlsClient.ADDRESS_FIELD_TAG; // 'a'
-    const fullString = address.toString();
+    const fullString = address.toString().toUpperCase();
     const lines = fullString.split("\n");
 
     return { lines, type };
+  };
+
+  /**
+   * formatPatronName(name)
+   * Format the patron's name so that it is last name and then first name
+   * and in all caps. If it's a single name, just return it in all caps.
+   *
+   * @param {string} name
+   */
+  const formatPatronName = (name) => {
+    if (!name) {
+      return "";
+    }
+
+    if (name.indexOf(" ") === -1) {
+      return name.toUpperCase();
+    }
+
+    const [first, last] = name.split(" ");
+
+    return `${last}, ${first}`.toUpperCase();
   };
 
   /**
@@ -265,14 +286,14 @@ const IlsClient = (args) => {
     let fixedFields = {};
     let patronCodes = {};
 
-    let address = formatAddress(patron.address);
+    const address = formatAddress(patron.address);
     addresses.push(address);
     if (patron.worksInCity()) {
-      let workAddress = formatAddress(patron.workAddress, true);
+      const workAddress = formatAddress(patron.workAddress, true);
       addresses.push(workAddress);
     }
 
-    let usernameVarField = {
+    const usernameVarField = {
       fieldTag: IlsClient.USERNAME_FIELD_TAG,
       content: patron.username,
     };
@@ -290,8 +311,10 @@ const IlsClient = (args) => {
     // Add agency fixedField
     fixedFields = agencyField(patron.agency, fixedFields);
 
+    const patronName = formatPatronName(patron.name);
+
     let fields = {
-      names: [patron.name],
+      names: [patronName],
       addresses: addresses,
       pin: patron.pin,
       patronType: patron.ptype,
@@ -306,7 +329,7 @@ const IlsClient = (args) => {
       fields["barcodes"] = [patron.barcode];
     }
     if (patron.email && patron.email.length) {
-      fields["emails"] = [patron.email];
+      fields["emails"] = [patron.email.toUpperCase()];
     }
     if (patron.birthdate) {
       fields["birthDate"] = patron.birthdate.toISOString().slice(0, 10);
@@ -369,6 +392,7 @@ const IlsClient = (args) => {
     ecommunicationsPref,
     formatPatronData,
     formatAddress,
+    formatPatronName,
   };
 };
 

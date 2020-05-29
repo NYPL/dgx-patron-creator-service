@@ -51,7 +51,8 @@ class PatronNotFound extends Error {
     super();
     this.type = "patron-not-found";
     this.name = "PatronNotFound";
-    this.message = "The patron couldn't be found.";
+    this.message =
+      "The patron couldn't be found in the ILS with the barcode or username.";
     this.status = 502;
   }
 }
