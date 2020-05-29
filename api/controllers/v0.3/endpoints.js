@@ -111,10 +111,10 @@ async function setupCheckUsername(req, res) {
     return;
   }
 
-  ilsClientKey = process.env.ILS_CLIENT_KEY;
-  // ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
-  ilsClientPassword = process.env.ILS_CLIENT_SECRET;
-  // ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
+  ilsClientKey =
+    ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
+  ilsClientPassword =
+    ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
 
   Promise.all([ilsClientKey, ilsClientPassword])
     .then((decryptedValues) => {
@@ -220,10 +220,10 @@ async function setupCreatePatron(req, res) {
     return;
   }
 
-  ilsClientKey = process.env.ILS_CLIENT_KEY;
-  // ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
-  ilsClientPassword = process.env.ILS_CLIENT_SECRET;
-  // ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
+  ilsClientKey =
+    ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
+  ilsClientPassword =
+    ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
 
   Promise.all([ilsClientKey, ilsClientPassword])
     .then((decryptedValues) => {
@@ -394,10 +394,10 @@ async function setupDependentEligibility(req, res) {
     return;
   }
 
-  ilsClientKey = process.env.ILS_CLIENT_KEY;
-  // ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
-  ilsClientPassword = process.env.ILS_CLIENT_SECRET;
-  // ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
+  ilsClientKey =
+    ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
+  ilsClientPassword =
+    ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
 
   Promise.all([ilsClientKey, ilsClientPassword])
     .then((decryptedValues) => {
@@ -499,10 +499,10 @@ async function setupCreateDependent(req, res) {
     return;
   }
 
-  ilsClientKey = process.env.ILS_CLIENT_KEY;
-  // ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
-  ilsClientPassword = process.env.ILS_CLIENT_SECRET;
-  // ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
+  ilsClientKey =
+    ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
+  ilsClientPassword =
+    ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
 
   Promise.all([ilsClientKey, ilsClientPassword])
     .then((decryptedValues) => {
