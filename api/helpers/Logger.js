@@ -89,11 +89,11 @@ const consoleTransport = new Console({
   ),
 });
 
-const loggerTransports = [];
+const loggerTransports = [fileTransport];
 
 // Don't show console messages or log to the file while running tests.
 if (process.env.NODE_ENV !== 'test') {
-  loggerTransports.push(fileTransport, consoleTransport);
+  loggerTransports.push(consoleTransport);
 }
 
 // Create the logger that will be used in the app now that the
