@@ -3,6 +3,7 @@ const winston = require('winston');
 const {
   combine, timestamp, printf, colorize,
 } = winston.format;
+const { File, Console } = winston.transports;
 
 // Set default NYPL agreed upon log levels
 // https://github.com/NYPL/engineering-general/blob/master/standards/logging.md
@@ -68,43 +69,44 @@ const nyplFormat = printf((options) => {
   return JSON.stringify(result);
 });
 
-const { File } = winston.transports;
-const loggerTransports = [
-  new File({
-    filename: './log/dgx-patron-creator-service.log',
-    handleExceptions: true,
-    maxsize: 5242880, // 5MB
-    maxFiles: 5,
-    format: combine(timestamp(), nyplFormat),
-  }),
-];
-
-// Don't show console messages while running tests.
-if (process.env.NODE_ENV !== 'test') {
-  const { Console } = winston.transports;
-  loggerTransports.push(
-    new Console({
-      handleExceptions: true,
-      format: combine(
-        timestamp(),
-        nyplFormat,
-        colorize({
-          all: true,
-        }),
-      ),
+// The transport function that logs to a file.
+const fileTransport = new File({
+  filename: './log/dgx-patron-creator-service.log',
+  handleExceptions: true,
+  maxsize: 5242880, // 5MB
+  maxFiles: 5,
+  format: combine(timestamp(), nyplFormat),
+});
+// The transport function that logs to the console.
+const consoleTransport = new Console({
+  handleExceptions: true,
+  format: combine(
+    timestamp(),
+    nyplFormat,
+    colorize({
+      all: true,
     }),
-  );
+  ),
+});
+
+const loggerTransports = [];
+
+// Don't show console messages or log to the file while running tests.
+if (process.env.NODE_ENV !== 'test') {
+  loggerTransports.push(fileTransport, consoleTransport);
 }
 
-// Create the logger that will be used in the app now that the configs are set up.
+// Create the logger that will be used in the app now that the
+// configs are set up.
+// The linter complains if the constructor is not capitalized.
 const CreateLogger = winston.createLogger;
-const logger = new CreateLogger({
+const logger = CreateLogger({
   levels: nyplLogLevels.levels,
   transports: loggerTransports,
   exitOnError: false,
 });
 
-// set the logger output level to one specified in the environment config
+// Set the logger output level to one specified in the environment config.
 logger.level = process.env.LOG_LEVEL || 'debug';
 
 module.exports = logger;
