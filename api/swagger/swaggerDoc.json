@@ -175,12 +175,9 @@
         "parameters": [
           {
             "name": "barcode",
-            "in": "body",
+            "in": "query",
             "description": "The 14-digit barcode of the existing patron",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/PatronsEligibilityDataV03"
-            }
+            "type": "string"
           }
         ],
         "responses": {
@@ -193,7 +190,7 @@
           "400": {
             "description": "Invalid request",
             "schema": {
-              "$ref": "#/definitions/400ErrorResponseV03"
+              "$ref": "#/definitions/400BarcodeErrorResponseV03"
             }
           },
           "502": {
@@ -834,16 +831,16 @@
     "PatronsEligibilityResponseV03": {
       "type": "object",
       "properties": {
+        "status": {
+          "type": "number",
+          "example": 200
+        },
         "eligible": {
-          "type": "boolean",
-          "example": true
+          "type": "boolean"
         },
         "decription": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "example": ["This patron can create dependent accounts."]
+          "type": "string",
+          "example": "This patron can create dependent accounts."
         }
       }
     },
@@ -859,9 +856,25 @@
             "dependent": {
               "type": "object",
               "properties": {
-                "link": {
+                "id": {
+                  "type": "number",
+                  "example": 12345
+                },
+                "username": {
                   "type": "string",
-                  "example": "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{newly-created-dependent-id}"
+                  "example": "username12"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "First name, last name"
+                },
+                "barcode": {
+                  "type": "string",
+                  "example": "28888888888888"
+                },
+                "pin": {
+                  "type": "string",
+                  "example": "1234"
                 }
               }
             },
@@ -871,6 +884,14 @@
                 "updated": {
                   "type": "boolean",
                   "example": true
+                },
+                "barcode": {
+                  "type": "string",
+                  "example": "28888888888886"
+                },
+                "dependents": {
+                  "type": "string",
+                  "example": "DEPENDENTS 28888888888887,28888888888888"
                 }
               }
             }
@@ -1007,9 +1028,38 @@
         },
         "message": {
           "type": "object",
+          "example": "Some value is wrong"
+        },
+        "detail": {
+          "type": "object",
           "example": {
-            "username": ["Username is not available or valid"]
+            "title": "",
+            "debug": ""
+          },
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "debug": {
+              "type": "string"
+            }
           }
+        }
+      }
+    },
+    "400BarcodeErrorResponseV03": {
+      "properties": {
+        "status": {
+          "type": "number",
+          "example": 400
+        },
+        "type": {
+          "type": "string",
+          "example": "not-eligible-card"
+        },
+        "message": {
+          "type": "object",
+          "example": "You have reached the limit of dependent cards you can receive via online application."
         },
         "detail": {
           "type": "object",
@@ -1057,7 +1107,7 @@
         },
         "type": {
           "type": "string",
-          "example": ""
+          "example": "remote-integration-failure"
         },
         "message": {
           "type": "number",

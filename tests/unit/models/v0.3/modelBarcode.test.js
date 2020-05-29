@@ -1,6 +1,7 @@
 const Barcode = require('../../../../api/models/v0.3/modelBarcode');
 const IlsClient = require('../../../../api/controllers/v0.3/IlsClient');
 const BarcodeDb = require('../../../../db');
+const { DatabaseError } = require('../../../../api/helpers/errors');
 
 // Initialize the connection to the database.
 const db = BarcodeDb({
@@ -205,7 +206,7 @@ describe('Barcode', () => {
       barcode.addBarcode = jest
         .fn()
         .mockRejectedValueOnce(
-          new Error('Error from database attempting to insert.'),
+          new DatabaseError('Error from database attempting to insert.'),
         )
         .mockReturnValue(true);
       barcode.nextLuhnValidCode = jest.fn().mockReturnValue(nextBarcode);
@@ -273,7 +274,7 @@ describe('Barcode', () => {
       barcode.markUsed = jest
         .fn()
         .mockRejectedValueOnce(
-          new Error('Error from database attempting to update.'),
+          new DatabaseError('Error from database attempting to update.'),
         )
         .mockReturnValue(true);
       barcode.nextLuhnValidCode = jest.fn().mockReturnValue(nextBarcode);
@@ -440,7 +441,7 @@ describe('Barcode', () => {
       const querySpy = jest
         .spyOn(barcode.db, 'query')
         .mockImplementation(
-          jest.fn().mockRejectedValueOnce(new Error('uh oh!')),
+          jest.fn().mockRejectedValueOnce(new DatabaseError('uh oh!')),
         );
 
       // Something unexpected happened in the database.

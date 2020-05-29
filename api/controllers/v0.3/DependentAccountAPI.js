@@ -1,5 +1,13 @@
 /* eslint-disable */
-const { NoILSClient, ILSIntegrationError } = require("../../helpers/errors");
+const {
+  NoILSClient,
+  ILSIntegrationError,
+  PatronNotFound,
+  InvalidRequest,
+  NoBarcode,
+  ExpiredAccount,
+  NotEligibleCard,
+} = require("../../helpers/errors");
 const IlsClient = require("./IlsClient");
 
 // A parent patron is only allowed to create three dependent juvenile accounts.
@@ -32,7 +40,10 @@ const DependentAccountAPI = (args) => {
     }
 
     if (!barcode) {
-      throw new Error("Invalid Request: No barcode passed");
+      throw new InvalidRequest("No barcode passed.");
+    }
+    if (barcode.length !== 14) {
+      throw new InvalidRequest("The barcode passed is not 14 digits.");
     }
 
     let response = {};
@@ -42,7 +53,15 @@ const DependentAccountAPI = (args) => {
     // in `getPatronFromILS` because we want to make sure that the eligibility
     // check was run in order to retrieve a patron.
     parentPatronData = patron;
-    // First, check that they have an eligible ptype that allows them to
+
+    // First check if the account isn't expired.
+    const hasExpiredAccount = checkAccountExpiration(patron.expirationDate);
+
+    if (hasExpiredAccount) {
+      throw new ExpiredAccount();
+    }
+
+    // Now, check that they have an eligible ptype that allows them to
     // create dependent accounts.
     const hasEligiblePtype = checkPType(patron.patronType);
 
@@ -52,19 +71,32 @@ const DependentAccountAPI = (args) => {
       const canCreateDependents = checkDependentLimit(patron.varFields);
 
       if (!canCreateDependents) {
-        response["eligible"] = false;
-        response["description"] =
-          "This patron has reached the limit to create dependent accounts.";
+        throw new NotEligibleCard(
+          "You have reached the limit of dependent cards you can receive via online application."
+        );
       } else {
         response["eligible"] = true;
         response["description"] = "This patron can create dependent accounts.";
       }
     } else {
-      response["eligible"] = false;
-      response["description"] = "This patron does not have an eligible ptype.";
+      throw new NotEligibleCard(
+        "You don’t have the correct card type to make child accounts. Please contact gethelp@nypl.org if you believe this is in error."
+      );
     }
 
     return response;
+  };
+
+  /**
+   * checkAccountExpiration(expirationDate)
+   * Returns true if the account is expired or false otherwise.
+   *
+   * @param {string} expirationDate
+   * @param {Date} now
+   */
+  const checkAccountExpiration = (expirationDate, now = new Date()) => {
+    const expDate = new Date(expirationDate);
+    return now > expDate;
   };
 
   /**
@@ -86,13 +118,16 @@ const DependentAccountAPI = (args) => {
 
       if (response.status !== 200) {
         // The record wasn't found.
-        throw new Error("The patron couldn't be found.");
+        throw new PatronNotFound();
       }
 
       // Return the patron object.
       return response.data;
     } catch (error) {
-      throw new ILSIntegrationError(error.message);
+      if (error.type !== "patron-not-found") {
+        throw new ILSIntegrationError(error.message);
+      }
+      throw error;
     }
   };
 
@@ -170,7 +205,41 @@ const DependentAccountAPI = (args) => {
    * the parent patron data is already stored in memory but will be
    * overidden the next time a new parent patron's data is requested.
    */
-  const getAlreadyFetchedParentPatron = () => parentPatronData;
+  const getAlreadyFetchedParentPatron = () => {
+    if (!parentPatronData) {
+      return;
+    }
+
+    const varFields = parentPatronData.varFields || [];
+    let dependents;
+    const xFieldTags = varFields.filter((obj) => obj.fieldTag === "x");
+    // No varFields were found, so we can assume the patron doesn't
+    // have any dependent accounts yet.
+    if (xFieldTags.length === 0) {
+      dependents = "DEPENDENTS ";
+    } else {
+      // Check for a varField that has `content` in the form of:
+      // "DEPENDENTS x,x,x"
+      // where `x` is a barcode. First get the varField that has "DEPENDENTS".
+      const dependentsVarField = xFieldTags.find(
+        (obj) => obj.content.indexOf("DEPENDENTS") !== -1
+      );
+
+      // There are varFields with a fieldTag of "x" but none with "DEPENDENTS".
+      // We can assume the patron doesn't have any dependents already.
+      if (!dependentsVarField) {
+        dependents = "DEPENDENTS ";
+      } else {
+        // The value is already there so return it.
+        dependents = dependentsVarField.content;
+      }
+    }
+
+    return {
+      ...parentPatronData,
+      dependents,
+    };
+  };
 
   /**
    * updateParentWithDependent(parent, dependentBarcode)
@@ -191,7 +260,7 @@ const DependentAccountAPI = (args) => {
     }
 
     if (!dependentBarcode) {
-      throw new Error(
+      throw new NoBarcode(
         "The dependent account has no barcode. Cannot update parent account."
       );
     }
@@ -233,7 +302,7 @@ const DependentAccountAPI = (args) => {
 
     if (response.status !== 204) {
       // The record wasn't found and couldn't be updated.
-      throw new Error("The parent patron couldn't be updated.");
+      throw new ILSIntegrationError("The parent patron couldn't be updated.");
     }
 
     return response;
@@ -280,6 +349,7 @@ const DependentAccountAPI = (args) => {
     // For testing,
     checkPType,
     checkDependentLimit,
+    checkAccountExpiration,
   };
 };
 

@@ -147,6 +147,26 @@ describe("IlsClient", () => {
     });
   });
 
+  // The name being sent to the ILS is in the form of:
+  // 'LASTNAME, FIRSTNAME'
+  describe("formatPatronName", () => {
+    const ilsClient = IlsClient({});
+
+    it("returns an empty string if nothing was passed", () => {
+      expect(ilsClient.formatPatronName()).toEqual("");
+    });
+
+    it("returns the name in all caps if there is only one value", () => {
+      const name = "Abraham";
+      expect(ilsClient.formatPatronName(name)).toEqual("ABRAHAM");
+    });
+
+    it("returns last name and then first name in all caps", () => {
+      const name = "Abraham Lincoln";
+      expect(ilsClient.formatPatronName(name)).toEqual("LINCOLN, ABRAHAM");
+    });
+  });
+
   // The address object being sent to the ILS is in the form of:
   // { lines: ['line 1', 'line 2'], type: 'a' }
   describe("formatAddress", () => {
@@ -154,7 +174,7 @@ describe("IlsClient", () => {
     const address = new Address({
       line1: "476 5th Avenue",
       city: "New York",
-      state: "New York",
+      state: "NY",
       zip: "10018",
     });
 
@@ -164,8 +184,8 @@ describe("IlsClient", () => {
       const formattedAddress = ilsClient.formatAddress(address, isWorkAddress);
 
       expect(formattedAddress.lines).toEqual([
-        "476 5th Avenue",
-        "New York, New York 10018",
+        "476 5TH AVENUE",
+        "NEW YORK, NY 10018",
       ]);
       expect(formattedAddress.type).toEqual(IlsClient.ADDRESS_FIELD_TAG);
       expect(formattedAddress.type).toEqual("a");
@@ -177,8 +197,8 @@ describe("IlsClient", () => {
       const formattedAddress = ilsClient.formatAddress(address, isWorkAddress);
 
       expect(formattedAddress.lines).toEqual([
-        "476 5th Avenue",
-        "New York, New York 10018",
+        "476 5TH AVENUE",
+        "NEW YORK, NY 10018",
       ]);
       expect(formattedAddress.type).toEqual(IlsClient.WORK_ADDRESS_FIELD_TAG);
       expect(formattedAddress.type).toEqual("h");
@@ -200,7 +220,7 @@ describe("IlsClient", () => {
       );
 
       const barcodeFieldTag = IlsClient.BARCODE_FIELD_TAG;
-      const expectedParams = `?varFieldTag=${barcodeFieldTag}&varFieldContent=${barcode}&fields=patronType,varFields,addresses,emails`;
+      const expectedParams = `?varFieldTag=${barcodeFieldTag}&varFieldContent=${barcode}&fields=patronType,varFields,addresses,emails,expirationDate`;
       const patron = await ilsClient.getPatronFromBarcodeOrUsername(
         barcode,
         isBarcode
@@ -227,7 +247,7 @@ describe("IlsClient", () => {
       );
 
       const usernameFieldTag = IlsClient.USERNAME_FIELD_TAG;
-      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,addresses,emails`;
+      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,addresses,emails,expirationDate`;
       const patron = await ilsClient.getPatronFromBarcodeOrUsername(
         username,
         isBarcode
@@ -255,7 +275,7 @@ describe("IlsClient", () => {
       );
 
       const usernameFieldTag = IlsClient.USERNAME_FIELD_TAG;
-      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,addresses,emails`;
+      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,addresses,emails,expirationDate`;
       const patron = await ilsClient.getPatronFromBarcodeOrUsername(
         username,
         isBarcode
@@ -283,7 +303,7 @@ describe("IlsClient", () => {
       );
 
       const usernameFieldTag = IlsClient.USERNAME_FIELD_TAG;
-      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,addresses,emails`;
+      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,addresses,emails,expirationDate`;
       const patron = await ilsClient.getPatronFromBarcodeOrUsername(
         username,
         isBarcode
@@ -314,7 +334,7 @@ describe("IlsClient", () => {
       );
 
       const usernameFieldTag = IlsClient.USERNAME_FIELD_TAG;
-      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,addresses,emails`;
+      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,addresses,emails,expirationDate`;
       const patron = await ilsClient.getPatronFromBarcodeOrUsername(
         username,
         isBarcode
@@ -345,7 +365,7 @@ describe("IlsClient", () => {
     describe("barcode", () => {
       const barcode = "12341234123412";
       const barcodeFieldTag = IlsClient.BARCODE_FIELD_TAG;
-      const expectedParams = `?varFieldTag=${barcodeFieldTag}&varFieldContent=${barcode}&fields=patronType,varFields,addresses,emails`;
+      const expectedParams = `?varFieldTag=${barcodeFieldTag}&varFieldContent=${barcode}&fields=patronType,varFields,addresses,emails,expirationDate`;
       const isBarcode = true;
 
       it("checks for barcode availability and finds an existing patron, so it is not available", async () => {
@@ -431,7 +451,7 @@ describe("IlsClient", () => {
     describe("username", () => {
       const username = "username";
       const usernameFieldTag = IlsClient.USERNAME_FIELD_TAG;
-      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,addresses,emails`;
+      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,addresses,emails,expirationDate`;
       const isBarcode = false;
 
       it("checks for username availability and finds an existing patron, so it is not available", async () => {
@@ -522,7 +542,7 @@ describe("IlsClient", () => {
     const address = new Address({
       line1: "476 5th Avenue",
       city: "New York",
-      state: "New York",
+      state: "NY",
       zip: "10018",
     });
     const policy = Policy({ policyType: "simplye" });
@@ -552,14 +572,14 @@ describe("IlsClient", () => {
       card.setAgency();
       const formatted = ilsClient.formatPatronData(card);
 
-      expect(formatted.names).toEqual(["First Last"]);
+      expect(formatted.names).toEqual(["LAST, FIRST"]);
       expect(formatted.pin).toEqual("1234");
       // simplye applicants are ptype of 2.
       expect(formatted.patronType).toEqual(2);
       expect(formatted.birthDate).toEqual("1988-01-01");
       expect(formatted.addresses).toEqual([
         {
-          lines: ["476 5th Avenue", "New York, New York 10018"],
+          lines: ["476 5TH AVENUE", "NEW YORK, NY 10018"],
           type: "a",
         },
       ]);
@@ -595,7 +615,7 @@ describe("IlsClient", () => {
     const address = new Address({
       line1: "476 5th Avenue",
       city: "New York",
-      state: "New York",
+      state: "NY",
       zip: "10018",
     });
     const policy = Policy({ policyType: "webApplicant" });
@@ -640,7 +660,7 @@ describe("IlsClient", () => {
         {
           addresses: [
             {
-              lines: ["476 5th Avenue", "New York, New York 10018"],
+              lines: ["476 5TH AVENUE", "NEW YORK, NY 10018"],
               type: "a",
             },
           ],
@@ -649,7 +669,7 @@ describe("IlsClient", () => {
           // The patron is not subscribed to e-communications by default.
           patronCodes: { pcode1: "-" },
           homeLibraryCode: "eb",
-          names: ["First Last"],
+          names: ["LAST, FIRST"],
           patronType: 1,
           pin: "1234",
           varFields: [{ content: "username", fieldTag: "u" }],
@@ -682,7 +702,7 @@ describe("IlsClient", () => {
         {
           addresses: [
             {
-              lines: ["476 5th Avenue", "New York, New York 10018"],
+              lines: ["476 5TH AVENUE", "NEW YORK, NY 10018"],
               type: "a",
             },
           ],
@@ -690,7 +710,7 @@ describe("IlsClient", () => {
           expirationDate: expirationDate.toISOString().slice(0, 10),
           patronCodes: { pcode1: "-" },
           homeLibraryCode: "eb",
-          names: ["First Last"],
+          names: ["LAST, FIRST"],
           patronType: 1,
           pin: "1234",
           varFields: [{ content: "username", fieldTag: "u" }],
