@@ -573,7 +573,7 @@ async function createDependent(req, res) {
   let response;
   const options = {
     barcode: req.body.barcode,
-    username: req.body.username,
+    username: req.body.parentUsername,
   };
 
   // Check that the patron is eligible to create dependent accounts.
