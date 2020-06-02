@@ -1068,7 +1068,7 @@
           "example": "not-eligible-card"
         },
         "message": {
-          "type": "object",
+          "type": "string",
           "example": "You have reached the limit of dependent cards you can receive via online application."
         },
         "detail": {
