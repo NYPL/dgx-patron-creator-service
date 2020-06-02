@@ -455,9 +455,13 @@ async function checkDependentEligibility(req, res) {
 
   const { isPatronEligible } = DependentAccountAPI({ ilsClient });
   let response;
-  const parentBarcode = req.query.barcode;
+  const options = {
+    barcode: req.query.barcode,
+    username: req.query.username,
+  };
+
   try {
-    response = await isPatronEligible(parentBarcode);
+    response = await isPatronEligible(options);
     status = 200;
   } catch (error) {
     response = modelResponse.errorResponseData(
@@ -567,10 +571,14 @@ async function createDependent(req, res) {
   let isEligible;
   let parentPatron;
   let response;
+  const options = {
+    barcode: req.body.barcode,
+    username: req.body.parentUsername,
+  };
 
   // Check that the patron is eligible to create dependent accounts.
   try {
-    isEligible = await isPatronEligible(req.body.barcode);
+    isEligible = await isPatronEligible(options);
   } catch (error) {
     response = modelResponse.errorResponseData(
       collectErrorResponseData(

@@ -1,9 +1,12 @@
 const winston = require('winston');
 
-// Suppress error handling
-winston.emitErrs = true;
+const {
+  combine, timestamp, printf, colorize,
+} = winston.format;
+const { File, Console } = winston.transports;
 
 // Set default NYPL agreed upon log levels
+// https://github.com/NYPL/engineering-general/blob/master/standards/logging.md
 const nyplLogLevels = {
   levels: {
     emergency: 0,
@@ -40,41 +43,70 @@ const getLogLevelCode = (levelString) => {
   }
 };
 
-const loggerTransports = [];
+/**
+ * nyplFormat
+ * This function is used for creating the logging object that will be printed
+ * in the console and in a local file.
+ */
+const nyplFormat = printf((options) => {
+  const result = {
+    timestamp: options.timestamp,
+    levelCode: getLogLevelCode(options.level),
+    level: options.level.toUpperCase(),
+    message: options.message.toString(),
+    // This is specific to this app to make searching easy.
+    appTag: 'dgx-patron-creator-service',
+  };
 
+  if (process.pid) {
+    result.pid = process.pid.toString();
+  }
+
+  if (options.meta) {
+    result.meta = JSON.stringify(options.meta);
+  }
+
+  return JSON.stringify(result);
+});
+
+// The transport function that logs to a file.
+const fileTransport = new File({
+  filename: './log/dgx-patron-creator-service.log',
+  handleExceptions: true,
+  maxsize: 5242880, // 5MB
+  maxFiles: 5,
+  format: combine(timestamp(), nyplFormat),
+});
+// The transport function that logs to the console.
+const consoleTransport = new Console({
+  handleExceptions: true,
+  format: combine(
+    timestamp(),
+    nyplFormat,
+    colorize({
+      all: true,
+    }),
+  ),
+});
+
+const loggerTransports = [fileTransport];
+
+// Don't show console messages or log to the file while running tests.
 if (process.env.NODE_ENV !== 'test') {
-  loggerTransports.push(
-    new winston.transports.Console({
-      timestamp: () => new Date().toISOString(),
-      formatter: (options) => {
-        const result = {
-          timestamp: options.timestamp(),
-          levelCode: getLogLevelCode(options.level),
-          level: options.level.toUpperCase(),
-          message: options.message.toString(),
-        };
-
-        if (process.pid) {
-          result.pid = process.pid.toString();
-        }
-
-        if (options.meta) {
-          result.meta = JSON.stringify(options.meta);
-        }
-
-        return JSON.stringify(result);
-      },
-    }) // eslint-disable-line comma-dangle
-  );
+  loggerTransports.push(consoleTransport);
 }
 
-const logger = new winston.Logger({
+// Create the logger that will be used in the app now that the
+// configs are set up.
+// The linter complains if the constructor is not capitalized.
+const CreateLogger = winston.createLogger;
+const logger = CreateLogger({
   levels: nyplLogLevels.levels,
   transports: loggerTransports,
   exitOnError: false,
 });
 
-// set the logger output level to one specified in the environment config
+// Set the logger output level to one specified in the environment config.
 logger.level = process.env.LOG_LEVEL || 'debug';
 
 module.exports = logger;
