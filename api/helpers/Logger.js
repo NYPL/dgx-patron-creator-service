@@ -3,7 +3,7 @@ const winston = require('winston');
 const {
   combine, timestamp, printf, colorize,
 } = winston.format;
-const { File, Console } = winston.transports;
+const { Console } = winston.transports;
 
 // Set default NYPL agreed upon log levels
 // https://github.com/NYPL/engineering-general/blob/master/standards/logging.md
@@ -69,15 +69,6 @@ const nyplFormat = printf((options) => {
   return JSON.stringify(result);
 });
 
-// The transport function that logs to a file.
-/* eslint-disable-next-line no-unused-vars */
-const fileTransport = new File({
-  filename: './log/dgx-patron-creator-service.log',
-  handleExceptions: true,
-  maxsize: 5242880, // 5MB
-  maxFiles: 5,
-  format: combine(timestamp(), nyplFormat),
-});
 // The transport function that logs to the console.
 const consoleTransport = new Console({
   handleExceptions: true,
