@@ -1,6 +1,7 @@
 const Barcode = require('../../../../api/models/v0.3/modelBarcode');
 const IlsClient = require('../../../../api/controllers/v0.3/IlsClient');
 const BarcodeDb = require('../../../../db');
+const { DatabaseError } = require('../../../../api/helpers/errors');
 
 // Initialize the connection to the database.
 const db = BarcodeDb({
@@ -82,7 +83,7 @@ describe('Barcode', () => {
       const barcode = new Barcode({ ilsClient: IlsClient() });
 
       const nextBarcode = barcode.nextLuhnValidCode('28888055432138');
-      expect(nextBarcode).toEqual('28888055432120');
+      expect(nextBarcode).toEqual('28888055432146');
     });
   });
 
@@ -97,9 +98,9 @@ describe('Barcode', () => {
       expect(querySpy).toHaveBeenCalledWith(
         'SELECT barcode FROM barcodes WHERE used=false ORDER BY barcodes ASC LIMIT 1;',
       );
-      // But there aren't any so get the small used one and make a new barcode.
+      // But there aren't any so get the largest used one and make a new barcode.
       expect(querySpy).toHaveBeenCalledWith(
-        'SELECT barcode FROM barcodes WHERE used=true ORDER BY barcodes ASC LIMIT 1;',
+        'SELECT barcode FROM barcodes WHERE used=true ORDER BY barcodes DESC LIMIT 1;',
       );
       expect(querySpy).toHaveBeenCalled();
 
@@ -108,7 +109,7 @@ describe('Barcode', () => {
 
       // The next available barcode after 28888055432138 which is
       // already in the database is:
-      expect(nextBarcode.barcode).toEqual('28888055432120');
+      expect(nextBarcode.barcode).toEqual('28888055432146');
       expect(nextBarcode.newBarcode).toEqual(true);
     });
 
@@ -205,7 +206,7 @@ describe('Barcode', () => {
       barcode.addBarcode = jest
         .fn()
         .mockRejectedValueOnce(
-          new Error('Error from database attempting to insert.'),
+          new DatabaseError('Error from database attempting to insert.'),
         )
         .mockReturnValue(true);
       barcode.nextLuhnValidCode = jest.fn().mockReturnValue(nextBarcode);
@@ -273,7 +274,7 @@ describe('Barcode', () => {
       barcode.markUsed = jest
         .fn()
         .mockRejectedValueOnce(
-          new Error('Error from database attempting to update.'),
+          new DatabaseError('Error from database attempting to update.'),
         )
         .mockReturnValue(true);
       barcode.nextLuhnValidCode = jest.fn().mockReturnValue(nextBarcode);
@@ -440,7 +441,7 @@ describe('Barcode', () => {
       const querySpy = jest
         .spyOn(barcode.db, 'query')
         .mockImplementation(
-          jest.fn().mockRejectedValueOnce(new Error('uh oh!')),
+          jest.fn().mockRejectedValueOnce(new DatabaseError('uh oh!')),
         );
 
       // Something unexpected happened in the database.

@@ -1,5 +1,5 @@
 /* eslint-disable */
-
+const logger = require("../api/helpers/Logger");
 const { Pool } = require("pg");
 
 let database;
@@ -36,12 +36,12 @@ class BarcodesDb {
     try {
       const res = await this.pool.query(query);
       if (res.command === "CREATE") {
-        console.log("database table 'barcodes' created");
+        logger.debug("database table 'barcodes' created");
       }
     } catch (error) {
       console.log(error);
       if (error.message === 'relation "barcodes" already exists') {
-        console.log("database table barcodes already exists, continuing");
+        logger.error("database table barcodes already exists, continuing");
       }
     }
     return;
@@ -58,9 +58,9 @@ class BarcodesDb {
 
     try {
       await this.pool.query(text, values);
-      console.log("successfully inserted seed barcode");
+      logger.debug("successfully inserted seed barcode");
     } catch (error) {
-      console.log("barcodes table already has the initial value");
+      logger.error("barcodes table already has the initial value");
     }
     return;
   }

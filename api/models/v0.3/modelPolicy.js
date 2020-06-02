@@ -1,5 +1,5 @@
-/* eslint-disable no-console */
 const IlsClient = require('../../controllers/v0.3/IlsClient');
+const logger = require('../../helpers/Logger');
 
 /**
  * Creates a policy object to find out what type of card is allowed for a
@@ -128,7 +128,7 @@ const Policy = (args) => {
   const usesAnApprovedPolicy = () => {
     const keys = Object.keys(ilsPolicy);
     if (!keys.includes(policyType)) {
-      console.log(
+      logger.error(
         `${policyType} policy type is invalid, must be of type ${keys.join(
           ', ',
         )}`,

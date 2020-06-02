@@ -1,12 +1,11 @@
 /* eslint-disable */
-const { NoILSClient, ILSIntegrationError } = require("../../helpers/errors");
+const { NoILSClient } = require("../../helpers/errors");
 
 /**
  * A class that validates usernames against the ILS.
  */
 const UsernameValidationAPI = (args) => {
   const ilsClient = args["ilsClient"];
-  // class IntegrationError < StandardError; end
   const USERNAME_PATTERN = /^[a-zA-Z0-9]{5,25}$/;
   const AVAILABLE_USERNAME_TYPE = "available-username";
   const UNAVAILABLE_USERNAME_TYPE = "unavailable-username";
@@ -18,21 +17,30 @@ const UsernameValidationAPI = (args) => {
   const RESPONSES = {
     invalid: {
       type: INVALID_USERNAME_TYPE,
-      card_type: null,
-      message: "Username must be 5-25 alphanumeric characters (A-z0-9).",
+      cardType: null,
+      message:
+        "Usernames should be 5-25 characters, letters or numbers only. Please revise your username.",
     },
     unavailable: {
       type: UNAVAILABLE_USERNAME_TYPE,
-      card_type: null,
+      cardType: null,
       message: "This username is unavailable. Please try another.",
     },
     available: {
       type: AVAILABLE_USERNAME_TYPE,
-      card_type: STANDARD_CARD_TYPE,
+      cardType: STANDARD_CARD_TYPE,
       message: "This username is available.",
     },
   };
-
+  class BadUsername extends Error {
+    constructor(type, message) {
+      super();
+      this.type = type;
+      this.name = "BadUsername";
+      this.message = message;
+      this.status = 400;
+    }
+  }
   /**
    * validate(username)
    * Checks if the username is valid and available and returns and object
@@ -42,12 +50,16 @@ const UsernameValidationAPI = (args) => {
    */
   const validate = async (username) => {
     if (!username || !USERNAME_PATTERN.test(username)) {
-      return RESPONSES["invalid"];
+      const invalid = RESPONSES["invalid"];
+      throw new BadUsername(invalid.type, invalid.message);
     } else {
       let type;
       const available = await usernameAvailable(username);
-      type = available ? "available" : "unavailable";
-      return RESPONSES[type];
+      if (!available) {
+        const unavailable = RESPONSES["unavailable"];
+        throw new BadUsername(unavailable.type, unavailable.message);
+      }
+      return RESPONSES["available"];
     }
   };
 
