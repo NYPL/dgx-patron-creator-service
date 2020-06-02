@@ -127,7 +127,7 @@
           {
             "name": "barcode_and_input",
             "in": "body",
-            "description": "The 14-digit barcode of the existing parent patron and the dependent's account information",
+            "description": "The barcode or username of the existing parent patron and the dependent's account information.",
             "required": true,
             "schema": {
               "$ref": "#/definitions/PatronsDependentsDataV03"
@@ -170,13 +170,19 @@
           "patrons"
         ],
         "summary": "Check Patron's account creation eligibility",
-        "description": "Check if a patron is eligible to create dependent juvenile accounts.",
+        "description": "Check if a patron is eligible to create dependent juvenile accounts. Pass in either the barcode or username of the existing patron account to check for eligibility.",
         "operationId": "patrons_eligibilityV03",
         "parameters": [
           {
             "name": "barcode",
             "in": "query",
             "description": "The 14-digit barcode of the existing patron",
+            "type": "string"
+          },
+          {
+            "name": "username",
+            "in": "query",
+            "description": "The username of the existing patron",
             "type": "string"
           }
         ],
@@ -668,6 +674,10 @@
         "barcode": {
           "type": "string",
           "example": "12345678912345"
+        },
+        "parentUsername": {
+          "type": "string",
+          "example": "parentUsername1"
         },
         "name": {
           "type": "string",
