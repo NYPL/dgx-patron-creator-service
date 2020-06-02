@@ -28,6 +28,24 @@ const basicCard = {
   birthdate: '01/01/1988',
 };
 
+// UsernameAvailabilityAPI constants
+const available = {
+  type: 'available-username',
+  cardType: 'standard',
+  message: 'This username is available',
+};
+const unavailable = {
+  type: 'unavailable-username',
+  cardType: null,
+  message: 'This username is unavailable. Please try another.',
+};
+const invalid = {
+  type: 'invalid-username',
+  cardType: null,
+  message:
+    'Usernames should be 5-25 characters, letters or numbers only. Please revise your username.',
+};
+
 describe('CardValidator', () => {
   const { validateBirthdate } = CardValidator();
 
@@ -85,6 +103,27 @@ describe('Card', () => {
     it('should not set a temporary card by default', () => {
       const card = new Card(basicCard);
       expect(card.isTemporary).toEqual(false);
+    });
+
+    it("should set homeLibraryCard to 'eb' by default", () => {
+      // `basicCard` does not have a homeLibraryCard value.
+      let card = new Card(basicCard);
+
+      expect(card.homeLibraryCode).toEqual('eb');
+
+      // but if you set one, it'll be used
+      card = new Card({
+        name: 'First Last',
+        address: new Address({ line1: '476th 5th Ave.', city: 'New York' }),
+        username: 'username',
+        pin: '1234',
+        // required for web applicants
+        birthdate: '01/01/1988',
+        // random library code
+        homeLibraryCode: 'aa',
+      });
+
+      expect(card.homeLibraryCode).toEqual('aa');
     });
   });
 
@@ -198,30 +237,29 @@ describe('Card', () => {
 
   describe('checkUsernameAvailability', () => {
     const card = new Card(basicCard);
-    const available = {
-      type: 'available-username',
-      card_type: 'standard',
-      message: 'This username is available',
-    };
 
     it('returns an invalid username response', async () => {
       // Mocking that the ILS request returned false and username is invalid.
       UsernameValidationAPI.mockImplementation(() => ({
-        validate: () => ({ type: 'invalid-username' }),
+        validate: () => invalid,
         responses: { available },
       }));
 
-      expect(await card.checkUsernameAvailability()).toEqual(false);
+      const usernameAvailability = await card.checkUsernameAvailability();
+      expect(usernameAvailability.available).toEqual(false);
+      expect(usernameAvailability.response).toEqual(invalid);
     });
 
     it('returns an unavailable username response', async () => {
       // Mocking that the ILS request returned false and username is unavailable.
       UsernameValidationAPI.mockImplementation(() => ({
-        validate: () => ({ type: 'unavailable-username' }),
+        validate: () => unavailable,
         responses: { available },
       }));
 
-      expect(await card.checkUsernameAvailability()).toEqual(false);
+      const usernameAvailability = await card.checkUsernameAvailability();
+      expect(usernameAvailability.available).toEqual(false);
+      expect(usernameAvailability.response).toEqual(unavailable);
     });
 
     it('returns a valid username response', async () => {
@@ -231,7 +269,9 @@ describe('Card', () => {
         responses: { available },
       }));
 
-      expect(await card.checkUsernameAvailability()).toEqual(true);
+      const usernameAvailability = await card.checkUsernameAvailability();
+      expect(usernameAvailability.available).toEqual(true);
+      expect(usernameAvailability.response).toEqual(available);
     });
 
     it('throws an error if no ilsClient was passed to the Card object, which calls the Username Validation API', async () => {
@@ -499,7 +539,10 @@ describe('Card', () => {
       });
 
       // Mock a call to the ILS.
-      card.checkUsernameAvailability = jest.fn().mockReturnValue(true);
+      card.checkUsernameAvailability = jest.fn().mockReturnValue({
+        available: true,
+        response: available,
+      });
 
       // This sets the `valid` flag to true but a ptype wasn't set.
       await card.validate();
@@ -516,7 +559,10 @@ describe('Card', () => {
       });
 
       // Mock a call to the ILS.
-      card.checkUsernameAvailability = jest.fn().mockReturnValue(true);
+      card.checkUsernameAvailability = jest.fn().mockReturnValue({
+        available: true,
+        response: available,
+      });
       // Let's try to validate the inputs.
       await card.validate();
       // When creating a patron in the ILS, the ptype is set before checking

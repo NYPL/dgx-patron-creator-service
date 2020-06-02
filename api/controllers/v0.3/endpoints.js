@@ -77,7 +77,7 @@ function getIlsToken(req, res, username, password) {
       const errorResponseData = modelResponse.errorResponseData(
         collectErrorResponseData(
           503,
-          "",
+          "ils-integration-error",
           `The ILS is not currently available. ${ilsError}`,
           "",
           ""
@@ -111,10 +111,10 @@ async function setupCheckUsername(req, res) {
     return;
   }
 
-  ilsClientKey = process.env.ILS_CLIENT_KEY;
-  // ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
-  ilsClientPassword = process.env.ILS_CLIENT_SECRET;
-  // ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
+  ilsClientKey =
+    ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
+  ilsClientPassword =
+    ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
 
   Promise.all([ilsClientKey, ilsClientPassword])
     .then((decryptedValues) => {
@@ -182,7 +182,13 @@ async function checkUsername(req, res) {
     status = 200;
   } catch (error) {
     usernameResponse = modelResponse.errorResponseData(
-      collectErrorResponseData(error.status, "", error.message, "", "") // eslint-disable-line comma-dangle
+      collectErrorResponseData(
+        error.status,
+        error.type || "",
+        error.message,
+        "",
+        ""
+      ) // eslint-disable-line comma-dangle
     );
     status = usernameResponse.status;
   }
@@ -214,10 +220,10 @@ async function setupCreatePatron(req, res) {
     return;
   }
 
-  ilsClientKey = process.env.ILS_CLIENT_KEY;
-  // ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
-  ilsClientPassword = process.env.ILS_CLIENT_SECRET;
-  // ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
+  ilsClientKey =
+    ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
+  ilsClientPassword =
+    ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
 
   Promise.all([ilsClientKey, ilsClientPassword])
     .then((decryptedValues) => {
@@ -295,6 +301,10 @@ async function createPatron(req, res) {
     ecommunicationsPref: req.body.ecommunicationsPref, // from req
     policy, //created above
     ilsClient, // created above
+    // SimplyE will always set the home library to the `eb` code. Eventually,
+    // the web app will pass a `homeLibraryCode` parameter with a patron's
+    // home library. For now, `eb` is hardcoded.
+    homeLibraryCode: req.body.homeLibraryCode || "eb",
   });
 
   let response = {};
@@ -310,7 +320,13 @@ async function createPatron(req, res) {
     // attempting to validate the username or address, catch that error here
     // and return it.
     response = modelResponse.errorResponseData(
-      collectErrorResponseData(error.status || 400, "", error.message, "", "") // eslint-disable-line comma-dangle
+      collectErrorResponseData(
+        error.status || 400,
+        error.type || "",
+        error.message,
+        "",
+        ""
+      ) // eslint-disable-line comma-dangle
     );
   }
 
@@ -318,7 +334,7 @@ async function createPatron(req, res) {
   // etc., or if the username is unavailable, render that error.
   if (errors && Object.keys(errors).length !== 0) {
     response = modelResponse.errorResponseData(
-      collectErrorResponseData(400, "", errors, "", "") // eslint-disable-line comma-dangle
+      collectErrorResponseData(400, "invalid-request", errors, "", "") // eslint-disable-line comma-dangle
     );
   } else {
     // If the card is valid, attempt to create a patron in the ILS!
@@ -330,7 +346,10 @@ async function createPatron(req, res) {
         // "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{patron-id}"
         response = {
           status: resp.status,
-          data: resp.data,
+          data: {
+            ...resp.data,
+            barcode: card.barcode,
+          },
         };
       } catch (error) {
         // There was an error hitting the ILS to create the patron. Catch
@@ -338,7 +357,7 @@ async function createPatron(req, res) {
         response = modelResponse.errorResponseData(
           collectErrorResponseData(
             error.status || 400,
-            "",
+            error.type || "",
             error.message,
             "",
             ""
@@ -375,10 +394,10 @@ async function setupDependentEligibility(req, res) {
     return;
   }
 
-  ilsClientKey = process.env.ILS_CLIENT_KEY;
-  // ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
-  ilsClientPassword = process.env.ILS_CLIENT_SECRET;
-  // ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
+  ilsClientKey =
+    ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
+  ilsClientPassword =
+    ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
 
   Promise.all([ilsClientKey, ilsClientPassword])
     .then((decryptedValues) => {
@@ -436,18 +455,28 @@ async function checkDependentEligibility(req, res) {
 
   const { isPatronEligible } = DependentAccountAPI({ ilsClient });
   let response;
-  const parentBarcode = req.query.barcode;
+  const options = {
+    barcode: req.query.barcode,
+    username: req.query.username,
+  };
+
   try {
-    response = await isPatronEligible(parentBarcode);
+    response = await isPatronEligible(options);
     status = 200;
   } catch (error) {
     response = modelResponse.errorResponseData(
-      collectErrorResponseData(error.status || 400, "", error.message, "", "") // eslint-disable-line comma-dangle
+      collectErrorResponseData(
+        error.status || 400,
+        error.type || "",
+        error.message,
+        "",
+        ""
+      ) // eslint-disable-line comma-dangle
     );
     status = response.status;
   }
 
-  renderResponse(req, res, status, response);
+  renderResponse(req, res, status, { status, ...response });
 }
 
 /**
@@ -474,10 +503,10 @@ async function setupCreateDependent(req, res) {
     return;
   }
 
-  ilsClientKey = process.env.ILS_CLIENT_KEY;
-  // ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
-  ilsClientPassword = process.env.ILS_CLIENT_SECRET;
-  // ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
+  ilsClientKey =
+    ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
+  ilsClientPassword =
+    ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
 
   Promise.all([ilsClientKey, ilsClientPassword])
     .then((decryptedValues) => {
@@ -542,13 +571,23 @@ async function createDependent(req, res) {
   let isEligible;
   let parentPatron;
   let response;
+  const options = {
+    barcode: req.body.barcode,
+    username: req.body.parentUsername,
+  };
 
   // Check that the patron is eligible to create dependent accounts.
   try {
-    isEligible = await isPatronEligible(req.body.barcode);
+    isEligible = await isPatronEligible(options);
   } catch (error) {
     response = modelResponse.errorResponseData(
-      collectErrorResponseData(error.status || 500, "", error.message, "", "") // eslint-disable-line comma-dangle
+      collectErrorResponseData(
+        error.status || 500,
+        error.type || "",
+        error.message,
+        "",
+        ""
+      ) // eslint-disable-line comma-dangle
     );
     // There was an error so just return the error and don't continue.
     return renderResponse(req, res, response.status, response);
@@ -558,12 +597,6 @@ async function createDependent(req, res) {
     // The patron is eligible. Let's get the data. The parent account was
     // stored after calling `isPatronEligible`.
     parentPatron = getAlreadyFetchedParentPatron();
-  } else {
-    // The patron is not eligible so return the error and don't continue.
-    response = modelResponse.errorResponseData(
-      collectErrorResponseData(200, "", isEligible.description, "", "") // eslint-disable-line comma-dangle
-    );
-    return renderResponse(req, res, response.status, response);
   }
 
   // Reformat the address for a new Address object.
@@ -588,6 +621,10 @@ async function createDependent(req, res) {
     policy, //created above
     ilsClient, // created above,
     varFields: [varField],
+    // SimplyE will always set the home library to the `eb` code. Eventually,
+    // the web app will pass a `homeLibraryCode` parameter with a patron's
+    // home library. For now, `eb` is hardcoded.
+    homeLibraryCode: req.body.homeLibraryCode || "eb",
   });
 
   let validCard;
@@ -604,7 +641,13 @@ async function createDependent(req, res) {
     // attempting to validate the username or address, catch that error here
     // and return it.
     response = modelResponse.errorResponseData(
-      collectErrorResponseData(error.status || 400, "", error.message, "", "") // eslint-disable-line comma-dangle
+      collectErrorResponseData(
+        error.status || 400,
+        error.type || "",
+        error.message,
+        "",
+        ""
+      ) // eslint-disable-line comma-dangle
     );
   }
 
@@ -633,14 +676,31 @@ async function createDependent(req, res) {
           parentPatron,
           card.barcode
         );
+        const { link } = newResponse.data;
 
         response = {
           status: 200,
           data: {
-            dependent: newResponse.data,
+            // This is data from the newly created dependent juvenile account.
+            // The `id` is from the ILS response in its `link` property, but
+            // we need to parse it and get the last value from the link which
+            // looks like
+            // "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{patron-id}"
+            dependent: {
+              id: parseInt(link.split("/").pop(), 10),
+              username: card.username,
+              name: card.name,
+              barcode: card.barcode,
+              pin: card.pin,
+            },
             // Updating a patron in the ILS simply returns a 204 with no
-            // response in the body. Just return that the parent was updated.
-            parent: { updated: true },
+            // response in the body.
+            // Return the parent's barcode and a list of its dependents.
+            parent: {
+              updated: true,
+              barcode: req.body.barcode,
+              dependents: `${parentPatron.dependents},${card.barcode}`,
+            },
           },
         };
       } catch (error) {
@@ -649,7 +709,7 @@ async function createDependent(req, res) {
         response = modelResponse.errorResponseData(
           collectErrorResponseData(
             error.status || 502,
-            "",
+            error.type || "",
             error.message,
             "",
             ""

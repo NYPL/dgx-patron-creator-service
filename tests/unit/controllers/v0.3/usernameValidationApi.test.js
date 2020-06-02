@@ -4,6 +4,7 @@ const IlsClient = require("../../../../api/controllers/v0.3/IlsClient");
 const {
   NoILSClient,
   ILSIntegrationError,
+  BadUsername,
 } = require("../../../../api/helpers/errors");
 
 jest.mock("../../../../api/controllers/v0.3/IlsClient");
@@ -23,13 +24,12 @@ describe("UsernameValidationApi", () => {
       const tooShort = "name";
       const tooLong = "averyveryveryveryverylongname";
       const notAlphanumeric = "!!uhuhNotRight$";
+      const invalidResponse = responses.invalid.message;
+      // "Usernames should be 5-25 characters, letters or numbers only. Please revise your username."
 
-      // responses.invalid =
-      //  { type: "invalid-username", cardType: null,
-      //    message: "Username must be 5-25 alphanumeric characters (A-z0-9)." }
-      expect(await validate(tooShort)).toEqual(responses.invalid);
-      expect(await validate(tooLong)).toEqual(responses.invalid);
-      expect(await validate(notAlphanumeric)).toEqual(responses.invalid);
+      await expect(validate(tooShort)).rejects.toThrow(invalidResponse);
+      await expect(validate(tooLong)).rejects.toThrow(invalidResponse);
+      await expect(validate(notAlphanumeric)).rejects.toThrow(invalidResponse);
       expect(IlsClient).not.toHaveBeenCalled();
     });
 
@@ -44,11 +44,10 @@ describe("UsernameValidationApi", () => {
         ilsClient: IlsClient(),
       });
       const unavailable = "unavailableName";
+      const unavailableResponse = responses.unavailable.message;
+      // "This username is unavailable. Please try another."
 
-      // responses.unavailable =
-      //  { type: "unavailable-username", cardType: null,
-      //    message: "This username is unavailable. Please try another." }
-      expect(await validate(unavailable)).toEqual(responses.unavailable);
+      await expect(validate(unavailable)).rejects.toThrow(unavailableResponse);
       expect(IlsClient).toHaveBeenCalled();
     });
 
