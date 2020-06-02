@@ -24,30 +24,41 @@ const DependentAccountAPI = (args) => {
   let parentPatronData;
 
   /**
-   * isPatronEligible(barcode)
+   * isPatronEligible(options)
    * The main function of this class. It gets a patron data object from the ILS
    * and it verifies it has the correct p-type. If it does, then it checks if
    * it can create another dependent account. It returns a response stating
    * whether the patron is eligible or not and a description if they are not.
    *
-   * @param {string} barcode
+   * @param {object} options
    */
-  const isPatronEligible = async (barcode) => {
+  const isPatronEligible = async (options) => {
     if (!ilsClient) {
       throw new NoILSClient(
         "ILS Client not set in the Dependent Eligibility API."
       );
     }
-
-    if (!barcode) {
-      throw new InvalidRequest("No barcode passed.");
+    if (!options || (!options.barcode && !options.username)) {
+      throw new InvalidRequest("No barcode or username passed.");
     }
-    if (barcode.length !== 14) {
-      throw new InvalidRequest("The barcode passed is not 14 digits.");
+
+    const { barcode, username } = options;
+    if (barcode && (barcode.length < 14 || barcode.length > 16)) {
+      throw new InvalidRequest(
+        "The barcode passed is not a 14-digit or 16-digit number."
+      );
+    }
+    const opts = {};
+    if (barcode) {
+      opts.value = barcode;
+      opts.type = "barcode";
+    } else {
+      opts.value = username;
+      opts.type = "username";
     }
 
     let response = {};
-    const patron = await getPatronFromILS(barcode);
+    const patron = await getPatronFromILS(opts);
     // Set the fetched patron data object into the global variable so
     // it can be accessed by `getPatron`. This is specifically set here and not
     // in `getPatronFromILS` because we want to make sure that the eligibility
@@ -100,21 +111,27 @@ const DependentAccountAPI = (args) => {
   };
 
   /**
-   * getPatronFromILS(barcode)
-   * This calls the ILS to get a patron data object from a barcode. Returns an
-   * error if the patron couldn't be found or there was an error with the ILS.
+   * getPatronFromILS(options)
+   * This calls the ILS to get a patron data object from a barcode or username.
+   * Returns an error if the patron couldn't be found or there was an error
+   * with the ILS.
    *
-   * @param {string} barcode
+   * @param {object} options
    */
-  const getPatronFromILS = async (barcode) => {
+  const getPatronFromILS = async (options) => {
     if (!ilsClient) {
       throw new NoILSClient(
         "ILS Client not set in the Dependent Eligibility API."
       );
     }
+    const { value, type } = options;
+    const isBarcode = !!(type === "barcode");
 
     try {
-      const response = await ilsClient.getPatronFromBarcodeOrUsername(barcode);
+      const response = await ilsClient.getPatronFromBarcodeOrUsername(
+        value,
+        isBarcode
+      );
 
       if (response.status !== 200) {
         // The record wasn't found.

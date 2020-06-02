@@ -103,18 +103,21 @@ describe("DependentAccountAPI", () => {
       );
     });
 
-    it("returns an error if a barcode is not passed", async () => {
+    it("returns an error if a barcode or username is not passed", async () => {
       const { isPatronEligible } = DependentAccountAPI({ ilsClient: {} });
 
-      await expect(isPatronEligible()).rejects.toThrow("No barcode passed.");
+      await expect(isPatronEligible()).rejects.toThrow(
+        "No barcode or username passed."
+      );
     });
 
-    it("returns an error if a barcode is not 14 digits", async () => {
+    // NYC ID can be used as a barcode and that is 16 digits long.
+    it("returns an error if a barcode is not 14 or 16 digits", async () => {
       const { isPatronEligible } = DependentAccountAPI({ ilsClient: {} });
-      const barcode = "1234567891234";
+      const options = { barcode: "1234567891234", username: undefined };
 
-      await expect(isPatronEligible(barcode)).rejects.toThrow(
-        "The barcode passed is not 14 digits."
+      await expect(isPatronEligible(options)).rejects.toThrow(
+        "The barcode passed is not a 14-digit or 16-digit number."
       );
     });
 
@@ -125,9 +128,15 @@ describe("DependentAccountAPI", () => {
       const { isPatronEligible } = DependentAccountAPI({
         ilsClient: IlsClient(),
       });
-      const barcode = "12333333333333";
+      let options = { barcode: "12333333333333", username: undefined };
 
-      await expect(isPatronEligible(barcode)).rejects.toThrow(
+      await expect(isPatronEligible(options)).rejects.toThrow(
+        "The patron couldn't be found in the ILS with the barcode or username."
+      );
+
+      options = { barcode: undefined, username: "someUsername" };
+
+      await expect(isPatronEligible(options)).rejects.toThrow(
         "The patron couldn't be found in the ILS with the barcode or username."
       );
     });
@@ -140,9 +149,15 @@ describe("DependentAccountAPI", () => {
       const { isPatronEligible } = DependentAccountAPI({
         ilsClient: IlsClient(),
       });
-      const barcode = "12333333333333";
+      let options = { barcode: "12333333333333", username: undefined };
 
-      await expect(isPatronEligible(barcode)).rejects.toThrow(
+      await expect(isPatronEligible(options)).rejects.toThrow(
+        "Your card has expired. Please try applying again."
+      );
+
+      options = { barcode: undefined, username: "username" };
+
+      await expect(isPatronEligible(options)).rejects.toThrow(
         "Your card has expired. Please try applying again."
       );
     });
@@ -154,9 +169,15 @@ describe("DependentAccountAPI", () => {
       const { isPatronEligible } = DependentAccountAPI({
         ilsClient: IlsClient(),
       });
-      const barcode = "12333333333333";
+      let options = { barcode: "12333333333333", username: undefined };
 
-      await expect(isPatronEligible(barcode)).rejects.toThrow(
+      await expect(isPatronEligible(options)).rejects.toThrow(
+        "You don’t have the correct card type to make child accounts. Please contact gethelp@nypl.org if you believe this is in error."
+      );
+
+      options = { barcode: undefined, username: "username" };
+
+      await expect(isPatronEligible(options)).rejects.toThrow(
         "You don’t have the correct card type to make child accounts. Please contact gethelp@nypl.org if you believe this is in error."
       );
     });
@@ -169,9 +190,15 @@ describe("DependentAccountAPI", () => {
       const { isPatronEligible } = DependentAccountAPI({
         ilsClient: IlsClient(),
       });
-      const barcode = "12333333333333";
+      let options = { barcode: "12333333333333", username: undefined };
 
-      await expect(isPatronEligible(barcode)).rejects.toThrow(
+      await expect(isPatronEligible(options)).rejects.toThrow(
+        "You have reached the limit of dependent cards you can receive via online application."
+      );
+
+      options = { barcode: undefined, username: "username" };
+
+      await expect(isPatronEligible(options)).rejects.toThrow(
         "You have reached the limit of dependent cards you can receive via online application."
       );
     });
@@ -183,9 +210,16 @@ describe("DependentAccountAPI", () => {
       const { isPatronEligible } = DependentAccountAPI({
         ilsClient: IlsClient(),
       });
-      const barcode = "12333333333333";
+      let options = { barcode: "12333333333333", username: undefined };
+      let response = await isPatronEligible(options);
 
-      const response = await isPatronEligible(barcode);
+      expect(response.eligible).toEqual(true);
+      expect(response.description).toEqual(
+        "This patron can create dependent accounts."
+      );
+
+      options = { barcode: undefined, username: "username" };
+      response = await isPatronEligible(options);
 
       expect(response.eligible).toEqual(true);
       expect(response.description).toEqual(
@@ -196,6 +230,7 @@ describe("DependentAccountAPI", () => {
 
   describe("getPatronFromILS", () => {
     const barcode = "12345678912345";
+    const username = "username";
 
     it("fails if no IlsClient is passed", async () => {
       const { getPatronFromILS } = DependentAccountAPI({});
@@ -205,23 +240,40 @@ describe("DependentAccountAPI", () => {
       );
     });
 
-    it("gets a valid patron object from the ILS", async () => {
-      // Mocking that the ILS request returned a successful response .
+    it("gets a valid patron object from the ILS from barcode or username", async () => {
+      // Mocking that the ILS request returned a successful response.
       IlsClient.mockImplementation(() => ({
         getPatronFromBarcodeOrUsername: () => mockedSuccessfulResponse,
       }));
       const ilsClient = IlsClient();
       const spy = jest.spyOn(ilsClient, "getPatronFromBarcodeOrUsername");
       let { getPatronFromILS } = DependentAccountAPI({ ilsClient });
-      const patron = await getPatronFromILS(barcode);
+      let options = { value: barcode, type: "barcode" };
+      let isBarcode = true;
+      let patron = await getPatronFromILS(options);
 
       expect(spy).toHaveBeenCalledTimes(1);
-      expect(spy).toHaveBeenCalledWith(barcode);
+      expect(spy).toHaveBeenCalledWith(barcode, isBarcode);
       expect(patron).toEqual({
         id: "12333333333333",
         patronType: 10,
         varFields: [
-          { fieldTag: "u", content: "username" },
+          { fieldTag: "u", content: username },
+          { fieldTag: "x", content: "DEPENDENTS 12333333333334" },
+        ],
+      });
+
+      options = { value: username, type: "username" };
+      isBarcode = false;
+      patron = await getPatronFromILS(options);
+
+      expect(spy).toHaveBeenCalledTimes(2);
+      expect(spy).toHaveBeenCalledWith(username, isBarcode);
+      expect(patron).toEqual({
+        id: "12333333333333",
+        patronType: 10,
+        varFields: [
+          { fieldTag: "u", content: username },
           { fieldTag: "x", content: "DEPENDENTS 12333333333334" },
         ],
       });
@@ -233,14 +285,26 @@ describe("DependentAccountAPI", () => {
       }));
       const ilsClient = IlsClient();
       const spy = jest.spyOn(ilsClient, "getPatronFromBarcodeOrUsername");
-      let { getPatronFromILS } = DependentAccountAPI({ ilsClient });
+      const { getPatronFromILS } = DependentAccountAPI({ ilsClient });
+      let options = { value: barcode, type: "barcode" };
+      let isBarcode = true;
 
-      await expect(getPatronFromILS(barcode)).rejects.toThrow(
+      await expect(getPatronFromILS(options)).rejects.toThrow(
         "The patron couldn't be found in the ILS with the barcode or username."
       );
 
       expect(spy).toHaveBeenCalledTimes(1);
-      expect(spy).toHaveBeenCalledWith(barcode);
+      expect(spy).toHaveBeenCalledWith(barcode, isBarcode);
+
+      options = { value: username, type: "username" };
+      isBarcode = false;
+
+      await expect(getPatronFromILS(options)).rejects.toThrow(
+        "The patron couldn't be found in the ILS with the barcode or username."
+      );
+
+      expect(spy).toHaveBeenCalledTimes(2);
+      expect(spy).toHaveBeenCalledWith(username, isBarcode);
     });
 
     it("throws an error if the ILS returns a 409 - duplicate patrons found", async () => {
@@ -249,14 +313,26 @@ describe("DependentAccountAPI", () => {
       }));
       const ilsClient = IlsClient();
       const spy = jest.spyOn(ilsClient, "getPatronFromBarcodeOrUsername");
-      let { getPatronFromILS } = DependentAccountAPI({ ilsClient });
+      const { getPatronFromILS } = DependentAccountAPI({ ilsClient });
+      let options = { value: barcode, type: "barcode" };
+      let isBarcode = true;
 
-      await expect(getPatronFromILS(barcode)).rejects.toThrow(
+      await expect(getPatronFromILS(options)).rejects.toThrow(
         "The patron couldn't be found in the ILS with the barcode or username."
       );
 
       expect(spy).toHaveBeenCalledTimes(1);
-      expect(spy).toHaveBeenCalledWith(barcode);
+      expect(spy).toHaveBeenCalledWith(barcode, isBarcode);
+
+      options = { value: username, type: "username" };
+      isBarcode = false;
+
+      await expect(getPatronFromILS(options)).rejects.toThrow(
+        "The patron couldn't be found in the ILS with the barcode or username."
+      );
+
+      expect(spy).toHaveBeenCalledTimes(2);
+      expect(spy).toHaveBeenCalledWith(username, isBarcode);
     });
 
     it("throws an error if the ILS returns a 500", async () => {
@@ -265,12 +341,22 @@ describe("DependentAccountAPI", () => {
       }));
       const ilsClient = IlsClient();
       const spy = jest.spyOn(ilsClient, "getPatronFromBarcodeOrUsername");
-      let { getPatronFromILS } = DependentAccountAPI({ ilsClient });
+      const { getPatronFromILS } = DependentAccountAPI({ ilsClient });
+      let options = { value: barcode, type: "barcode" };
+      let isBarcode = true;
 
-      await expect(getPatronFromILS(barcode)).rejects.toThrow(PatronNotFound);
+      await expect(getPatronFromILS(options)).rejects.toThrow(PatronNotFound);
 
       expect(spy).toHaveBeenCalledTimes(1);
-      expect(spy).toHaveBeenCalledWith(barcode);
+      expect(spy).toHaveBeenCalledWith(barcode, isBarcode);
+
+      options = { value: username, type: "username" };
+      isBarcode = false;
+
+      await expect(getPatronFromILS(options)).rejects.toThrow(PatronNotFound);
+
+      expect(spy).toHaveBeenCalledTimes(2);
+      expect(spy).toHaveBeenCalledWith(username, isBarcode);
     });
   });
 
@@ -441,9 +527,9 @@ describe("DependentAccountAPI", () => {
       } = DependentAccountAPI({
         ilsClient: IlsClient(),
       });
-      const barcode = "12333333333333";
+      const options = { barcode: "12333333333333", username: undefined };
 
-      await isPatronEligible(barcode);
+      await isPatronEligible(options);
 
       expect(getAlreadyFetchedParentPatron()).toEqual({
         id: "12333333333333",
