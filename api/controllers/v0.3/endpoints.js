@@ -111,10 +111,10 @@ async function setupCheckUsername(req, res) {
     return;
   }
 
-  ilsClientKey = process.env.ILS_CLIENT_KEY;
-  // ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
-  ilsClientPassword = process.env.ILS_CLIENT_SECRET;
-  // ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
+  ilsClientKey =
+    ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
+  ilsClientPassword =
+    ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
 
   Promise.all([ilsClientKey, ilsClientPassword])
     .then((decryptedValues) => {
@@ -220,10 +220,10 @@ async function setupCreatePatron(req, res) {
     return;
   }
 
-  ilsClientKey = process.env.ILS_CLIENT_KEY;
-  // ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
-  ilsClientPassword = process.env.ILS_CLIENT_SECRET;
-  // ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
+  ilsClientKey =
+    ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
+  ilsClientPassword =
+    ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
 
   Promise.all([ilsClientKey, ilsClientPassword])
     .then((decryptedValues) => {
@@ -394,10 +394,10 @@ async function setupDependentEligibility(req, res) {
     return;
   }
 
-  ilsClientKey = process.env.ILS_CLIENT_KEY;
-  // ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
-  ilsClientPassword = process.env.ILS_CLIENT_SECRET;
-  // ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
+  ilsClientKey =
+    ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
+  ilsClientPassword =
+    ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
 
   Promise.all([ilsClientKey, ilsClientPassword])
     .then((decryptedValues) => {
@@ -455,9 +455,13 @@ async function checkDependentEligibility(req, res) {
 
   const { isPatronEligible } = DependentAccountAPI({ ilsClient });
   let response;
-  const parentBarcode = req.query.barcode;
+  const options = {
+    barcode: req.query.barcode,
+    username: req.query.username,
+  };
+
   try {
-    response = await isPatronEligible(parentBarcode);
+    response = await isPatronEligible(options);
     status = 200;
   } catch (error) {
     response = modelResponse.errorResponseData(
@@ -499,10 +503,10 @@ async function setupCreateDependent(req, res) {
     return;
   }
 
-  ilsClientKey = process.env.ILS_CLIENT_KEY;
-  // ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
-  ilsClientPassword = process.env.ILS_CLIENT_SECRET;
-  // ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
+  ilsClientKey =
+    ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
+  ilsClientPassword =
+    ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
 
   Promise.all([ilsClientKey, ilsClientPassword])
     .then((decryptedValues) => {
@@ -567,10 +571,14 @@ async function createDependent(req, res) {
   let isEligible;
   let parentPatron;
   let response;
+  const options = {
+    barcode: req.body.barcode,
+    username: req.body.parentUsername,
+  };
 
   // Check that the patron is eligible to create dependent accounts.
   try {
-    isEligible = await isPatronEligible(req.body.barcode);
+    isEligible = await isPatronEligible(options);
   } catch (error) {
     response = modelResponse.errorResponseData(
       collectErrorResponseData(
