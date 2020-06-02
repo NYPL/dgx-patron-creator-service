@@ -70,6 +70,7 @@ const nyplFormat = printf((options) => {
 });
 
 // The transport function that logs to a file.
+/* eslint-disable-next-line no-unused-vars */
 const fileTransport = new File({
   filename: './log/dgx-patron-creator-service.log',
   handleExceptions: true,
@@ -89,7 +90,7 @@ const consoleTransport = new Console({
   ),
 });
 
-const loggerTransports = [fileTransport];
+const loggerTransports = [];
 
 // Don't show console messages or log to the file while running tests.
 if (process.env.NODE_ENV !== 'test') {
