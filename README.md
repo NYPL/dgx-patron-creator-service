@@ -77,6 +77,8 @@ CARD_CREATOR_PASSWORD=password
 
 _Please contact [NYPL's Simplified Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials to the Card Creator API._
 
+All credentials that are used as environment variables need to be encrypted through the AWS KMS service. See [NYPL Engineering General](https://github.com/NYPL/engineering-general/blob/8afa65f3af28654159f11b5b1ac91dde5812153e/security/secrets.md) for more details.
+
 ### API Routes
 
 #### 1. Create a Patron `/api/v0.1/patrons` - POST
