@@ -13,7 +13,9 @@
 - Added a Dependent Account API controller to check for a patron's eligibility to create dependent juvenile cards and to create dependent accounts.
 - Added a Username Validation API controller to find a patron by username in the ILS and return whether that username is valid and available in the ILS.
 - Added an Address Validation API controller but not it's not complete as the Service Objects API still needs to be implemented.
-- Added test to cover all of the added code.
+- Added tests to cover all of the added code.
+- Removed unnecessary npm packages and updated packages to remove security issues found through `npm audit`.
+- Updated encrypted credentials for QA and production for necessary third-party services.
 
 ### v0.4.0
 
