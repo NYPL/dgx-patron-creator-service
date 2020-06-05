@@ -5,7 +5,6 @@ const {
 
 const Policy = require('../../../../api/models/v0.3/modelPolicy');
 const Address = require('../../../../api/models/v0.3/modelAddress');
-const NameValidationAPI = require('../../../../api/controllers/v0.3/NameValidationAPI');
 const UsernameValidationAPI = require('../../../../api/controllers/v0.3/UsernameValidationAPI');
 const IlsClient = require('../../../../api/controllers/v0.3/IlsClient');
 const {
@@ -14,7 +13,6 @@ const {
 } = require('../../../../api/helpers/errors');
 const Barcode = require('../../../../api/models/v0.3/modelBarcode');
 
-jest.mock('../../../../api/controllers/v0.3/NameValidationAPI');
 jest.mock('../../../../api/controllers/v0.3/UsernameValidationAPI');
 jest.mock('../../../../api/controllers/v0.3/IlsClient');
 jest.mock('../../../../api/models/v0.3/modelBarcode');
@@ -94,7 +92,6 @@ describe('CardValidator', () => {
 describe('Card', () => {
   beforeEach(() => {
     // Clear all instances and calls to constructor and all methods:
-    NameValidationAPI.mockClear();
     UsernameValidationAPI.mockClear();
     IlsClient.mockClear();
   });
@@ -128,53 +125,6 @@ describe('Card', () => {
   });
 
   describe('validate', () => {});
-
-  describe('checkValidName', () => {
-    it('should return whatever value is already set', () => {
-      const card = new Card(basicCard);
-      // It is undefined by default.
-      expect(card.hasValidName).toEqual(undefined);
-      // mock that it has a valid name
-      card.hasValidName = true;
-      expect(card.checkValidName()).toEqual(true);
-      // mock that it has an invalid name
-      card.hasValidName = false;
-      expect(card.checkValidName()).toEqual(false);
-    });
-    it("should return if it's not already valid and validation is disabled", () => {
-      const card = new Card(basicCard);
-      // mock that it has a valid name
-      expect(card.checkValidName()).toEqual(true);
-    });
-    it('should check for name validity', () => {
-      const card = new Card(basicCard);
-      card.nameValidationDisabled = false;
-      // Mock until NameValidationAPI is implemented.
-      card.checkNameValidity = jest.fn().mockReturnValue(true);
-
-      expect(card.checkValidName()).toEqual(true);
-    });
-  });
-
-  describe('checkNameValidity', () => {
-    const card = new Card(basicCard);
-
-    it('fails because the name is not valid', () => {
-      // Mocking that the ILS request returned false and name is not valid.
-      NameValidationAPI.mockImplementation(() => ({ validate: () => false }));
-
-      expect(card.checkNameValidity()).toEqual(false);
-    });
-
-    it('passes because the name is valid', () => {
-      // Mocking that the ILS request returned true and name is valid.
-      NameValidationAPI.mockImplementation(() => ({
-        validate: () => ({ valid: true, type: 'valid-name' }),
-      }));
-
-      expect(card.checkNameValidity()).toEqual(true);
-    });
-  });
 
   describe('checkValidUsername', () => {
     const card = new Card(basicCard);

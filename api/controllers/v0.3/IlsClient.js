@@ -10,6 +10,11 @@ const IlsClient = (args) => {
   const createUrl = args["createUrl"] || "";
   const findUrl = args["findUrl"] || "";
   const ilsToken = args["ilsToken"] || "";
+  // We need the `id`, `patronType`, `varFields`, `addresses`, `emails`, and
+  // `expirationDate` fields from the patron object (`id` is returned by
+  // default), so those fields are added at the end of the endpoint request.
+  const ilsResponseFields =
+    "&fields=patronType,varFields,addresses,emails,expirationDate";
   // TBD if these should be moved into this file.
   // const tokenUrl = args["tokenUrl"] || "";
   // const ilsClientKey = args["ilsClientKey"] || "";
@@ -128,7 +133,7 @@ const IlsClient = (args) => {
    * denoted as 'u'.
    *
    * @param {string} barcodeOrUsername
-   * @param {boolean}} isBarcode
+   * @param {boolean} isBarcode
    */
   const getPatronFromBarcodeOrUsername = async (
     barcodeOrUsername,
@@ -138,13 +143,8 @@ const IlsClient = (args) => {
       ? IlsClient.BARCODE_FIELD_TAG
       : IlsClient.USERNAME_FIELD_TAG;
     // These two query parameters are required to make a valid GET request.
-    // We need the `id`, `patronType`, `varField`, `addresses`, and `emails`
-    // fields from the patron object (`id` is returned by default), so those
-    // fields are added at the end of the endpoint request.
-    // This can be optimized later.
     const varFieldParams = `varFieldTag=${fieldTag}&varFieldContent=${barcodeOrUsername}`;
-    const otherFields = `&fields=patronType,varFields,addresses,emails,expirationDate`;
-    const params = `?${varFieldParams}${otherFields}`;
+    const params = `?${varFieldParams}${ilsResponseFields}`;
 
     const response = await axios
       .get(`${findUrl}${params}`, {
@@ -265,12 +265,12 @@ const IlsClient = (args) => {
    * Format all the data into an object that the ILS understands.
    * Example of an ILS-ready object:
    * {
-   *   names: [ 'Edwin Guzman' ],
+   *   names: [ 'FirstName LastName' ],
    *   addresses: [ { lines: ['476 5th Ave', 'New York, NY 10018'], type: 'a' } ],
    *   pin: '1234',
    *   patronType: 1,
    *   expirationDate: '2020-07-29',
-   *   varFields: [ { fieldTag: 'u', content: 'mikeolson' } ],
+   *   varFields: [ { fieldTag: 'u', content: 'username' } ],
    *   birthDate: '1988-01-01',
    *   homeLibraryCode: 'eb',
    * }
@@ -472,8 +472,8 @@ IlsClient.DEFAULT_PATRON_AGENCY = "202";
 IlsClient.DEFAULT_NOTICE_PREF = "z";
 IlsClient.DEFAULT_NOTE = `Patron's work/school address is ADDRESS2[ph].
                     Out-of-state home address is ADDRESS1[pa].`;
-// Opt-in/out of Marketing's email subscription service
-// ('s' = subscribed; '-' = not subscribed)
+// Opt-in/out of Marketing's email subscription service:
+// 's' = subscribed; '-' = not subscribed
 // This needs to be sent in the patronCodes object in the pcode1 field
 // { pcode1: 's' } or { pcode1: '-' }
 IlsClient.SUBSCRIBED_ECOMMUNICATIONS_PREF = "s";

@@ -3,7 +3,7 @@ const winston = require('winston');
 const {
   combine, timestamp, printf, colorize,
 } = winston.format;
-const { Console } = winston.transports;
+const { File, Console } = winston.transports;
 
 // Set default NYPL agreed upon log levels
 // https://github.com/NYPL/engineering-general/blob/master/standards/logging.md
@@ -68,7 +68,14 @@ const nyplFormat = printf((options) => {
 
   return JSON.stringify(result);
 });
-
+// The transport function that logs to a file.
+const fileTransport = new File({
+  filename: './log/dgx-patron-creator-service.log',
+  handleExceptions: true,
+  maxsize: 5242880, // 5MB
+  maxFiles: 5,
+  format: combine(timestamp(), nyplFormat),
+});
 // The transport function that logs to the console.
 const consoleTransport = new Console({
   handleExceptions: true,
@@ -81,11 +88,10 @@ const consoleTransport = new Console({
   ),
 });
 
-const loggerTransports = [];
+const loggerTransports = [consoleTransport];
 
-// Don't show console messages or log to the file while running tests.
 if (process.env.NODE_ENV !== 'test') {
-  loggerTransports.push(consoleTransport);
+  loggerTransports.push(fileTransport);
 }
 
 // Create the logger that will be used in the app now that the
@@ -99,6 +105,11 @@ const logger = CreateLogger({
 });
 
 // Set the logger output level to one specified in the environment config.
-logger.level = process.env.LOG_LEVEL || 'debug';
+if (process.env.NODE_ENV === 'test') {
+  // Console logs from tests can be disruptive.
+  logger.level = 'none';
+} else {
+  logger.level = process.env.LOG_LEVEL || 'debug';
+}
 
 module.exports = logger;
