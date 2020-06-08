@@ -1,9 +1,18 @@
 language: node_js
 node_js:
-- '6'
+- '10'
 script: npm test
 before_deploy: echo 'All unit tests passed; Successfully built distribution assets;
   Preparing to deploy DGX Patron Creator Service to AWS.'
+
+services:
+  - postgres
+before_script:
+  - npm install
+  - psql -c 'create database barcodes_test;' -U postgres
+script:
+  - TRAVIS=true npm run test
+
 deploy:
 - provider: script
   skip_cleanup: true

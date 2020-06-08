@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "version": "0.2.1",
+    "version": "0.4.0",
     "title": "dgx-patron-creator-service"
   },
   "host": "localhost:3001",
@@ -59,7 +59,7 @@
         "security": [
           {
             "api_auth": [
-              "openid write:patron"
+              "openid write:patron offline_access api"
             ]
           }
         ]
@@ -108,7 +108,206 @@
         "security": [
           {
             "api_auth": [
-              "openid write:patron"
+              "openid write:patron offline_access api"
+            ]
+          }
+        ]
+      }
+    },
+    "/v0.3/patrons/dependents": {
+      "x-swagger-router-controller": "patrons",
+      "post": {
+        "tags": [
+          "patrons"
+        ],
+        "summary": "Create a dependent juvenile account",
+        "description": "Create a dependent juvenile account based off a parent's patron account",
+        "operationId": "patrons_dependentsV03",
+        "parameters": [
+          {
+            "name": "barcode_and_input",
+            "in": "body",
+            "description": "The barcode or username of the existing parent patron and the dependent's account information.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PatronsDependentsDataV03"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": {
+              "$ref": "#/definitions/PatronsDependentsResponseV03"
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "schema": {
+              "$ref": "#/definitions/400ErrorResponseV03"
+            }
+          },
+          "502": {
+            "description": "ILS Integration Error",
+            "schema": {
+              "$ref": "#/definitions/502ILSIntegrationErrorV03"
+            }
+          }
+        },
+        "security": [
+          {
+            "api_auth": [
+              "openid write:patron offline_access api"
+            ]
+          }
+        ]
+      }
+    },
+    "/v0.3/patrons/dependent-eligibility": {
+      "x-swagger-router-controller": "patrons",
+      "get": {
+        "tags": [
+          "patrons"
+        ],
+        "summary": "Check Patron's account creation eligibility",
+        "description": "Check if a patron is eligible to create dependent juvenile accounts. Pass in either the barcode or username of the existing patron account to check for eligibility.",
+        "operationId": "patrons_eligibilityV03",
+        "parameters": [
+          {
+            "name": "barcode",
+            "in": "query",
+            "description": "The 14-digit barcode of the existing patron",
+            "type": "string"
+          },
+          {
+            "name": "username",
+            "in": "query",
+            "description": "The username of the existing patron",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": {
+              "$ref": "#/definitions/PatronsEligibilityResponseV03"
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "schema": {
+              "$ref": "#/definitions/400BarcodeErrorResponseV03"
+            }
+          },
+          "502": {
+            "description": "ILS Integration Error",
+            "schema": {
+              "$ref": "#/definitions/502ILSIntegrationErrorV03"
+            }
+          }
+        },
+        "security": [
+          {
+            "api_auth": [
+              "openid write:patron offline_access api"
+            ]
+          }
+        ]
+      }
+    },
+    "/v0.1/validations/username": {
+      "x-swagger-router-controller": "validations/username",
+      "post": {
+        "tags": [
+          "validations"
+        ],
+        "summary": "Create a Patron username validation",
+        "description": "Makes a call to NYPL's Simplified Card Creator API for patron username validation.",
+        "operationId": "username",
+        "parameters": [
+          {
+            "name": "username",
+            "in": "body",
+            "description": "The username to be validated",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UsernameData"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": {
+              "$ref": "#/definitions/UsernameResponse"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/400ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Generic server error",
+            "schema": {
+              "$ref": "#/definitions/500ErrorResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "api_auth": [
+              "openid write:patron offline_access api"
+            ]
+          }
+        ]
+      }
+    },
+    "/v0.1/validations/address": {
+      "x-swagger-router-controller": "validations/address",
+      "post": {
+        "tags": [
+          "validations"
+        ],
+        "summary": "Create a Patron address validation",
+        "description": "Makes a call to NYPL's Simplified Card Creator API for patron address validation.",
+        "operationId": "address",
+        "parameters": [
+          {
+            "name": "address_data",
+            "in": "body",
+            "description": "The address to be validated",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/AddressData"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": {
+              "$ref": "#/definitions/AddressResponse"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/400ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Generic server error",
+            "schema": {
+              "$ref": "#/definitions/500ErrorResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "api_auth": [
+              "openid write:patron offline_access api"
             ]
           }
         ]
@@ -243,6 +442,26 @@
         }
       }
     },
+    "400ErrorResponse": {
+      "required": [
+        "data"
+      ],
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/400ErrorResponseContent"
+        }
+      }
+    },
+    "400ErrorResponseContent": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/400ErrorStatusModel"
+        },
+        {
+          "$ref": "#/definitions/ErrorModel"
+        }
+      ]
+    },
     "400ErrorResponseV01": {
       "properties": {
         "data": {
@@ -261,6 +480,26 @@
         },
         {
           "$ref": "#/definitions/ErrorModelV01"
+        }
+      ]
+    },
+    "500ErrorResponse": {
+      "required": [
+        "data"
+      ],
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/500ErrorResponseContent"
+        }
+      }
+    },
+    "500ErrorResponseContent": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/500ErrorStatusModel"
+        },
+        {
+          "$ref": "#/definitions/ErrorModel"
         }
       ]
     },
@@ -313,6 +552,48 @@
         }
       }
     },
+    "400ErrorStatusModel": {
+      "required": [
+        "status_code_from_card_creator",
+        "type",
+        "message"
+      ],
+      "properties": {
+        "status_code_from_card_creator": {
+          "type": "number",
+          "example": 400
+        },
+        "type": {
+          "type": "string",
+          "example": "invalid-request"
+        },
+        "message": {
+          "type": "string",
+          "example": "No data"
+        }
+      }
+    },
+    "500ErrorStatusModel": {
+      "required": [
+        "status_code_from_card_creator",
+        "type",
+        "message"
+      ],
+      "properties": {
+        "status_code_from_card_creator": {
+          "type": "number",
+          "example": 500
+        },
+        "type": {
+          "type": "string",
+          "example": "internal-server-error"
+        },
+        "message": {
+          "type": "string",
+          "example": "Internal server error"
+        }
+      }
+    },
     "500ErrorStatusSimplePatronV01": {
       "properties": {
         "simplePatron": {
@@ -345,6 +626,70 @@
       "properties": {
         "patron": {
           "type": "object"
+        }
+      }
+    },
+    "ErrorModel": {
+      "required": [
+        "valid",
+        "card_type",
+        "detail"
+      ],
+      "properties": {
+        "valid": {
+          "type": "boolean",
+          "example": false
+        },
+        "card_type": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "object",
+          "example": {
+            "title": "Not found.",
+            "debug": "Invalid endpoint: [POST] /v2/validate/address"
+          }
+        }
+      }
+    },
+    "PatronsEligibilityDataV03": {
+      "required": [
+        "barcode"
+      ],
+      "properties": {
+        "barcode": {
+          "type": "string",
+          "example": "12345678912345"
+        }
+      }
+    },
+    "PatronsDependentsDataV03": {
+      "required": [
+        "barcode",
+        "name",
+        "username",
+        "pin"
+      ],
+      "properties": {
+        "barcode": {
+          "type": "string",
+          "example": "12345678912345"
+        },
+        "parentUsername": {
+          "type": "string",
+          "example": "parentUsername1"
+        },
+        "name": {
+          "type": "string",
+          "example": "Dependent First name, Last Name"
+        },
+        "username": {
+          "type": "string",
+          "example": "dependentUsername1"
+        },
+        "pin": {
+          "type": "string",
+          "example": "1234"
         }
       }
     },
@@ -493,6 +838,77 @@
         }
       }
     },
+    "PatronsEligibilityResponseV03": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "number",
+          "example": 200
+        },
+        "eligible": {
+          "type": "boolean"
+        },
+        "decription": {
+          "type": "string",
+          "example": "This patron can create dependent accounts."
+        }
+      }
+    },
+    "PatronsDependentsResponseV03": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "number",
+          "example": 200
+        },
+        "data": {
+          "properties": {
+            "dependent": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "number",
+                  "example": 12345
+                },
+                "username": {
+                  "type": "string",
+                  "example": "username12"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "First name, last name"
+                },
+                "barcode": {
+                  "type": "string",
+                  "example": "28888888888888"
+                },
+                "pin": {
+                  "type": "string",
+                  "example": "1234"
+                }
+              }
+            },
+            "parent": {
+              "type": "object",
+              "properties": {
+                "updated": {
+                  "type": "boolean",
+                  "example": true
+                },
+                "barcode": {
+                  "type": "string",
+                  "example": "28888888888886"
+                },
+                "dependents": {
+                  "type": "string",
+                  "example": "DEPENDENTS 28888888888887,28888888888888"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "PatronsCreatorResponseModelV02": {
       "required": [
         "names",
@@ -610,6 +1026,68 @@
         }
       }
     },
+    "400ErrorResponseV03": {
+      "properties": {
+        "status": {
+          "type": "number",
+          "example": 400
+        },
+        "type": {
+          "type": "string",
+          "example": "invalid-request"
+        },
+        "message": {
+          "type": "object",
+          "example": "Some value is wrong"
+        },
+        "detail": {
+          "type": "object",
+          "example": {
+            "title": "",
+            "debug": ""
+          },
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "debug": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "400BarcodeErrorResponseV03": {
+      "properties": {
+        "status": {
+          "type": "number",
+          "example": 400
+        },
+        "type": {
+          "type": "string",
+          "example": "not-eligible-card"
+        },
+        "message": {
+          "type": "object",
+          "example": "You have reached the limit of dependent cards you can receive via online application."
+        },
+        "detail": {
+          "type": "object",
+          "example": {
+            "title": "",
+            "debug": ""
+          },
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "debug": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
     "500ErrorResponseV02": {
       "properties": {
         "status_code_from_ils": {
@@ -628,6 +1106,207 @@
           "type": "object",
           "example": {
           }
+        }
+      }
+    },
+    "502ILSIntegrationErrorV03": {
+      "properties": {
+        "status": {
+          "type": "number",
+          "example": 502
+        },
+        "type": {
+          "type": "string",
+          "example": "remote-integration-failure"
+        },
+        "message": {
+          "type": "number",
+          "example": "The ILS could not be requested."
+        },
+        "detail": {
+          "type": "object",
+          "example": {
+            "title": "",
+            "debug": ""
+          },
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "debug": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "UsernameData": {
+      "required": [
+        "username"
+      ],
+      "properties": {
+        "username": {
+          "type": "string",
+          "example": "mikeolson"
+        }
+      }
+    },
+    "UsernameResponse": {
+      "type": "object",
+      "required": [
+        "data"
+      ],
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/UsernameResponseModel"
+        }
+      }
+    },
+    "UsernameResponseModel": {
+      "required": [
+        "status_code_from_card_creator",
+        "valid",
+        "type",
+        "card_type",
+        "message",
+        "detail"
+      ],
+      "properties": {
+        "status_code_from_card_creator": {
+          "type": "number",
+          "example": 200
+        },
+        "valid": {
+          "type": "boolean",
+          "example": true
+        },
+        "type": {
+          "type": "string",
+          "example": "available-username"
+        },
+        "card_type": {
+          "type": "string",
+          "example": "standard"
+        },
+        "message": {
+          "type": "string",
+          "example": "This username is available."
+        },
+        "detail": {
+          "type": "object",
+          "example": {}
+        }
+      }
+    },
+    "AddressData": {
+      "description": "The data format of the input address",
+      "required": [
+        "address"
+      ],
+      "properties": {
+        "address": {
+          "$ref": "#/definitions/AddressModel"
+        },
+        "is_work_or_school_address": {
+          "type": "boolean",
+          "default": false,
+          "example": true
+        }
+      }
+    },
+    "AddressResponse": {
+      "type": "object",
+      "required": [
+        "data"
+      ],
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/AddressResponseModel"
+        }
+      }
+    },
+    "AddressResponseModel": {
+      "required": [
+        "status_code_from_card_creator",
+        "valid",
+        "type",
+        "card_type",
+        "message",
+        "detail",
+        "addresses",
+        "original_address"
+      ],
+      "properties": {
+        "status_code_from_card_creator": {
+          "type": "number",
+          "example": 200
+        },
+        "valid": {
+          "type": "boolean",
+          "example": true
+        },
+        "type": {
+          "type": "string",
+          "example": "valid-address"
+        },
+        "card_type": {
+          "type": "string",
+          "example": "standard"
+        },
+        "message": {
+          "type": "string",
+          "example": "This valid address will result in a standard library card."
+        },
+        "detail": {
+          "type": "object",
+          "example": {}
+        },
+        "addresses": {
+          "type": "array",
+          "items": {
+            "required": [
+              "line_1",
+              "line_2",
+              "city",
+              "county",
+              "state",
+              "zip",
+              "is_residential"
+            ],
+            "properties": {
+              "line_1": {
+                "type": "string",
+                "example": "123 W40th St"
+              },
+              "line_2": {
+                "type": "string",
+                "example": ""
+              },
+              "city": {
+                "type": "string",
+                "example": "New York"
+              },
+              "county": {
+                "type": "string",
+                "example": "New York"
+              },
+              "state": {
+                "type": "string",
+                "example": "NY"
+              },
+              "zip": {
+                "type": "string",
+                "example": "10018-2600"
+              },
+              "is_residential": {
+                "type": "boolean",
+                "example": false
+              }
+            }
+          }
+        },
+        "original_address": {
+          "$ref": "#/definitions/AddressModel"
         }
       }
     },
@@ -667,6 +1346,10 @@
     {
       "name": "patrons",
       "description": "Patron API"
+    },
+    {
+      "name": "validations",
+      "description": "Validations API"
     }
   ],
   "securityDefinitions": {
@@ -676,7 +1359,7 @@
       "authorizationUrl": "https://isso.nypl.org/oauth/authorize",
       "tokenUrl": "https://isso.nypl.org/oauth/token",
       "scopes": {
-        "openid write:patron": "Creating Patron access"
+        "openid write:patron offline_access api": "Creating Patron and Validations access"
       }
     }
   }
