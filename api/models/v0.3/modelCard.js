@@ -398,9 +398,7 @@ class Card {
     // False if patron provides a home address that is not residential
     // False if patron does not have a recognized name
     // False if patron policy is not the default (simplye)
-    return (
-      this.address.isResidential && this.hasValidName && this.policy.isDefault
-    );
+    return this.address.address.isResidential && this.policy.isDefault;
   }
 
   /**
