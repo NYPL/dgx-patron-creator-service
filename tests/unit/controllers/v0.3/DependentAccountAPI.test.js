@@ -5,15 +5,24 @@ const { PatronNotFound } = require("../../../../api/helpers/errors");
 
 jest.mock("../../../../api/controllers/v0.3/IlsClient");
 
+const exampleVarFields = [
+  { fieldTag: "u", content: "username" },
+  { fieldTag: "x", content: "DEPENDENTS 12333333333334" },
+];
+const exampleVarFieldsMultipleDependents = [
+  { fieldTag: "u", content: "username" },
+  {
+    fieldTag: "x",
+    content: "DEPENDENTS 12333333333334,12333333333335,12333333333336",
+  },
+];
+
 const mockedSuccessfulResponse = {
   status: 200,
   data: {
     id: "12333333333333",
     patronType: 10,
-    varFields: [
-      { fieldTag: "u", content: "username" },
-      { fieldTag: "x", content: "DEPENDENTS 12333333333334" },
-    ],
+    varFields: exampleVarFields,
     // Other ILS patron fields which aren't necessary for testing
   },
 };
@@ -22,13 +31,7 @@ const mockedSuccessfulResponseLimitReached = {
   data: {
     id: "12333333333333",
     patronType: 10,
-    varFields: [
-      { fieldTag: "u", content: "username" },
-      {
-        fieldTag: "x",
-        content: "DEPENDENTS 12333333333334,12333333333335,12333333333336",
-      },
-    ],
+    varFields: exampleVarFieldsMultipleDependents,
     // Other ILS patron fields which aren't necessary for testing
   },
 };
@@ -37,10 +40,7 @@ const mockedSuccessfulResponseBadPType = {
   data: {
     id: "12333333333333",
     patronType: 1,
-    varFields: [
-      { fieldTag: "u", content: "username" },
-      { fieldTag: "x", content: "some content" },
-    ],
+    varFields: exampleVarFields,
     // Other ILS patron fields which aren't necessary for testing
   },
 };
@@ -50,10 +50,7 @@ const mockedSuccessfulResponseExpiredAccount = {
     id: "12333333333333",
     patronType: 1,
     expirationDate: "2020-04-04",
-    varFields: [
-      { fieldTag: "u", content: "username" },
-      { fieldTag: "x", content: "some content" },
-    ],
+    varFields: exampleVarFields,
     // Other ILS patron fields which aren't necessary for testing
   },
 };
@@ -432,7 +429,7 @@ describe("DependentAccountAPI", () => {
     });
   });
 
-  describe("checkDependentLimit", () => {
+  describe("canCreateDependents", () => {
     let varFields = [
       {
         fieldTag: "z",
@@ -450,31 +447,31 @@ describe("DependentAccountAPI", () => {
     const ilsClient = IlsClient();
 
     it("returns true if there are no `varFields` object with a fieldTag of `x`", () => {
-      let { checkDependentLimit } = DependentAccountAPI({ ilsClient });
+      let { canCreateDependents } = DependentAccountAPI({ ilsClient });
 
-      const canCreateDependents = checkDependentLimit(varFields);
-      expect(canCreateDependents).toEqual(true);
+      const canCreateDependentsValue = canCreateDependents(varFields);
+      expect(canCreateDependentsValue).toEqual(true);
     });
 
     it("returns true if there are any `varFields` objects with a fieldTag of `x` but not with `DEPENDENTS` in the `contents`", () => {
-      let { checkDependentLimit } = DependentAccountAPI({ ilsClient });
+      let { canCreateDependents } = DependentAccountAPI({ ilsClient });
       // Create a copy of the varFields array.
       let xVarFields = varFields.slice();
       xVarFields.push({ fieldTag: "x", content: "content" });
 
-      let canCreateDependents = checkDependentLimit(xVarFields);
-      expect(canCreateDependents).toEqual(true);
+      let canCreateDependentsValue = canCreateDependents(xVarFields);
+      expect(canCreateDependentsValue).toEqual(true);
 
       // Even if there are multiple varFields objects with a fieldTag of `x`,
       // it doesn't matter unless they have the `DEPENDENTS` string in the
       // `content` field.
       xVarFields.push({ fieldTag: "x", content: "content2" });
-      canCreateDependents = checkDependentLimit(xVarFields);
-      expect(canCreateDependents).toEqual(true);
+      canCreateDependentsValue = canCreateDependents(xVarFields);
+      expect(canCreateDependentsValue).toEqual(true);
     });
 
     it("returns true if there are less than three dependents", () => {
-      let { checkDependentLimit } = DependentAccountAPI({ ilsClient });
+      let { canCreateDependents } = DependentAccountAPI({ ilsClient });
       let oneDependentVarFields = varFields.slice();
       // There is one barcode in `content` field.
       oneDependentVarFields.push({
@@ -482,8 +479,8 @@ describe("DependentAccountAPI", () => {
         content: "DEPENDENTS 12333333333334",
       });
 
-      let canCreateDependents = checkDependentLimit(oneDependentVarFields);
-      expect(canCreateDependents).toEqual(true);
+      let canCreateDependentsValue = canCreateDependents(oneDependentVarFields);
+      expect(canCreateDependentsValue).toEqual(true);
 
       let twoDependentVarFields = varFields.slice();
       // There are two barcodes in `content` field.
@@ -492,12 +489,12 @@ describe("DependentAccountAPI", () => {
         content: "DEPENDENTS 12333333333334,12333333333335",
       });
 
-      canCreateDependents = checkDependentLimit(twoDependentVarFields);
-      expect(canCreateDependents).toEqual(true);
+      canCreateDependentsValue = canCreateDependents(twoDependentVarFields);
+      expect(canCreateDependentsValue).toEqual(true);
     });
 
     it("returns false if there are three dependents already", () => {
-      let { checkDependentLimit } = DependentAccountAPI({ ilsClient });
+      let { canCreateDependents } = DependentAccountAPI({ ilsClient });
       let reachedLimitVarFields = varFields.slice();
       // There are 3 barcodes in `content` field and the limit has been reached.
       reachedLimitVarFields.push({
@@ -505,8 +502,8 @@ describe("DependentAccountAPI", () => {
         content: "DEPENDENTS 12333333333334,12333333333335,12333333333336",
       });
 
-      let canCreateDependents = checkDependentLimit(reachedLimitVarFields);
-      expect(canCreateDependents).toEqual(false);
+      let canCreateDependentsValue = canCreateDependents(reachedLimitVarFields);
+      expect(canCreateDependentsValue).toEqual(false);
     });
   });
 
@@ -733,20 +730,20 @@ describe("DependentAccountAPI", () => {
     });
   });
 
-  describe("formatDependentAddress", () => {
-    let { formatDependentAddress } = DependentAccountAPI({});
+  describe("formatAddressForILS", () => {
+    let { formatAddressForILS } = DependentAccountAPI({});
 
     it("returns an empty object if the input is wrong", () => {
       // It expects an array of two strings since that's how the ILS
       // formats its addresses.
       const badAddress = { lines: ["476 5th Ave."] };
-      expect(formatDependentAddress({})).toEqual({});
-      expect(formatDependentAddress(badAddress)).toEqual({});
+      expect(formatAddressForILS({})).toEqual({});
+      expect(formatAddressForILS(badAddress)).toEqual({});
     });
 
     it("returns an object structured for the Address class", () => {
       const address = { lines: ["476 5th Ave.", "New York, NY 10018"] };
-      expect(formatDependentAddress(address)).toEqual({
+      expect(formatAddressForILS(address)).toEqual({
         line1: "476 5th Ave.",
         city: "New York",
         state: "NY",
@@ -767,6 +764,88 @@ describe("DependentAccountAPI", () => {
 
       expect(checkAccountExpiration(futureDate, mockNowDate)).toEqual(false);
       expect(checkAccountExpiration(expiredDate, mockNowDate)).toEqual(true);
+    });
+  });
+
+  describe("getVarField", () => {
+    const { getVarField } = DependentAccountAPI({});
+
+    it("returns an empty array if no params or an empty array were passed", () => {
+      expect(getVarField()).toEqual([]);
+      expect(getVarField([])).toEqual([]);
+    });
+
+    it("returns an empty array if the fieldTag is not found in any object", () => {
+      const fieldTag = "y";
+      expect(getVarField(exampleVarFields, fieldTag)).toEqual([]);
+    });
+
+    it("returns an object with the fieldTag value passed in", () => {
+      let fieldTag = "u";
+      expect(getVarField(exampleVarFields, fieldTag)).toEqual([
+        { fieldTag: "u", content: "username" },
+      ]);
+
+      fieldTag = "x";
+      expect(getVarField(exampleVarFields, fieldTag)).toEqual([
+        { fieldTag: "x", content: "DEPENDENTS 12333333333334" },
+      ]);
+    });
+
+    it("returns multiple values if they exist", () => {
+      const noteFields = [
+        { fieldTag: "x", content: "some note" },
+        { fieldTag: "x", content: "another note" },
+      ];
+      const multipleValues = exampleVarFields.concat(noteFields);
+
+      expect(getVarField(multipleValues)).toEqual([
+        { fieldTag: "x", content: "DEPENDENTS 12333333333334" },
+        ...noteFields,
+      ]);
+    });
+  });
+
+  describe("getDependentVarField", () => {
+    const { getDependentVarField } = DependentAccountAPI({});
+
+    it("returns a undefined if no param was passed", () => {
+      expect(getDependentVarField()).toEqual(undefined);
+    });
+    it("returns a undefined if an empty array was passed", () => {
+      expect(getDependentVarField([])).toEqual(undefined);
+    });
+
+    it("returns undefined if there were no objects with the string 'DEPENDENTS'\
+      in the content property", () => {
+      const exampleVarFieldsNoDependents = [
+        { fieldTag: "u", content: "username" },
+        { fieldTag: "b", content: "12333333333334" },
+        { fieldTag: "x", content: "some note" },
+      ];
+      expect(
+        getDependentVarField(exampleVarFieldsNoDependents)
+      ).not.toBeDefined();
+    });
+
+    it("returns the object with the string 'DEPENDENTS' in the content property", () => {
+      expect(getDependentVarField(exampleVarFields)).toEqual({
+        fieldTag: "x",
+        content: "DEPENDENTS 12333333333334",
+      });
+
+      // Even if there are multiple objects with a fieldTag of 'x', only the
+      // one that has 'DEPENDENTS' in the content is returned.
+      const multipleXFieldTags = [
+        ...exampleVarFields,
+        { fieldTag: "x", content: "some note" },
+        { fieldTag: "x", content: "another note" },
+      ];
+
+      expect(getDependentVarField(multipleXFieldTags)).toEqual({
+        fieldTag: "x",
+        content: "DEPENDENTS 12333333333334",
+      });
     });
   });
 });

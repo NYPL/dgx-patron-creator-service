@@ -1,5 +1,5 @@
 /* eslint-disable */
-const { NoILSClient } = require("../../helpers/errors");
+const { NoILSClient, BadUsername } = require("../../helpers/errors");
 
 /**
  * A class that validates usernames against the ILS.
@@ -32,15 +32,7 @@ const UsernameValidationAPI = (args) => {
       message: "This username is available.",
     },
   };
-  class BadUsername extends Error {
-    constructor(type, message) {
-      super();
-      this.type = type;
-      this.name = "BadUsername";
-      this.message = message;
-      this.status = 400;
-    }
-  }
+
   /**
    * validate(username)
    * Checks if the username is valid and available and returns and object

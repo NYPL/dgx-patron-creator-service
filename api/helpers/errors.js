@@ -1,5 +1,4 @@
 /* eslint-disable */
-
 // Thrown when parameter(s) are missing/invalid
 // See https://httpstatuses.com/422
 class InvalidEnvironmentConfiguration extends Error {
@@ -31,6 +30,7 @@ class InvalidRequest extends Error {
 class NoILSClient extends Error {
   constructor(message) {
     super();
+    this.type = "no-ils-client";
     this.name = "NoILSClient";
     this.message = message;
     this.status = 500;
@@ -40,6 +40,7 @@ class NoILSClient extends Error {
 class ILSIntegrationError extends Error {
   constructor(message) {
     super();
+    this.type = "ils-integration-error";
     this.name = "ILSIntegrationError";
     this.message = message;
     this.status = 502;
@@ -117,6 +118,26 @@ class NotEligibleCard extends Error {
   }
 }
 
+class BadUsername extends Error {
+  constructor(type, message) {
+    super();
+    this.type = type;
+    this.name = "BadUsername";
+    this.message = message;
+    this.status = 400;
+  }
+}
+
+class NotILSValid extends Error {
+  constructor(message) {
+    super();
+    this.type = "not-ils-valid-account";
+    this.name = "NotILSValid";
+    this.message = message;
+    this.status = 400;
+  }
+}
+
 module.exports = {
   InvalidEnvironmentConfiguration,
   InvalidRequest,
@@ -130,4 +151,6 @@ module.exports = {
   IncorrectPin,
   ExpiredAccount,
   NotEligibleCard,
+  BadUsername,
+  NotILSValid,
 };

@@ -79,9 +79,9 @@ const DependentAccountAPI = (args) => {
     if (hasEligiblePtype) {
       // Great, they have an eligible ptype. Now check that they have not
       // reached the dependent account limit.
-      const canCreateDependents = checkDependentLimit(patron.varFields);
+      const canCreateDependentsValue = canCreateDependents(patron.varFields);
 
-      if (!canCreateDependents) {
+      if (!canCreateDependentsValue) {
         throw new NotEligibleCard(
           "You have reached the limit of dependent cards you can receive via online application."
         );
@@ -116,7 +116,10 @@ const DependentAccountAPI = (args) => {
    * Returns an error if the patron couldn't be found or there was an error
    * with the ILS.
    *
-   * @param {object} options
+   * @param {object} options - Object containing a type and value to get a
+   *  patron from the ILS. Examples:
+   *  { type: "barcode", value: "123456789123456" }
+   *  { type: "username", value: "someUserName12" }
    */
   const getPatronFromILS = async (options) => {
     if (!ilsClient) {
@@ -159,60 +162,45 @@ const DependentAccountAPI = (args) => {
     IlsClient.CAN_CREATE_DEPENDENTS.includes(patronType);
 
   /**
-   * checkDependentLimit(varFields)
-   * This function assumes that the patron has an eligible p-type, and so can
-   * create dependent accounts. Dependent accounts will be found in the
-   * varField array of a patron data object as an object with a fieldTag of "x".
-   * A varField object comes in the form of
-   *   { fieldtag: "", content: ""}
-   * This checks specificially if `content` has "DEPENDENTS" in the string. If
+   * canCreateDependents(varFields)
+   * This function assumes that the patron has an eligible p-type and can
+   * therefore create dependent accounts. Dependent accounts are found in the
+   * `varFields` array of a patron data object, in an object with a
+   * `fieldTag` of "x". A varField object has the following form:
+   *   { fieldtag: "", content: "" }
+   * This checks specifically if `content` has "DEPENDENTS" in the string. If
    * it does, it then checks to see how many barcodes are in the string based
    * on how many commas there are to separate the barcodes. If the limit of
-   * barcodes are found (DEPENDENT_LIMIT), then the patron has reached their
-   * limit. Otherwise, they have one or two dependents and can create another.
-   * If the object with the fieldTag of "x" isn't found, or if it is found but
-   * it has other content, then we assume they don't have any dependents.
-   * They already have an eligible p-type so let them create dependents.
+   * barcodes is found (DEPENDENT_LIMIT), then the patron can no longer create
+   * dependent accounts. Otherwise, they have one or two dependents and can
+   * create another. If the object with the fieldTag of "x" isn't found, or
+   * if it is found but it has other content, then we assume they don't have
+   * any dependents. The patron already has an eligible p-type so they can
+   * create dependents.
    *
    * @param {array} varFields
    */
-  const checkDependentLimit = (varFields) => {
-    // We only want varFields that have a fieldTag of "x".
-    const xFieldTags = varFields.filter((obj) => obj.fieldTag === "x");
+  const canCreateDependents = (varFields) => {
+    const varField = getDependentVarField(varFields);
 
-    // No varFields were found, so we can assume the patron doesn't
+    // No varField object was found, so we can assume the patron doesn't
     // have any dependent accounts yet.
-    if (xFieldTags.length === 0) {
-      return true;
-    }
-
-    // Check for a varField that has `content` in the form of:
-    // "DEPENDENTS x,x,x"
-    // where `x` is a barcode. First get the varField that has "DEPENDENTS".
-    const dependentsVarField = xFieldTags.find(
-      (obj) => obj.content.indexOf("DEPENDENTS") !== -1
-    );
-
-    // There are varFields with a fieldTag of "x" but none with "DEPENDENTS".
-    // We can assume the patron doesn't have any dependents already and
-    // can create dependent accounts.
-    if (!dependentsVarField) {
+    if (!varField) {
       return true;
     }
 
     // There is a varField with "DEPENDENTS". Now find how many dependents are
     // in the `content` string. The content will be in the form of
     // "DEPENDENTS x,x,x" so split the string by a space to get the accounts.
-    const dependentAccounts = dependentsVarField.content.split(" ")[1];
+    const dependentAccounts = varField.content.split(" ")[1];
     // Now split that string by the commas to get a count of how many
     // accounts there are.
     const totalAccounts = dependentAccounts.split(",").length;
 
-    // If they reached the limit, they can't create anymore.
-    if (totalAccounts === DEPENDENT_LIMIT) {
-      return false;
-    }
-    return true;
+    // If the patron hasn't reached the limit, return true because they can
+    // create more accounts. Otherwise, they reached the limit so return false
+    // because they can't create more dependent accounts.
+    return totalAccounts !== DEPENDENT_LIMIT;
   };
 
   /**
@@ -227,35 +215,76 @@ const DependentAccountAPI = (args) => {
       return;
     }
 
+    // The following is to display in the API response the dependent accounts
+    // the parent patron has.
     const varFields = parentPatronData.varFields || [];
+    const varField = getDependentVarField(varFields);
     let dependents;
-    const xFieldTags = varFields.filter((obj) => obj.fieldTag === "x");
-    // No varFields were found, so we can assume the patron doesn't
-    // have any dependent accounts yet.
-    if (xFieldTags.length === 0) {
-      dependents = "DEPENDENTS ";
-    } else {
-      // Check for a varField that has `content` in the form of:
-      // "DEPENDENTS x,x,x"
-      // where `x` is a barcode. First get the varField that has "DEPENDENTS".
-      const dependentsVarField = xFieldTags.find(
-        (obj) => obj.content.indexOf("DEPENDENTS") !== -1
-      );
 
-      // There are varFields with a fieldTag of "x" but none with "DEPENDENTS".
-      // We can assume the patron doesn't have any dependents already.
-      if (!dependentsVarField) {
-        dependents = "DEPENDENTS ";
-      } else {
-        // The value is already there so return it.
-        dependents = dependentsVarField.content;
-      }
-    }
+    // No varFields were found, so we can assume the patron doesn't
+    // have any dependent accounts yet. Return `"DEPENDENTS "` with the space to
+    // add the first dependent account barcode later on.
+    // Else, there are already barcodes so just return it, and the next barcode
+    // will be added later on.
+    dependents = !varField ? "DEPENDENTS " : varField.content;
 
     return {
       ...parentPatronData,
       dependents,
     };
+  };
+
+  /**
+   * getVarField(varFields, fieldTag)
+   * Returns all the varField objects in the varFields array with a specific
+   * `fieldTag` value. Currently, the default `fieldTag` value is `"x"` since
+   * that's the note field we will most often use.
+   *
+   * @param {array} varFields
+   * @param {string} fieldTag
+   */
+  const getVarField = (varFields = [], fieldTag = "x") => {
+    if (!varFields) {
+      return;
+    }
+
+    return varFields.filter((obj) => obj.fieldTag === fieldTag);
+  };
+
+  /**
+   * getDependentVarField(varFields)
+   * Get the varFields object that has a `fieldTag` value of "x" and a `content`
+   * value that includes the string "DEPENDENTS ..."". The `content` property
+   * can include up to three dependent barcodes. If no object is found, or if
+   * there is an object with a `fieldTag` value of "x", but "DEPENDENTS" is not
+   * in the `content` property, then return undefined. Otherwise, return the
+   * object which can look like:
+   * { fieldTag: "x", content: "DEPENDENTS y,y,y" }
+   *
+   * @param {array} varFields
+   */
+  const getDependentVarField = (varFields = []) => {
+    if (!varFields || !varFields.length) {
+      return;
+    }
+
+    const fieldTag = "x";
+    // Get all varField objects that have a `fieldTag` value of "x".
+    const xVarFieldTags = getVarField(varFields, fieldTag);
+    // No varFields were found, return.
+    if (xVarFieldTags.length === 0) {
+      return;
+    } else {
+      // Check for a varField that "DEPENDENTS" in the `content` property.
+      const dependentsVarField = xVarFieldTags.find(
+        (obj) => obj.content.indexOf("DEPENDENTS") !== -1
+      );
+
+      // There are varFields with a `fieldTag` of "x" but none with a `content`
+      // value that includes "DEPENDENTS". This will result in undefined.
+      // Otherwise, the found object will be returned.
+      return dependentsVarField;
+    }
   };
 
   /**
@@ -283,36 +312,28 @@ const DependentAccountAPI = (args) => {
     }
 
     const varFields = parent.varFields || [];
-    let varField;
-    // parent
-    const xFieldTags = varFields.filter((obj) => obj.fieldTag === "x");
-    // No varFields were found, so we can assume the patron doesn't
+    let varField = getDependentVarField(varFields);
+    let updatedVarField;
+    // No varField object was found, so we can assume the patron doesn't
     // have any dependent accounts yet.
-    if (xFieldTags.length === 0) {
-      varField = { fieldTag: "x", content: `DEPENDENTS ${dependentBarcode}` };
+    if (!varField) {
+      // This is the parent patron's first dependent.
+      updatedVarField = {
+        fieldTag: "x",
+        content: `DEPENDENTS ${dependentBarcode}`,
+      };
     } else {
-      // Check for a varField that has `content` in the form of:
-      // "DEPENDENTS x,x,x"
-      // where `x` is a barcode. First get the varField that has "DEPENDENTS".
-      const dependentsVarField = xFieldTags.find(
-        (obj) => obj.content.indexOf("DEPENDENTS") !== -1
-      );
-
-      // There are varFields with a fieldTag of "x" but none with "DEPENDENTS".
-      // We can assume the patron doesn't have any dependents already.
-      if (!dependentsVarField) {
-        varField = { fieldTag: "x", content: `DEPENDENTS ${dependentBarcode}` };
-      } else {
-        // The value is already there. So now append the new barcode.
-        dependentsVarField.content += `,${dependentBarcode}`;
-        varField = dependentsVarField;
-      }
+      // The value is already there. So now append the new barcode.
+      updatedVarField = {
+        ...varField,
+        content: `${varField.content},${dependentBarcode}`,
+      };
     }
 
     // This field is hardcoded but we only expect to update a patron's account
     // if they have a dependent to add.
     const updatedFields = {
-      varFields: [varField],
+      varFields: [updatedVarField],
     };
 
     const response = await ilsClient.updatePatron(parent.id, updatedFields);
@@ -326,7 +347,7 @@ const DependentAccountAPI = (args) => {
   };
 
   /**
-   * formatDependentAddress(address)
+   * formatAddressForILS(address)
    * A dependent account has the same address as its parent account. The address
    * just needs to be converted into an object for the purposes of creating
    * a new Address object to run validations for the new dependent. Since
@@ -335,7 +356,7 @@ const DependentAccountAPI = (args) => {
    *
    * @param {object} address
    */
-  const formatDependentAddress = (address) => {
+  const formatAddressForILS = (address) => {
     if (!address.lines) {
       return {};
     } else if (address.lines.length !== 2) {
@@ -360,13 +381,15 @@ const DependentAccountAPI = (args) => {
   return {
     isPatronEligible,
     getAlreadyFetchedParentPatron,
-    getPatronFromILS,
     updateParentWithDependent,
-    formatDependentAddress,
+    formatAddressForILS,
     // For testing,
+    getPatronFromILS,
     checkPType,
-    checkDependentLimit,
+    canCreateDependents,
     checkAccountExpiration,
+    getVarField,
+    getDependentVarField,
   };
 };
 

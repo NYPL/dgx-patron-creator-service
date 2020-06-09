@@ -1,12 +1,12 @@
 /* eslint-disable */
 const AddressValidationApi = require("../../controllers/v0.3/AddressValidationAPI");
 const UsernameValidationApi = require("../../controllers/v0.3/UsernameValidationAPI");
-const NameValidationApi = require("../../controllers/v0.3/NameValidationAPI");
 const Barcode = require("./modelBarcode");
 const {
   DatabaseError,
   MissingRequiredValues,
   IncorrectPin,
+  NotILSValid,
 } = require("../../helpers/errors");
 
 /**
@@ -208,36 +208,6 @@ class Card {
       this.valid = true;
     }
     return { valid: this.valid, errors: this.errors };
-  }
-
-  /**
-   * checkValidName()
-   * Check if the name is valid. If it valid (true) or not valid (false),
-   * return that value. Otherwise, the name hasn't been checked so check
-   * its validity if name validation is enabled. If name validation is
-   * disabled, then this will always return true when it is first run. This
-   * works as an internal cache so it won't call the Name Validatoin API
-   * if it already received a value.
-   */
-  checkValidName() {
-    this.hasValidName =
-      this.hasValidName !== undefined
-        ? this.hasValidName
-        : this.nameValidationDisabled || this.checkNameValidity();
-    return this.hasValidName;
-  }
-
-  /**
-   * checkNameValidity()
-   * Verifies that the current name is valid against the NameValidation API.
-   */
-  checkNameValidity() {
-    const { validate } = NameValidationApi();
-    const validatedName = validate(this.name);
-    return (
-      typeof validatedName === "object" &&
-      validatedName["type"] === NameValidationApi.VALID_NAME_TYPE
-    );
   }
 
   /**
@@ -443,7 +413,7 @@ class Card {
     this.setAgency();
 
     if (!this.validForIls()) {
-      throw new Error("The card has not been validated or has no ptype.");
+      throw new NotILSValid("The card has not been validated or has no ptype.");
     }
 
     // For patrons with the `simplye` policy type, the barcode is required,

@@ -3,7 +3,6 @@ const modelResponse = require("../../models/v0.3/modelResponse");
 const UsernameValidationAPI = require("./UsernameValidationAPI");
 const axios = require("axios");
 const awsDecrypt = require("./../../../config/awsDecrypt.js");
-const AddressValidationAPI = require("./AddressValidationAPI");
 const IlsClient = require("./IlsClient");
 const modelStreamPatron = require("./../../models/v0.2/modelStreamPatron.js")
   .modelStreamPatron;
@@ -24,14 +23,14 @@ const ROUTE_TAG = "CREATE_PATRON_0.3";
 // This returns a function that generates the error response object.
 const collectErrorResponseData = errorResponseDataWithTag(ROUTE_TAG);
 // The following are global variables that work as caching for the values.
-// Once the ILS key and password are decrypted, they are stored so that the
+// Once the ILS key and secret are decrypted, they are stored so that the
 // next request doesn't have to deal with decrypting those values. The ILS
 // token is declared when the API returns that value, and the timestamp is
 // then generated. Once all those values are obtained, the ilsClient is created
 // only once and stored. This way, there is one instance of the client to make
 // calls to the ILS for either the validation or create endpoints.
 let ilsClientKey;
-let ilsClientPassword;
+let ilsClientSecret;
 let ilsToken;
 let ilsTokenTimestamp;
 let ilsClient;
@@ -47,16 +46,16 @@ const envVariableNames = [
 ];
 
 /**
- * getIlsToken(req, res, username, password) {
- * Get a token from the ILS.
+ * getIlsToken(req, res, key, secret) {
+ * Get a token from the ILS using the ILS client key and secret.
  *
  * @param {HTTP request} req
  * @param {HTTP response} res
- * @param {string} username
- * @param {string} password
+ * @param {string} key
+ * @param {string} secret
  */
-function getIlsToken(req, res, username, password) {
-  const basicAuth = `Basic ${encode(`${username}:${password}`)}`;
+function getIlsToken(req, res, key, secret) {
+  const basicAuth = `Basic ${encode(`${key}:${secret}`)}`;
 
   return axios
     .post(
@@ -88,16 +87,20 @@ function getIlsToken(req, res, username, password) {
 }
 
 /**
- * setupCheckUsername(req, res)
- * The callback for the "/api/v0.3/validations/username" route. This will make
- * sure that everything is set up correctly in order to make a request to
- * the ILS. This includes validating environment variables and decrypting
- * AWS keys.
+ * setupEndpoint(endpointFn, req, res)
+ * The setup function for every endpoint that checks for environment variables,
+ * decrypts the ILS client key and secret and stores it in the local cache,
+ * creates a token to call the ILS API and stores it in the local cache, and
+ * it creates one instance of the IlsClient with the token to call the ILS.
  *
+ * It then proceeds to call the endpoint function that was passed and
+ * return the response or error to the client.
+ *
+ * @param {function} endpointFn
  * @param {HTTP request} req
  * @param {HTTP response} res
  */
-async function setupCheckUsername(req, res) {
+async function setupEndpoint(endpointFn, req, res) {
   const hasValidEnvVariables = await checkEnvVariables(
     req,
     res,
@@ -111,39 +114,106 @@ async function setupCheckUsername(req, res) {
     return;
   }
 
-  ilsClientKey =
-    ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
-  ilsClientPassword =
-    ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
+  // Let's use KMS to decrypt the environment variable if they haven't already
+  // been decrypted.
+  try {
+    ilsClientKey =
+      ilsClientKey || (await awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY));
+    ilsClientSecret =
+      ilsClientSecret ||
+      (await awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET));
+  } catch (error) {
+    const localErrorMessage =
+      "The ILS ClientKey and/or Secret were not decrypted";
 
-  Promise.all([ilsClientKey, ilsClientPassword])
-    .then((decryptedValues) => {
-      [ilsClientKey, ilsClientPassword] = decryptedValues;
-      checkUsername(req, res);
-    })
-    .catch(() => {
-      const localErrorMessage =
-        "The ILS ClientKey and/or Secret were not decrypted";
+    const errorResponseData = modelResponse.errorResponseData(
+      collectErrorResponseData(
+        500,
+        "configuration-error",
+        localErrorMessage,
+        "",
+        ""
+      ) // eslint-disable-line comma-dangle
+    );
+    renderResponse(req, res, 500, errorResponseData);
+  }
 
-      const errorResponseData = modelResponse.errorResponseData(
-        collectErrorResponseData(
-          500,
-          "configuration-error",
-          localErrorMessage,
-          "",
-          ""
-        ) // eslint-disable-line comma-dangle
-      );
-      renderResponse(req, res, 500, errorResponseData);
+  // Now, let's generate a token that will be used to make authenticated
+  // calls to the ILS API.
+  const timeNow = new Date();
+  // 3540000 = 59 minutes; tokens are for 60 minutes
+  const ilsTokenExpired =
+    ilsTokenTimestamp && timeNow - ilsTokenTimestamp > 3540000;
+  if (!ilsToken || ilsTokenExpired) {
+    getIlsToken(req, res, ilsClientKey, ilsClientSecret).then(() => {
+      setupEndpoint(endpointFn, req, res);
     });
+    return;
+  }
+
+  // Only one instance of the IlsClient class is needed, so create it if
+  // it doesn't already exist.
+  ilsClient =
+    ilsClient ||
+    IlsClient({
+      createUrl: process.env.ILS_CREATE_PATRON_URL,
+      findUrl: process.env.ILS_FIND_VALUE_URL,
+      tokenUrl: process.env.ILS_CREATE_TOKEN_URL,
+      ilsToken,
+    });
+
+  // Finally, call the specific function needed for the route that was called.
+  // Check the bottom of the file for the specific route to function mapping.
+  endpointFn(req, res);
+}
+
+/**
+ * setupCheckUsername(req, res)
+ * The callback function for the "/api/v0.3/validations/username" route.
+ *
+ * @param {HTTP request} req
+ * @param {HTTP response} res
+ */
+async function setupCheckUsername(req, res) {
+  return setupEndpoint(checkUsername, req, res);
+}
+
+/**
+ * setupCreatePatron(req, res)
+ * The callback function for the "/api/v0.3/patrons" route.
+ *
+ * @param {HTTP request} req
+ * @param {HTTP response} res
+ */
+async function setupCreatePatron(req, res) {
+  return setupEndpoint(createPatron, req, res);
+}
+
+/**
+ * setupDependentEligibility(req, res)
+ * The callback function for the "/api/v0.3/validations/username" route.
+ *
+ * @param {HTTP request} req
+ * @param {HTTP response} res
+ */
+async function setupDependentEligibility(req, res) {
+  return setupEndpoint(checkDependentEligibility, req, res);
+}
+
+/**
+ * setupCreateDependent(req, res)
+ * The callback function for the "/api/v0.3/patrons/dependents" route.
+ *
+ * @param {HTTP request} req
+ * @param {HTTP response} res
+ */
+async function setupCreateDependent(req, res) {
+  return setupEndpoint(createDependent, req, res);
 }
 
 /**
  * checkUsername(req, res)
- * Once all the environment variables are set up, this functions makes a
- * request to get the necessary token to call the ILS. Once that is set up or
- * the token isn't expired, then the following occurs:
- * 1. Basic username validation is checked
+ * 1. Basic username validation is checked.
  * 2. If the username is valid, make a POST request to the ILS to check on
  *   its availability.
  *
@@ -151,29 +221,6 @@ async function setupCheckUsername(req, res) {
  * @param {HTTP response} res
  */
 async function checkUsername(req, res) {
-  const timeNow = new Date();
-  // eslint-disable-next-line max-len
-  const ilsTokenExpired =
-    ilsTokenTimestamp && timeNow - ilsTokenTimestamp > 3540000; // 3540000 = 59 minutes; tokens are for 60 minutes
-  if (!ilsToken || ilsTokenExpired) {
-    getIlsToken(req, res, ilsClientKey, ilsClientPassword).then(() => {
-      checkUsername(req, res);
-    });
-    return;
-  }
-
-  ilsClient =
-    ilsClient ||
-    IlsClient({
-      createUrl: process.env.ILS_CREATE_PATRON_URL,
-      findUrl: process.env.ILS_FIND_VALUE_URL,
-      ilsToken,
-      tokenUrl: process.env.ILS_CREATE_TOKEN_URL,
-      // ilsTokenTimestamp,
-      // ilsClientKey,
-      // ilsClientPassword,
-    });
-
   const { validate } = UsernameValidationAPI({ ilsClient });
   let usernameResponse;
   let status;
@@ -197,98 +244,21 @@ async function checkUsername(req, res) {
 }
 
 /**
- * setupCreatePatron(req, res)
- * The callback for the "/api/v0.3/patrons" route. This will make
- * sure that everything is set up correctly in order to make a request to
- * the ILS. This includes validating environment variables and decrypting
- * AWS keys.
- *
- * @param {HTTP request} req
- * @param {HTTP response} res
- */
-async function setupCreatePatron(req, res) {
-  const hasValidEnvVariables = await checkEnvVariables(
-    req,
-    res,
-    ROUTE_TAG,
-    envVariableNames
-  );
-
-  if (!hasValidEnvVariables) {
-    // `checkEnvVariables` already sent the error response so return the
-    // function so it doesn't continue to process the current request.
-    return;
-  }
-
-  ilsClientKey =
-    ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
-  ilsClientPassword =
-    ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
-
-  Promise.all([ilsClientKey, ilsClientPassword])
-    .then((decryptedValues) => {
-      [ilsClientKey, ilsClientPassword] = decryptedValues;
-      createPatron(req, res);
-    })
-    .catch(() => {
-      const localErrorMessage =
-        "The ILS ClientKey and/or Secret were not decrypted";
-
-      const errorResponseData = modelResponse.errorResponseData(
-        collectErrorResponseData(
-          500,
-          "configuration-error",
-          localErrorMessage,
-          "",
-          ""
-        ) // eslint-disable-line comma-dangle
-      );
-      renderResponse(req, res, 500, errorResponseData);
-    });
-}
-
-/**
  * createPatron(req, res)
- * Once all the environment variables are set up, this functions makes a
- * request to get the necessary token to call the ILS. Once that is set up or
- * the token isn't expired, then the following occurs:
  * 1. An Address, Policy, and Card objects are created from the request.
  * 2. TODO: The Address object is validated to make sure there are no errors
  *   and the address is valid.
  * 3. The Card is validated to make sure there are no errors. This includes
  *   checking to see if the username is valid and available in the ILS.
- * 4. TODO: If all the data is valid, then create a barcode and
- *   associated with the Card.
- * 5. If all the data, including the barcode, is valid, attempt to make a
- *   request to the ILS to create a patron.
+ * 4. If all the data is valid, then create a barcode and associated with
+ *   the Card.
+ * 5. If all the data is valid, attempt to make a request to the ILS to
+ *   create a patron.
  *
  * @param {HTTP request} req
  * @param {HTTP response} res
  */
 async function createPatron(req, res) {
-  const timeNow = new Date();
-  // eslint-disable-next-line max-len
-  const ilsTokenExpired =
-    ilsTokenTimestamp && timeNow - ilsTokenTimestamp > 3540000; // 3540000 = 59 minutes; tokens are for 60 minutes
-  if (!ilsToken || ilsTokenExpired) {
-    getIlsToken(req, res, ilsClientKey, ilsClientPassword).then(() => {
-      createPatron(req, res);
-    });
-    return;
-  }
-
-  ilsClient =
-    ilsClient ||
-    IlsClient({
-      createUrl: process.env.ILS_CREATE_PATRON_URL,
-      findUrl: process.env.ILS_FIND_VALUE_URL,
-      ilsToken,
-      tokenUrl: process.env.ILS_CREATE_TOKEN_URL,
-      // ilsTokenTimestamp,
-      // ilsClientKey,
-      // ilsClientPassword,
-    });
-
   let address = new Address(req.body.address);
   const policy = Policy({ policyType: req.body.policyType || "simplye" });
   const card = new Card({
@@ -371,88 +341,12 @@ async function createPatron(req, res) {
 }
 
 /**
- * setupDependentEligibility(req, res)
- * The callback for the "/api/v0.3/validations/username" route. This will make
- * sure that everything is set up correctly in order to make a request to
- * the ILS. This includes validating environment variables and decrypting
- * AWS keys.
- *
- * @param {HTTP request} req
- * @param {HTTP response} res
- */
-async function setupDependentEligibility(req, res) {
-  const hasValidEnvVariables = await checkEnvVariables(
-    req,
-    res,
-    ROUTE_TAG,
-    envVariableNames
-  );
-
-  if (!hasValidEnvVariables) {
-    // `checkEnvVariables` already sent the error response so return the
-    // function so it doesn't continue to process the current request.
-    return;
-  }
-
-  ilsClientKey =
-    ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
-  ilsClientPassword =
-    ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
-
-  Promise.all([ilsClientKey, ilsClientPassword])
-    .then((decryptedValues) => {
-      [ilsClientKey, ilsClientPassword] = decryptedValues;
-      checkDependentEligibility(req, res);
-    })
-    .catch(() => {
-      const localErrorMessage =
-        "The ILS ClientKey and/or Secret were not decrypted";
-
-      const errorResponseData = modelResponse.errorResponseData(
-        collectErrorResponseData(
-          500,
-          "configuration-error",
-          localErrorMessage,
-          "",
-          ""
-        ) // eslint-disable-line comma-dangle
-      );
-      renderResponse(req, res, 500, errorResponseData);
-    });
-}
-
-/**
  * checkDependentEligibility(req, res)
  *
  * @param {HTTP request} req
  * @param {HTTP response} res
  */
 async function checkDependentEligibility(req, res) {
-  const timeNow = new Date();
-  // eslint-disable-next-line max-len
-  const ilsTokenExpired =
-    ilsTokenTimestamp && timeNow - ilsTokenTimestamp > 3540000; // 3540000 = 59 minutes; tokens are for 60 minutes
-  if (!ilsToken || ilsTokenExpired) {
-    getIlsToken(req, res, ilsClientKey, ilsClientPassword).then(() => {
-      checkDependentEligibility(req, res);
-    });
-    return;
-  }
-
-  ilsClient =
-    ilsClient ||
-    IlsClient({
-      createUrl: process.env.ILS_CREATE_PATRON_URL,
-      findUrl: process.env.ILS_FIND_VALUE_URL,
-      ilsToken,
-      tokenUrl: process.env.ILS_CREATE_TOKEN_URL,
-      // ilsTokenTimestamp,
-      // ilsClientKey,
-      // ilsClientPassword,
-    });
-
-  DependentAccountAPI;
-
   const { isPatronEligible } = DependentAccountAPI({ ilsClient });
   let response;
   const options = {
@@ -480,91 +374,17 @@ async function checkDependentEligibility(req, res) {
 }
 
 /**
- * setupCreateDependent(req, res)
- * The callback for the "/api/v0.3/patrons/dependents" route. This will make
- * sure that everything is set up correctly in order to make a request to
- * the ILS. This includes validating environment variables and decrypting
- * AWS keys.
- *
- * @param {HTTP request} req
- * @param {HTTP response} res
- */
-async function setupCreateDependent(req, res) {
-  const hasValidEnvVariables = await checkEnvVariables(
-    req,
-    res,
-    ROUTE_TAG,
-    envVariableNames
-  );
-
-  if (!hasValidEnvVariables) {
-    // `checkEnvVariables` already sent the error response so return the
-    // function so it doesn't continue to process the current request.
-    return;
-  }
-
-  ilsClientKey =
-    ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
-  ilsClientPassword =
-    ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
-
-  Promise.all([ilsClientKey, ilsClientPassword])
-    .then((decryptedValues) => {
-      [ilsClientKey, ilsClientPassword] = decryptedValues;
-      createDependent(req, res);
-    })
-    .catch(() => {
-      const localErrorMessage =
-        "The ILS ClientKey and/or Secret were not decrypted";
-
-      const errorResponseData = modelResponse.errorResponseData(
-        collectErrorResponseData(
-          500,
-          "configuration-error",
-          localErrorMessage,
-          "",
-          ""
-        ) // eslint-disable-line comma-dangle
-      );
-      renderResponse(req, res, 500, errorResponseData);
-    });
-}
-
-/**
  * createDependent(req, res)
  *
  * @param {HTTP request} req
  * @param {HTTP response} res
  */
 async function createDependent(req, res) {
-  const timeNow = new Date();
-  // eslint-disable-next-line max-len
-  const ilsTokenExpired =
-    ilsTokenTimestamp && timeNow - ilsTokenTimestamp > 3540000; // 3540000 = 59 minutes; tokens are for 60 minutes
-  if (!ilsToken || ilsTokenExpired) {
-    getIlsToken(req, res, ilsClientKey, ilsClientPassword).then(() => {
-      createDependent(req, res);
-    });
-    return;
-  }
-
-  ilsClient =
-    ilsClient ||
-    IlsClient({
-      createUrl: process.env.ILS_CREATE_PATRON_URL,
-      findUrl: process.env.ILS_FIND_VALUE_URL,
-      ilsToken,
-      tokenUrl: process.env.ILS_CREATE_TOKEN_URL,
-      // ilsTokenTimestamp,
-      // ilsClientKey,
-      // ilsClientPassword,
-    });
-
   const {
     isPatronEligible,
     getAlreadyFetchedParentPatron,
     updateParentWithDependent,
-    formatDependentAddress,
+    formatAddressForILS,
   } = DependentAccountAPI({
     ilsClient,
   });
@@ -600,7 +420,7 @@ async function createDependent(req, res) {
   }
 
   // Reformat the address for a new Address object.
-  const formattedAddress = formatDependentAddress(parentPatron.addresses[0]);
+  const formattedAddress = formatAddressForILS(parentPatron.addresses[0]);
   // This varField is needed for the dependent account to associate it with
   // its parent account.
   const varField = {
@@ -722,6 +542,11 @@ async function createDependent(req, res) {
   renderResponse(req, res, response.status, response);
 }
 
+// Note: we are returning a function that calls the setup function with the
+// specific function for the given route. This is because we cannot directly
+// call the setup function or else express will immediately call it.
+// Example, `createPatron: setupCreatePatron` is called because
+// `createPatron: setupEndpoint(createPatron, req, res)` throws an error.
 module.exports = {
   createPatron: setupCreatePatron,
   createDependent: setupCreateDependent,
