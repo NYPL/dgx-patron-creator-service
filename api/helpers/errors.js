@@ -138,6 +138,38 @@ class NotILSValid extends Error {
   }
 }
 
+class SOAuthorizationError extends Error {
+  constructor(code, message = "") {
+    super();
+    this.type = "service-objects-authorization-error";
+    this.name = "SOAuthorizationError";
+    this.code = code;
+    this.message = `SO Authorization Error: ${message}`;
+    this.status = 502;
+  }
+}
+
+class SODomainSpecificError extends Error {
+  constructor(code, message = "") {
+    super();
+    this.type = "service-objects-domain-specific-error";
+    this.name = "SODomainSpecificError";
+    this.code = code;
+    this.message = message;
+    this.status = 502;
+  }
+}
+
+class SOIntegrationError extends Error {
+  constructor(message) {
+    super();
+    this.type = "service-objects-integration-error";
+    this.name = "SOIntegrationError";
+    this.message = message;
+    this.status = 502;
+  }
+}
+
 module.exports = {
   InvalidEnvironmentConfiguration,
   InvalidRequest,
@@ -153,4 +185,7 @@ module.exports = {
   NotEligibleCard,
   BadUsername,
   NotILSValid,
+  SOAuthorizationError,
+  SODomainSpecificError,
+  SOIntegrationError,
 };

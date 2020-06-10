@@ -1,9 +1,9 @@
 /* eslint-disable */
-const AddressValidationApi = require("../../controllers/v0.3/AddressValidationAPI");
+const AddressValidationAPI = require("../../controllers/v0.3/AddressValidationAPI");
 
 /**
  * Creates objects with proper address structure and validates
- * the data against the AddressValidationApi.
+ * the data against the AddressValidationAPI.
  */
 class Address {
   constructor(args = {}) {

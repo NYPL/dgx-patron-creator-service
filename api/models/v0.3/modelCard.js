@@ -1,5 +1,5 @@
 /* eslint-disable */
-const AddressValidationApi = require("../../controllers/v0.3/AddressValidationAPI");
+const AddressValidationAPI = require("../../controllers/v0.3/AddressValidationAPI");
 const UsernameValidationApi = require("../../controllers/v0.3/UsernameValidationAPI");
 const Barcode = require("./modelBarcode");
 const {
@@ -387,7 +387,6 @@ class Card {
         if (isWorkAddress) {
           return false;
         }
-
         return true;
       }
     }
@@ -530,21 +529,19 @@ class Card {
 
 Card.RESPONSES = {
   cardDenied: {
-    type: AddressValidationApi.VALID_ADDRESS_TYPE,
+    type: "valid-address",
     cardType: null,
-    message: `Library cards are only available for residents of New
-      York State or students and commuters working in New York City.`,
+    message: `Library cards are only available for residents of New York State or students and commuters working in New York City.`,
   },
   temporaryCard: {
-    type: AddressValidationApi.VALID_ADDRESS_TYPE,
-    cardType: Card.TEMPORARY_CARD_TYPE,
-    message: `This valid address will result in a temporary library
-      card. You must visit an NYPL branch within the next 30 days to
-      receive a standard card.`,
+    type: "valid-address",
+    cardType: "temporary",
+    message:
+      "This valid address will result in a temporary library card. You must visit an NYPL branch within the next 30 days to receive a standard card.",
   },
   standardCard: {
-    type: AddressValidationApi.VALID_ADDRESS_TYPE,
-    cardType: Card.STANDARD_CARD_TYPE,
+    type: "valid-address",
+    cardType: "standard",
     message: "This valid address will result in a standard library card.",
   },
 };
