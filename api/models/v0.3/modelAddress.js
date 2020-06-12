@@ -47,6 +47,11 @@ class Address {
       return false;
     }
 
+    // If the value is already a boolean, just return it.
+    if (typeof str === "boolean") {
+      return str;
+    }
+
     const vals = ["true", "false"];
     const valsHash = { true: true, false: false };
     let found = "";

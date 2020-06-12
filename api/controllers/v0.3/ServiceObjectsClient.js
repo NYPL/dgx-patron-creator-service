@@ -4,32 +4,27 @@ const {
   SOAuthorizationError,
   SODomainSpecificError,
   SOIntegrationError,
+  SONoLicenseKeyError,
 } = require("../../helpers/errors");
 const logger = require("../../helpers/Logger");
 
 /**
- *
+ * Helper class that calls Service Objects to validate addresses.
  */
-const ServiceObjectsClient = (args) => {
-  const soLicenseKey = args["soLicenseKey"];
+const ServiceObjectsClient = (args = {}) => {
+  const soLicenseKey = args["soLicenseKey"] || "";
   const baseUrl = "https://ws.serviceobjects.com/";
   const backupUrl = "https://wsbackup.serviceobjects.com/";
   const endpoint = "AV3/api.svc/GetBestMatchesJSON";
 
-  if (!soLicenseKey) {
-    throw new SOIntegrationError(
-      "No credentials for Service Objects were passed."
-    );
-  }
-
   /**
    * generateParamString(args)
    * Generates a string to be used as the parameter string for a url. The
-   * object needs to be
-   *
+   * object's key and value pair will be turned into a url parameter:
+   * { key: "value" } => "&key=value"
    * @param {object} args
    */
-  const generateParamString = (args) => {
+  const generateParamString = (args = {}) => {
     return Object.keys(args).reduce(
       (accumulator, key) =>
         accumulator + `&${key}=${encodeURIComponent(args[key])}`,
@@ -38,24 +33,38 @@ const ServiceObjectsClient = (args) => {
   };
 
   /**
-   * validateAddress(address)
+   * createAddressObjforSO(address)
+   * Convert the address to an object with the keys that Service Objects
+   * understands, along with the license key.
    * @param {object} address
    */
-  const validateAddress = async (address) => {
-    // Convert the address to an object with the keys that Service Objects
-    // understands, along with the license key.
-    const paramObject = {
-      Address: address.line1,
-      Address2: address.line2,
-      City: address.city,
-      State: address.state,
-      PostalCode: address.zip,
-      LicenseKey: soLicenseKey,
-    };
-    const paramString = generateParamString(paramObject);
+  const createAddressObjforSO = (address = {}) => ({
+    Address: address.line1 || "",
+    Address2: address.line2 || "",
+    City: address.city || "",
+    State: address.state || "",
+    PostalCode: address.zip || "",
+    LicenseKey: soLicenseKey,
+  });
+
+  /**
+   * validateAddress(address)
+   * This generates the full URL to call Service Objects. It either receives
+   * a validated address response or an error and those are handled in the
+   * `then` clause. Otherwise, errors are thrown and handled.
+   * @param {object} address
+   */
+  const validateAddress = async (address = {}) => {
+    if (!soLicenseKey) {
+      throw new SONoLicenseKeyError(
+        "No credentials for Service Objects were passed."
+      );
+    }
+
+    const addressforSO = createAddressObjforSO(address);
+    const paramString = generateParamString(addressforSO);
     const fullUrl = `${baseUrl}${endpoint}?${paramString}`;
 
-    console.log(fullUrl);
     return await axios
       .get(fullUrl)
       .then((response) => {
@@ -66,10 +75,8 @@ const ServiceObjectsClient = (args) => {
             "Unexpected response status from Service Objects."
           );
         }
-
         const data = response.data["Addresses"];
         const error = response.data["Error"];
-        console.log(data, error);
 
         if (data && data.length) {
           // Return the data and let the callee handle parsing the array
@@ -85,7 +92,8 @@ const ServiceObjectsClient = (args) => {
         }
       })
       .catch((error) => {
-        // If we threw the error, just passing it on by returning it.
+        // If we threw the error, catch it to log it but then pass it
+        // on by throwing it so the callee can catch or render the error.
         if (
           error.type === new SOAuthorizationError().type ||
           error.type === new SODomainSpecificError().type ||
@@ -95,7 +103,7 @@ const ServiceObjectsClient = (args) => {
           throw error;
         }
         // Ah, this is a new and different error.
-        const unknownError = `Error using the Service Objects API: ${error}`;
+        const unknownError = `Error using the Service Objects API: ${error.message}`;
         logger.error(unknownError);
         throw new SOIntegrationError(unknownError);
       });
@@ -104,21 +112,23 @@ const ServiceObjectsClient = (args) => {
   /**
    * throwValidErrorType(error)
    * Parse the error object that is returned from Service Objects and throw
-   * the specific type of error. The error object is in the form of:
-   * { Type: "Authorization",
-   *   TypeCode: "1",
-   *   Desc: "Please provide a valid license key for this web service.",
-   *   DescCode: "1" }
+   * the specific type of error. Specific errors that are being caught are
+   * "Domain Specific Errors" and "Authorization" errors. The error object
+   * is in the form of:
+   *   { Type: "Authorization",
+   *     TypeCode: "1",
+   *     Desc: "Please provide a valid license key for this web service.",
+   *     DescCode: "1" }
    * @param {object} error
    */
   const throwValidErrorType = (error) => {
-    // to test
-    // const err = { Type: "Authorization",
-    //   TypeCode: "4",
-    //   Desc: "Address not found",
-    //   DescCode: "1",
-    // };
-    // throw new SODomainSpecificError(err["DescCode"], err["Desc"]);
+    // This shouldn't happen since this function will only be called if there
+    // is an error object from Service Objects, but just normal error handling.
+    if (!error) {
+      throw new SOIntegrationError(
+        "No Error object from Service Objects. Check ServiceObjectsClient."
+      );
+    }
 
     // Error codes are from the Domain Specific Errors in the Service
     // Objects Address Validation Documentation, which can be found at:
@@ -139,6 +149,7 @@ const ServiceObjectsClient = (args) => {
     ) {
       throw new SODomainSpecificError(error["DescCode"], error["Desc"]);
     } else {
+      // Otherwise, there was some integration error with Service Objects.
       throw new SOIntegrationError(error["Desc"]);
     }
   };
@@ -148,6 +159,7 @@ const ServiceObjectsClient = (args) => {
     // For testing,
     generateParamString,
     throwValidErrorType,
+    createAddressObjforSO,
   };
 };
 

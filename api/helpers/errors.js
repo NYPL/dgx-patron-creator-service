@@ -170,6 +170,16 @@ class SOIntegrationError extends Error {
   }
 }
 
+class SONoLicenseKeyError extends Error {
+  constructor(message) {
+    super();
+    this.type = "service-objects-no-license-key-error";
+    this.name = "SONoLicenseKeyError";
+    this.message = message;
+    this.status = 502;
+  }
+}
+
 module.exports = {
   InvalidEnvironmentConfiguration,
   InvalidRequest,
@@ -188,4 +198,5 @@ module.exports = {
   SOAuthorizationError,
   SODomainSpecificError,
   SOIntegrationError,
+  SONoLicenseKeyError,
 };
