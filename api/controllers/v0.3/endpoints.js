@@ -271,7 +271,7 @@ async function checkAddress(req, res) {
   let status;
   try {
     addressResponse = await validate(req.body.address, req.body.policyType);
-    status = 200;
+    status = addressResponse.status || 200;
   } catch (error) {
     addressResponse = modelResponse.errorResponseData(
       collectErrorResponseData(

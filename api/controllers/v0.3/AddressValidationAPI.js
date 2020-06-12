@@ -60,6 +60,7 @@ const AddressValidationAPI = (args = {}) => {
         throw error;
       } else if (error.name === new SODomainSpecificError().name) {
         response = {
+          status: 400,
           ...RESPONSES["unrecognized_address"],
           message: `${RESPONSES["unrecognized_address"].message} ${error.message}`,
           address,

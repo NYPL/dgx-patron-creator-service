@@ -135,6 +135,7 @@ describe("AddressValidationAPI", () => {
       // ...but `validate` returns a response.
       const response = await validate(rawAddress1);
       expect(response).toEqual({
+        status: 400,
         type: "unrecognized-address",
         message: `Unrecognized address. ${addressNotFound["Desc"]}`,
         address: rawAddress1,
@@ -162,6 +163,7 @@ describe("AddressValidationAPI", () => {
       const { validate } = AddressValidationAPI({ soLicenseKey });
       const response = await validate(rawAddress1);
       expect(response).toEqual({
+        status: 400,
         type: "unrecognized-address",
         message: `Unrecognized address. ${streetNotFound["Desc"]}`,
         address: rawAddress1,
