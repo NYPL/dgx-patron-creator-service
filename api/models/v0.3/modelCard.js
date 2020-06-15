@@ -1,7 +1,8 @@
 /* eslint-disable */
-const AddressValidationAPI = require("../../controllers/v0.3/AddressValidationAPI");
 const UsernameValidationApi = require("../../controllers/v0.3/UsernameValidationAPI");
 const Barcode = require("./modelBarcode");
+const Address = require("./modelAddress");
+
 const {
   DatabaseError,
   MissingRequiredValues,
@@ -23,6 +24,7 @@ const CardValidator = () => {
    *
    * @param {Card object} card
    */
+
   const validate = async (card) => {
     if (card.workAddress) {
       // There is a work address so the home address needs to be present,
@@ -33,10 +35,10 @@ const CardValidator = () => {
       }
 
       // The work address needs to be valid for a card.
-      card = validateAddress(card, "workAddress", true);
+      card = await validateAddress(card, "workAddress", true);
     } else {
       // Without a work address, the home address must be valid for a card.
-      card = validateAddress(card, "address");
+      card = await validateAddress(card, "address");
     }
 
     // Will throw an error if the username is not valid.
@@ -70,9 +72,11 @@ const CardValidator = () => {
    * @param {string} addressType - "address" or "workAddress"
    * @param {boolean} isWorkAddress
    */
-  const validateAddress = (card, addressType, workAddress = null) => {
-    let validAddress = card[addressType].validatedVersion(workAddress);
-
+  const validateAddress = async (card, addressType, workAddress = null) => {
+    let validAddress = await card[addressType].validate(
+      workAddress,
+      card.policy.policyType
+    );
     if (validAddress) {
       // Check card.policy for address limitations.
       if (card.cardDenied(validAddress, workAddress)) {
@@ -141,7 +145,10 @@ const cardValidator = CardValidator();
 class Card {
   constructor(args) {
     this.name = args["name"];
-    this.address = args["address"];
+    this.address =
+      args["address"] instanceof Address
+        ? args["address"]
+        : new Address(args["address"]);
     this.username = args["username"];
     this.pin = args["pin"];
     this.email = args["email"] || "";
@@ -204,6 +211,7 @@ class Card {
     // Now that all values have gone through a basic validation process,
     // do the more in-depth validation.
     const validated = await cardValidator.validate(this);
+
     if (validated.valid) {
       this.valid = true;
     }

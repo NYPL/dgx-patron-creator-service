@@ -270,7 +270,12 @@ async function checkAddress(req, res) {
   let addressResponse;
   let status;
   try {
-    addressResponse = await validate(req.body.address, req.body.policyType);
+    const isWorkAddress = false;
+    addressResponse = await validate(
+      req.body.address,
+      isWorkAddress,
+      req.body.policyType
+    );
     status = addressResponse.status || 200;
   } catch (error) {
     addressResponse = modelResponse.errorResponseData(
@@ -304,7 +309,7 @@ async function checkAddress(req, res) {
  * @param {HTTP response} res
  */
 async function createPatron(req, res) {
-  let address = new Address(req.body.address);
+  let address = new Address(req.body.address, soLicenseKey);
   const policy = Policy({ policyType: req.body.policyType || "simplye" });
   const card = new Card({
     name: req.body.name, // from req
@@ -314,7 +319,7 @@ async function createPatron(req, res) {
     email: req.body.email, // from req
     birthdate: req.body.birthdate, // from req
     ecommunicationsPref: req.body.ecommunicationsPref, // from req
-    policy, //created above
+    policy, // created above
     ilsClient, // created above
     // SimplyE will always set the home library to the `eb` code. Eventually,
     // the web app will pass a `homeLibraryCode` parameter with a patron's

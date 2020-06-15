@@ -5,7 +5,6 @@ const {
   SODomainSpecificError,
   SONoLicenseKeyError,
 } = require("../../helpers/errors");
-const Address = require("../../models/v0.3/modelAddress");
 const { Card } = require("../../models/v0.3/modelCard");
 const Policy = require("../../models/v0.3/modelPolicy");
 
@@ -40,9 +39,14 @@ const AddressValidationAPI = (args = {}) => {
    * Calls the Service Objects client to validate an address and returns a
    * response or throws an error.
    * @param {Object} address
+   * @param {boolean} isWorkAddress
    * @param {string} policyType
    */
-  const validate = async (address, policyType = "simplye") => {
+  const validate = async (
+    address,
+    isWorkAddress = false,
+    policyType = "simplye"
+  ) => {
     if (!soLicenseKey) {
       throw new SONoLicenseKeyError(
         "No credentials for Service Objects were passed in AddressValidationAPI."
@@ -52,7 +56,7 @@ const AddressValidationAPI = (args = {}) => {
     let response;
     try {
       const addresses = await validateAddress(address);
-      response = parseResponse(addresses, address, policyType);
+      response = parseResponse(addresses, address, isWorkAddress, policyType);
     } catch (error) {
       // If there's an authorization error, throw the error. Otherwise, return
       // an "unrecognized address type" response with the error message.
@@ -74,16 +78,16 @@ const AddressValidationAPI = (args = {}) => {
 
   /**
    * createAddressFromResponse(address)
-   * Returns a new Address instance based on the validated address data
-   * returned from Service Objects.
+   * Returns an address object based on the validated address data returned
+   * from Service Objects. This is to make it easier to create Address
+   * instances by updating the key values.
    * @param {object} address
    */
   const createAddressFromResponse = (address) => {
     if (!address) {
       return;
     }
-
-    return new Address({
+    return {
       line1: address["Address1"],
       line2: address["Address2"],
       city: address["City"],
@@ -94,20 +98,20 @@ const AddressValidationAPI = (args = {}) => {
       isResidential: address["IsResidential"],
       // This is from Service Objects, so it's been validated.
       hasBeenValidated: true,
-    });
+    };
   };
 
   /**
    * alternateAddressesResponse(addresses)
-   * Combines all alternate Address instances into a response.
-   * @param {Array} addresses - Array of Address objects
+   * Combines all alternate addresses into a response.
+   * @param {Array} addresses - Array of address objects
+   * @param {object} originalAddress - Address object
    */
-  const alternateAddressesResponse = (addresses = []) => {
-    const alternates = addresses.map((address) => address.address);
-
+  const alternateAddressesResponse = (addresses = [], originalAddress = {}) => {
     return {
       ...RESPONSES["alternate_addresses"],
-      addresses: alternates,
+      addresses,
+      originalAddress,
     };
   };
 
@@ -124,6 +128,7 @@ const AddressValidationAPI = (args = {}) => {
   const parseResponse = (
     addressesParam,
     originalAddress,
+    isWorkAddress = false,
     policyType = "simplye"
   ) => {
     // If no addresses are passed, return an unrecognized address response.
@@ -141,33 +146,35 @@ const AddressValidationAPI = (args = {}) => {
     // ambiguous and Service Objects has identified multiple potential
     // alternate addresses.
     if (addresses.length > 1) {
-      return alternateAddressesResponse(addresses);
+      return alternateAddressesResponse(addresses, originalAddress);
     }
 
     const validatedAddress = addresses[0];
     let response = {
       ...RESPONSES["valid_address"],
-      address: validatedAddress.address,
+      address: validatedAddress,
       originalAddress,
     };
 
-    // Initialize a patron/card object to determine card_type by policy.
+    // Initialize a patron/card object to determine cardType by policy.
     const card = new Card({
-      address: validatedAddress.address,
+      address: validatedAddress,
       policy: Policy({ policyType }),
     });
-    let policyResponse = card.checkCardTypePolicy(validatedAddress, false);
+    let policyResponse = card.checkCardTypePolicy(card.address, isWorkAddress);
 
     // Before it checked if it got an unauthorized error, but it can't get both
     // unauthorized and a validated address...
-    if (validatedAddress.inState(card.policy)) {
-      policyResponse = Card.RESPONSES["temporaryCard"];
-    }
+    // if (card.address.inState(card.policy)) {
+    //   policyResponse = Card.RESPONSES["temporaryCard"];
+    // }
 
     response = {
       ...response,
       ...policyResponse,
     };
+
+    delete response.address.hasBeenValidated;
 
     return response;
   };

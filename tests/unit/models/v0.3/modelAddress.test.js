@@ -1,6 +1,8 @@
 /* eslint-disable */
+const AddressValidationAPI = require("../../../../api/controllers/v0.3/AddressValidationAPI");
 const Address = require("../../../../api/models/v0.3/modelAddress");
 const Policy = require("../../../../api/models/v0.3/modelPolicy");
+jest.mock("../../../../api/controllers/v0.3/AddressValidationAPI");
 
 const emptyAddress = {
   line1: "",
@@ -37,7 +39,7 @@ describe("Address", () => {
       });
     });
 
-    it("returns an error if the two address lines are too long", () => {
+    it("returns an error if the two address lines are too long", async () => {
       const address = new Address({
         line1:
           "some very long line to throw a validation error for the address",
@@ -45,9 +47,10 @@ describe("Address", () => {
         city: "New York City",
         state: "New York",
       });
-      expect(address.validate()).toEqual(false);
+      const response = await address.validate();
+      expect(response).toEqual(false);
       expect(address.errors).toEqual({
-        line1: "Address lines must be less than 100 characters combined",
+        line1: "Address lines must be less than 100 characters combined.",
       });
     });
   });
@@ -280,25 +283,38 @@ describe("Address", () => {
     // TODO: when AddressValidationApi is implemented
     describe("validationResponse", () => {});
 
-    describe("validatedVersion", () => {
-      it("should return the current address if it already has been validated", () => {
+    // TODO: redo
+    describe("validate", () => {
+      it("should return the current address if it already has been validated", async () => {
+        AddressValidationAPI.mockImplementation(() => {
+          validate: () => Promise.resolve({ type: "valid-address " });
+        });
         // mock that the address is valid and has been validated.
         const address = new Address({
           hasBeenValidated: true,
         });
-        expect(address.validatedVersion()).toEqual(address);
+        const validateInAPISpy = jest.spyOn(address, "validateInAPI");
+        const resp = await address.validate();
+
+        // If the address has already been validated, then "validatedInAPI"
+        // won't be called.
+        expect(validateInAPISpy).not.toHaveBeenCalled();
+        expect(resp).toEqual(address);
       });
 
-      it("should return undefined if the address is not valid", () => {
+      it("should return undefined if the address is not valid", async () => {
         // mock that the address is valid and has been validated.
         const address = new Address({
           line1: "not valid address",
         });
-        address.validationResponse = jest.fn().mockReturnValue(undefined);
-        expect(address.validatedVersion()).toEqual(undefined);
+        address.validateInAPI = jest
+          .fn()
+          .mockReturnValue({ response: "something" });
+        const resp = await address.validate();
+        expect(resp).toEqual(undefined);
       });
 
-      it("should try to validate the address and succeeded", () => {
+      it("should try to validate the address and succeeded", async () => {
         const address = new Address({
           line1: "some address",
         });
@@ -307,9 +323,9 @@ describe("Address", () => {
 
         // Mock for now
         address.hasBeenValidated = true;
-        address.validationResponse = jest.fn().mockReturnValue(address);
+        address.validateInAPI = jest.fn().mockReturnValue(address);
 
-        let validatedVersion = address.validatedVersion();
+        let validatedVersion = await address.validate();
         expect(validatedVersion.hasBeenValidated).toEqual(true);
         expect(validatedVersion).toEqual(address);
       });

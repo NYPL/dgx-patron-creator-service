@@ -6,7 +6,7 @@ const AddressValidationAPI = require("../../controllers/v0.3/AddressValidationAP
  * the data against the AddressValidationAPI.
  */
 class Address {
-  constructor(args = {}) {
+  constructor(args = {}, soLicenseKey = "") {
     this.address = {
       line1: args.line1 || "",
       line2: args.line2 || "",
@@ -17,22 +17,9 @@ class Address {
       isResidential: this.strToBool(args.isResidential),
     };
     this.errors = {};
+    this.soLicenseKey = soLicenseKey;
     // Only set in the API call
     this.hasBeenValidated = args.hasBeenValidated || false;
-  }
-
-  /**
-   * validate()
-   * Simple validation to make sure the address length is the proper length.
-   */
-  validate() {
-    const fullAddressLength = (this.address.line1 + this.address.line2).length;
-    if (fullAddressLength > 100) {
-      this.errors["line1"] =
-        "Address lines must be less than 100 characters combined";
-      return false;
-    }
-    return true;
   }
 
   /**
@@ -106,11 +93,9 @@ class Address {
    * two-line addres string.
    */
   toString() {
-    const address = this.address;
-    const streetInfo = `${address.line1}${
-      address.line2.length > 0 ? `, ${address.line2}` : address.line2
-    }`;
-    const cityInfo = `${address.city}, ${address.state} ${address.zip}`;
+    const { line1, line2, city, state, zip } = this.address;
+    const streetInfo = `${line1}${line2.length > 0 ? `, ${line2}` : line2}`;
+    const cityInfo = `${city}, ${state} ${zip}`;
     return `${streetInfo}\n${cityInfo}`;
   }
 
@@ -151,37 +136,40 @@ class Address {
   }
 
   /**
-   * validationResponse(isWorkAddress)
-   * TODO: Need to call validation API to validate the address
-   * which depends on Service Objects.
-   *
+   * validateInAPI(isWorkAddress)
    * @param {boolean} isWorkAddress
    */
-  validationResponse(isWorkAddress = undefined) {
-    // const { responses, validate } = AddressValidationAPI({ ilsClient });
-    // let validAddress = await validate(this.address);
-    // if false return null;
-    return true;
+  async validateInAPI(isWorkAddress = false, policyType = "simplye") {
+    const { validate } = AddressValidationAPI({
+      soLicenseKey: this.soLicenseKey,
+    });
+    let response = await validate(this.address, isWorkAddress, policyType);
+    return response;
   }
 
   /**
-   * validatedVersion(isWorkAddress)
-   * Creates a validated address with updated attributes from
-   * the validation process.
-   *
+   * validate(isWorkAddress)
+   * Simple validation to make sure the address length is the proper length. If
+   * it is, it then validates the address in Service Objects.
    * @param {boolean} isWorkAddress
    */
-  validatedVersion(isWorkAddress = undefined) {
+  async validate(isWorkAddress = false, policyType = "simplye") {
+    const fullAddressLength = (this.address.line1 + this.address.line2).length;
+    if (fullAddressLength > 100) {
+      this.errors["line1"] =
+        "Address lines must be less than 100 characters combined.";
+      return false;
+    }
     // return the current address since it's already validated;
     if (this.hasBeenValidated) {
       return this;
     }
 
     // Check to see if address is valid
-    const validation = this.validationResponse(isWorkAddress);
+    const validation = await this.validateInAPI(isWorkAddress, policyType);
     // TODO if validation error return; integration error
-
-    if (validation) {
+    // const validation = true;
+    if (validation.type === "valid-address") {
       this.hasBeenValidated = true;
 
       return this;
