@@ -94,18 +94,21 @@ const ServiceObjectsClient = (args = {}) => {
       .catch((error) => {
         // If we threw the error, catch it to log it but then pass it
         // on by throwing it so the callee can catch or render the error.
+        const badAddress = `${address.line1} ${address.line2}, ${address.city}, ${address.state} ${address.zip}`;
+        const errorMessage = `Error using the Service Objects API: ${error.message}`;
+
+        logger.error(`Error using the Service Objects API: ${error.message}`);
+        logger.error(`Bad address - ${badAddress}`);
+
         if (
           error.type === new SOAuthorizationError().type ||
           error.type === new SODomainSpecificError().type ||
           error.type === new SOIntegrationError().type
         ) {
-          logger.error(error.message);
           throw error;
         }
         // Ah, this is a new and different error.
-        const unknownError = `Error using the Service Objects API: ${error.message}`;
-        logger.error(unknownError);
-        throw new SOIntegrationError(unknownError);
+        throw new SOIntegrationError(errorMessage);
       });
   };
 
