@@ -466,20 +466,11 @@ class Card {
    */
   checkCardTypePolicy(validAddress, workAddress = null) {
     if (this.cardDenied(validAddress, workAddress)) {
-      return {
-        ...Card.RESPONSES["cardDenied"],
-        address: validAddress.address,
-      };
+      return Card.RESPONSES["cardDenied"];
     } else if (validAddress.addressForTemporaryCard(workAddress)) {
-      return {
-        ...Card.RESPONSES["temporaryCard"],
-        address: validAddress.address,
-      };
+      return Card.RESPONSES["temporaryCard"];
     } else {
-      return {
-        ...Card.RESPONSES["standardCard"],
-        address: validAddress.address,
-      };
+      return Card.RESPONSES["standardCard"];
     }
   }
 
@@ -537,18 +528,16 @@ class Card {
 
 Card.RESPONSES = {
   cardDenied: {
-    type: "valid-address",
     cardType: null,
-    message: `Library cards are only available for residents of New York State or students and commuters working in New York City.`,
+    message:
+      "Library cards are only available for residents of New York State or students and commuters working in New York City.",
   },
   temporaryCard: {
-    type: "valid-address",
     cardType: "temporary",
     message:
-      "This valid address will result in a temporary library card. You must visit an NYPL branch within the next 30 days to receive a standard card.",
+      "This address will result in a temporary library card. You must visit an NYPL branch within the next 30 days to receive a standard card.",
   },
   standardCard: {
-    type: "valid-address",
     cardType: "standard",
     message: "This valid address will result in a standard library card.",
   },

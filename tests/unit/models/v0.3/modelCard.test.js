@@ -928,10 +928,9 @@ describe('Card', () => {
 
       // The card must be denied to get the right response.
       expect(card.cardDenied(card.address)).toEqual(true);
-      expect(card.checkCardTypePolicy(card.address)).toEqual({
-        ...Card.RESPONSES.cardDenied,
-        address: card.address.address,
-      });
+      expect(card.checkCardTypePolicy(card.address)).toEqual(
+        Card.RESPONSES.cardDenied,
+      );
     });
 
     it('returns a temporary card for residential work addresses', () => {
@@ -946,10 +945,9 @@ describe('Card', () => {
       });
       const isWorkAddress = true;
 
-      expect(card.checkCardTypePolicy(card.address, isWorkAddress)).toEqual({
-        ...Card.RESPONSES.temporaryCard,
-        address: card.address.address,
-      });
+      expect(card.checkCardTypePolicy(card.address, isWorkAddress)).toEqual(
+        Card.RESPONSES.temporaryCard,
+      );
     });
 
     it('returns a temporary card for non-residential home addresses', () => {
@@ -964,10 +962,9 @@ describe('Card', () => {
       });
       const isWorkAddress = false;
 
-      expect(card.checkCardTypePolicy(card.address, isWorkAddress)).toEqual({
-        ...Card.RESPONSES.temporaryCard,
-        address: card.address.address,
-      });
+      expect(card.checkCardTypePolicy(card.address, isWorkAddress)).toEqual(
+        Card.RESPONSES.temporaryCard,
+      );
     });
 
     it('returns a standard card', () => {
@@ -982,10 +979,9 @@ describe('Card', () => {
       });
       const isWorkAddress = false;
 
-      expect(card.checkCardTypePolicy(card.address, isWorkAddress)).toEqual({
-        ...Card.RESPONSES.standardCard,
-        address: card.address.address,
-      });
+      expect(card.checkCardTypePolicy(card.address, isWorkAddress)).toEqual(
+        Card.RESPONSES.standardCard,
+      );
     });
   });
 

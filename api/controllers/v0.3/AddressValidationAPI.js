@@ -7,6 +7,7 @@ const {
 } = require("../../helpers/errors");
 const { Card } = require("../../models/v0.3/modelCard");
 const Policy = require("../../models/v0.3/modelPolicy");
+const Address = require("../../models/v0.3/modelAddress");
 
 /**
  * A class that uses Service Objects to validate addresses.
@@ -54,25 +55,25 @@ const AddressValidationAPI = (args = {}) => {
     }
 
     let response;
+    let addresses = [];
+    let errors = {};
+
     try {
-      const addresses = await validateAddress(address);
-      response = parseResponse(addresses, address, isWorkAddress, policyType);
+      addresses = await validateAddress(address);
     } catch (error) {
-      // If there's an authorization error, throw the error. Otherwise, return
-      // an "unrecognized address type" response with the error message.
-      if (error.name === new SOAuthorizationError().name) {
-        throw error;
-      } else if (error.name === new SODomainSpecificError().name) {
-        response = {
-          status: 400,
-          ...RESPONSES["unrecognized_address"],
-          message: `${RESPONSES["unrecognized_address"].message} ${error.message}`,
-          address,
-        };
-      } else {
-        throw error;
-      }
+      // Destructuring the error object since we want the contents and not
+      // the error object itself.
+      errors = { ...error };
     }
+
+    response = parseResponse(
+      addresses,
+      errors,
+      address,
+      isWorkAddress,
+      policyType
+    );
+
     return response;
   };
 
@@ -87,7 +88,7 @@ const AddressValidationAPI = (args = {}) => {
     if (!address) {
       return;
     }
-    return {
+    return new Address({
       line1: address["Address1"],
       line2: address["Address2"],
       city: address["City"],
@@ -98,7 +99,7 @@ const AddressValidationAPI = (args = {}) => {
       isResidential: address["IsResidential"],
       // This is from Service Objects, so it's been validated.
       hasBeenValidated: true,
-    };
+    });
   };
 
   /**
@@ -122,59 +123,76 @@ const AddressValidationAPI = (args = {}) => {
    * the policy needed for the correct account type. A response for that
    * address and policy is then returned.
    * @param {Array} addressesParam
+   * @param {Object} errorParam
    * @param {Object} originalAddress
+   * @param {boolean} isWorkAddress
    * @param {string} policyType
    */
   const parseResponse = (
     addressesParam,
+    errorParam = {},
     originalAddress,
     isWorkAddress = false,
     policyType = "simplye"
   ) => {
-    // If no addresses are passed, return an unrecognized address response.
-    // This step is covered before in the API call and shouldn't happen but
-    // handled here just in case.
-    if (!addressesParam || !addressesParam.length) {
-      return {
+    let policyResponse = {};
+    let errorResponse = {};
+    let response = {};
+    let addressToCheck;
+
+    if ((errorParam && errorParam.message) || !addressesParam) {
+      errorResponse = {
+        status: 400,
         ...RESPONSES["unrecognized_address"],
-        address: originalAddress,
+        originalAddress,
+        error: errorParam,
       };
     }
 
-    const addresses = addressesParam.map(createAddressFromResponse);
-    // If more than one address is returned, the original address was
-    // ambiguous and Service Objects has identified multiple potential
-    // alternate addresses.
-    if (addresses.length > 1) {
-      return alternateAddressesResponse(addresses, originalAddress);
+    // SO succeeded and returned one or more validated addresses.
+    if (addressesParam && addressesParam.length) {
+      const addresses = addressesParam.map(createAddressFromResponse);
+      // If more than one address is returned, the original address was
+      // ambiguous and Service Objects has identified multiple potential
+      // alternate addresses.
+      if (addresses.length > 1) {
+        return {
+          status: 400,
+          ...alternateAddressesResponse(addresses),
+          originalAddress,
+        };
+      }
+
+      const validatedAddress = addresses[0];
+      addressToCheck = validatedAddress;
+      // The address has been validated by SO. We still need to check if
+      // the policy allows for a standard or temporary card or none.
+      response = {
+        ...RESPONSES["valid_address"],
+        address: validatedAddress.address,
+        originalAddress,
+      };
+    } else {
+      // SO returned an error but let's get a policy response for the
+      // address that hasn't gone through validation. This address will be
+      // considered as an "unrecognized-address" type since it couldn't go
+      // through the SO validation check.
+      const unconfirmedAddress = new Address(originalAddress);
+      addressToCheck = unconfirmedAddress;
     }
-
-    const validatedAddress = addresses[0];
-    let response = {
-      ...RESPONSES["valid_address"],
-      address: validatedAddress,
-      originalAddress,
-    };
-
     // Initialize a patron/card object to determine cardType by policy.
     const card = new Card({
-      address: validatedAddress,
+      address: addressToCheck.address,
       policy: Policy({ policyType }),
     });
-    let policyResponse = card.checkCardTypePolicy(card.address, isWorkAddress);
+    policyResponse = card.checkCardTypePolicy(addressToCheck, isWorkAddress);
 
-    // Before it checked if it got an unauthorized error, but it can't get both
-    // unauthorized and a validated address...
-    // if (card.address.inState(card.policy)) {
-    //   policyResponse = Card.RESPONSES["temporaryCard"];
-    // }
-
+    // Merge all the responses.
     response = {
       ...response,
+      ...errorResponse,
       ...policyResponse,
     };
-
-    delete response.address.hasBeenValidated;
 
     return response;
   };
