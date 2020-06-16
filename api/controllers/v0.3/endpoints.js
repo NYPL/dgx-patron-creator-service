@@ -1,6 +1,7 @@
 /* eslint-disable */
 const modelResponse = require("../../models/v0.3/modelResponse");
 const UsernameValidationAPI = require("./UsernameValidationAPI");
+const AddressValidationAPI = require("./AddressValidationAPI");
 const axios = require("axios");
 const awsDecrypt = require("./../../../config/awsDecrypt.js");
 const IlsClient = require("./IlsClient");
@@ -34,6 +35,7 @@ let ilsClientSecret;
 let ilsToken;
 let ilsTokenTimestamp;
 let ilsClient;
+let soLicenseKey;
 const envVariableNames = [
   "ILS_CLIENT_KEY",
   "ILS_CLIENT_SECRET",
@@ -43,6 +45,7 @@ const envVariableNames = [
   "ILS_FIND_VALUE_URL",
   "PATRON_STREAM_NAME_V03",
   "PATRON_SCHEMA_NAME_V03",
+  "SO_LICENSE_KEY",
 ];
 
 /**
@@ -122,9 +125,11 @@ async function setupEndpoint(endpointFn, req, res) {
     ilsClientSecret =
       ilsClientSecret ||
       (await awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET));
+    soLicenseKey =
+      soLicenseKey || (await awsDecrypt.decryptKMS(process.env.SO_LICENSE_KEY));
   } catch (error) {
     const localErrorMessage =
-      "The ILS ClientKey and/or Secret were not decrypted";
+      "The ILS client key and/or secret, or the Service Objects license key were not decrypted";
 
     const errorResponseData = modelResponse.errorResponseData(
       collectErrorResponseData(
@@ -176,6 +181,17 @@ async function setupEndpoint(endpointFn, req, res) {
  */
 async function setupCheckUsername(req, res) {
   return setupEndpoint(checkUsername, req, res);
+}
+
+/**
+ * setupCheckAddress(req, res)
+ * The callback function for the "/api/v0.3/validations/address" route.
+ *
+ * @param {HTTP request} req
+ * @param {HTTP response} res
+ */
+async function setupCheckAddress(req, res) {
+  return setupEndpoint(checkAddress, req, res);
 }
 
 /**
@@ -241,6 +257,35 @@ async function checkUsername(req, res) {
   }
 
   renderResponse(req, res, status, usernameResponse);
+}
+
+/**
+ * checkAddress(req, res)
+ *
+ * @param {HTTP request} req
+ * @param {HTTP response} res
+ */
+async function checkAddress(req, res) {
+  const { validate } = AddressValidationAPI({ soLicenseKey });
+  let addressResponse;
+  let status;
+  try {
+    addressResponse = await validate(req.body.address, req.body.policyType);
+    status = addressResponse.status || 200;
+  } catch (error) {
+    addressResponse = modelResponse.errorResponseData(
+      collectErrorResponseData(
+        error.status,
+        error.type || "",
+        error.message,
+        "",
+        ""
+      ) // eslint-disable-line comma-dangle
+    );
+    status = addressResponse.status;
+  }
+
+  renderResponse(req, res, status, addressResponse);
 }
 
 /**
@@ -552,4 +597,5 @@ module.exports = {
   createDependent: setupCreateDependent,
   checkUsername: setupCheckUsername,
   checkDependentEligibility: setupDependentEligibility,
+  checkAddress: setupCheckAddress,
 };
