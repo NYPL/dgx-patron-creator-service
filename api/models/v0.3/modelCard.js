@@ -66,7 +66,7 @@ const CardValidator = () => {
   /**
    * validateAddress(card, addressType, workAddress)
    * Returns the card object with updated validated address or errors based
-   * on policy and ILS verification.
+   * on policy and Service Objects verification.
    *
    * @param {Card object} card
    * @param {string} addressType - "address" or "workAddress"
@@ -180,15 +180,10 @@ class Card {
     this.barcode = undefined;
     this.ptype = undefined;
     this.patronId = undefined;
-    this.hasValidName = undefined;
     this.hasValidUsername = undefined;
     this.expirationDate = undefined;
     this.agency = undefined;
     this.valid = false;
-
-    // Card types for /validate/* responses
-    this.TEMPORARY_CARD_TYPE = "temporary";
-    this.STANDARD_CARD_TYPE = "standard";
   }
 
   /**
@@ -383,11 +378,8 @@ class Card {
     }
 
     // False if patron provides a home address that is not residential
-    // False if patron does not have a recognized name
     // False if patron policy is not the default (simplye)
-    return (
-      this.address.isResidential && this.hasValidName && this.policy.isDefault
-    );
+    return this.address.isResidential && this.policy.isDefault;
   }
 
   /**

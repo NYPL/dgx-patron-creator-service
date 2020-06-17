@@ -1,12 +1,6 @@
 /* eslint-disable */
 const ServiceObjectsClient = require("./ServiceObjectsClient");
-const { Card } = require("../../models/v0.3/modelCard");
-const Policy = require("../../models/v0.3/modelPolicy");
-const {
-  SOAuthorizationError,
-  SODomainSpecificError,
-  SONoLicenseKeyError,
-} = require("../../helpers/errors");
+const { SONoLicenseKeyError } = require("../../helpers/errors");
 
 /**
  * A class that uses Service Objects to validate addresses.

@@ -11,9 +11,6 @@ const UsernameValidationAPI = (args) => {
   const UNAVAILABLE_USERNAME_TYPE = "unavailable-username";
   const INVALID_USERNAME_TYPE = "invalid-username";
 
-  const STANDARD_CARD_TYPE = "standard";
-  const TEMPORARY_CARD_TYPE = "temporary";
-
   const RESPONSES = {
     invalid: {
       type: INVALID_USERNAME_TYPE,
@@ -28,7 +25,7 @@ const UsernameValidationAPI = (args) => {
     },
     available: {
       type: AVAILABLE_USERNAME_TYPE,
-      cardType: STANDARD_CARD_TYPE,
+      cardType: "standard",
       message: "This username is available.",
     },
   };
