@@ -136,15 +136,14 @@ class Address {
   }
 
   /**
-   * validateInAPI(isWorkAddress)
-   * @param {boolean} isWorkAddress
+   * validateInAPI()
    */
-  async validateInAPI(isWorkAddress = false, policyType = "simplye") {
+  async validateInAPI() {
     const { validate } = AddressValidationAPI({
       soLicenseKey: this.soLicenseKey,
     });
-    let response = await validate(this.address, isWorkAddress, policyType);
-    return response;
+
+    return await validate(this.address);
   }
 
   /**
@@ -165,18 +164,12 @@ class Address {
       return this;
     }
 
-    // Check to see if address is valid
-    const validation = await this.validateInAPI(isWorkAddress, policyType);
-    // TODO if validation error return; integration error
-    // const validation = true;
+    const validation = await this.validateInAPI();
     if (validation.type === "valid-address") {
       this.hasBeenValidated = true;
-
-      return this;
     }
 
-    // The address is not valid so return undefined.
-    return;
+    return validation;
   }
 }
 

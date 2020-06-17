@@ -1,13 +1,12 @@
 /* eslint-disable */
 const ServiceObjectsClient = require("./ServiceObjectsClient");
+const { Card } = require("../../models/v0.3/modelCard");
+const Policy = require("../../models/v0.3/modelPolicy");
 const {
   SOAuthorizationError,
   SODomainSpecificError,
   SONoLicenseKeyError,
 } = require("../../helpers/errors");
-const { Card } = require("../../models/v0.3/modelCard");
-const Policy = require("../../models/v0.3/modelPolicy");
-const Address = require("../../models/v0.3/modelAddress");
 
 /**
  * A class that uses Service Objects to validate addresses.
@@ -36,18 +35,12 @@ const AddressValidationAPI = (args = {}) => {
   };
 
   /**
-   * validate(address, policyType)
+   * validate(address)
    * Calls the Service Objects client to validate an address and returns a
-   * response or throws an error.
+   * response with the type of address it is, even if SO is not callable.
    * @param {Object} address
-   * @param {boolean} isWorkAddress
-   * @param {string} policyType
    */
-  const validate = async (
-    address,
-    isWorkAddress = false,
-    policyType = "simplye"
-  ) => {
+  const validate = async (address) => {
     if (!soLicenseKey) {
       throw new SONoLicenseKeyError(
         "No credentials for Service Objects were passed in AddressValidationAPI."
@@ -66,13 +59,7 @@ const AddressValidationAPI = (args = {}) => {
       errors = { ...error };
     }
 
-    response = parseResponse(
-      addresses,
-      errors,
-      address,
-      isWorkAddress,
-      policyType
-    );
+    response = parseResponse(addresses, errors, address);
 
     return response;
   };
@@ -88,7 +75,7 @@ const AddressValidationAPI = (args = {}) => {
     if (!address) {
       return;
     }
-    return new Address({
+    return {
       line1: address["Address1"],
       line2: address["Address2"],
       city: address["City"],
@@ -99,7 +86,7 @@ const AddressValidationAPI = (args = {}) => {
       isResidential: address["IsResidential"],
       // This is from Service Objects, so it's been validated.
       hasBeenValidated: true,
-    });
+    };
   };
 
   /**
@@ -117,7 +104,7 @@ const AddressValidationAPI = (args = {}) => {
   };
 
   /**
-   * parseResponse(addressParam, originalAddress, policyType)
+   * parseResponse(addressParam, originalAddress)
    * If there are alternate addresses, then a response with those addresses
    * is returned. Otherwise, there's only one address and it's used to find
    * the policy needed for the correct account type. A response for that
@@ -125,20 +112,10 @@ const AddressValidationAPI = (args = {}) => {
    * @param {Array} addressesParam
    * @param {Object} errorParam
    * @param {Object} originalAddress
-   * @param {boolean} isWorkAddress
-   * @param {string} policyType
    */
-  const parseResponse = (
-    addressesParam,
-    errorParam = {},
-    originalAddress,
-    isWorkAddress = false,
-    policyType = "simplye"
-  ) => {
-    let policyResponse = {};
+  const parseResponse = (addressesParam, errorParam = {}, originalAddress) => {
     let errorResponse = {};
     let response = {};
-    let addressToCheck;
 
     if ((errorParam && errorParam.message) || !addressesParam) {
       errorResponse = {
@@ -163,35 +140,22 @@ const AddressValidationAPI = (args = {}) => {
         };
       }
 
+      // Otherwise, there's only one validated address.
       const validatedAddress = addresses[0];
-      addressToCheck = validatedAddress;
+
       // The address has been validated by SO. We still need to check if
       // the policy allows for a standard or temporary card or none.
       response = {
         ...RESPONSES["valid_address"],
-        address: validatedAddress.address,
+        address: validatedAddress,
         originalAddress,
       };
-    } else {
-      // SO returned an error but let's get a policy response for the
-      // address that hasn't gone through validation. This address will be
-      // considered as an "unrecognized-address" type since it couldn't go
-      // through the SO validation check.
-      const unconfirmedAddress = new Address(originalAddress);
-      addressToCheck = unconfirmedAddress;
     }
-    // Initialize a patron/card object to determine cardType by policy.
-    const card = new Card({
-      address: addressToCheck.address,
-      policy: Policy({ policyType }),
-    });
-    policyResponse = card.checkCardTypePolicy(addressToCheck, isWorkAddress);
 
     // Merge all the responses.
     response = {
       ...response,
       ...errorResponse,
-      ...policyResponse,
     };
 
     return response;

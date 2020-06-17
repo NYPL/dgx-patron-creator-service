@@ -1,7 +1,7 @@
 /* eslint-disable */
 const UsernameValidationApi = require("../../controllers/v0.3/UsernameValidationAPI");
-const Barcode = require("./modelBarcode");
 const Address = require("./modelAddress");
+const Barcode = require("./modelBarcode");
 
 const {
   DatabaseError,
@@ -77,16 +77,26 @@ const CardValidator = () => {
       workAddress,
       card.policy.policyType
     );
-    if (validAddress) {
+
+    // Do what you need to do with this:
+    // policyResponse = card.checkCardTypePolicy(validAddress, isWorkAddress);
+    if (validAddress.address) {
+      const address = new Address(
+        {
+          ...validAddress.address,
+          hasBeenValidated: validAddress.address.hasBeenValidated,
+        },
+        card[addressType].soLicenseKey
+      );
       // Check card.policy for address limitations.
-      if (card.cardDenied(validAddress, workAddress)) {
+      if (card.cardDenied(address, workAddress)) {
         const message = Card.RESPONSES["cardDenied"]["message"];
         card.errors[addressType] = message;
-      } else if (validAddress.addressForTemporaryCard(workAddress)) {
+      } else if (address.addressForTemporaryCard(workAddress)) {
         card.setTemporary();
       }
       // Reset the card's address type input to the validated version.
-      card[addressType] = validAddress;
+      card[addressType] = address;
     } else {
       card.errors[addressType] = UNVALIDATED_ADDRESS_ERROR;
     }
@@ -176,7 +186,6 @@ class Card {
     this.agency = undefined;
     this.valid = false;
 
-    this.nameValidationDisabled = true;
     // Card types for /validate/* responses
     this.TEMPORARY_CARD_TYPE = "temporary";
     this.STANDARD_CARD_TYPE = "standard";
@@ -458,16 +467,15 @@ class Card {
   }
 
   /**
-   * checkCardTypePolicy(validAddress, workAddress)
+   * checkCardTypePolicy(workAddress)
    * Returns a response object based on the type of card that is set.
    *
-   * @param {Address object} validAddress
    * @param {boolean} workAddress
    */
-  checkCardTypePolicy(validAddress, workAddress = null) {
-    if (this.cardDenied(validAddress, workAddress)) {
+  checkCardTypePolicy(workAddress = false) {
+    if (this.cardDenied(this.address, workAddress)) {
       return Card.RESPONSES["cardDenied"];
-    } else if (validAddress.addressForTemporaryCard(workAddress)) {
+    } else if (this.address.addressForTemporaryCard(workAddress)) {
       return Card.RESPONSES["temporaryCard"];
     } else {
       return Card.RESPONSES["standardCard"];
