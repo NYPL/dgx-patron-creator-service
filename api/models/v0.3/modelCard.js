@@ -73,10 +73,7 @@ const CardValidator = () => {
    * @param {boolean} isWorkAddress
    */
   const validateAddress = async (card, addressType, workAddress = null) => {
-    let validAddress = await card[addressType].validate(
-      workAddress,
-      card.policy.policyType
-    );
+    let validAddress = await card[addressType].validate();
 
     if (validAddress.address) {
       const address = new Address(

@@ -150,9 +150,8 @@ class Address {
    * validate(isWorkAddress)
    * Simple validation to make sure the address length is the proper length. If
    * it is, it then validates the address in Service Objects.
-   * @param {boolean} isWorkAddress
    */
-  async validate(isWorkAddress = false, policyType = "simplye") {
+  async validate() {
     const fullAddressLength = (this.address.line1 + this.address.line2).length;
     if (fullAddressLength > 100) {
       this.errors["line1"] =
