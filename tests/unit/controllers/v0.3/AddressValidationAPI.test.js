@@ -95,8 +95,10 @@ describe("AddressValidationAPI", () => {
 
       const response = await validate(rawAddress1);
 
+      // The response is a validation of the address, this is then passed to
+      // the next step which checks for policy and if it's eligible for a
+      // temporary card, but not a responsibility of this API.
       expect(response).toEqual({
-        cardType: "temporary",
         error: {
           code: "1",
           message:
@@ -105,9 +107,7 @@ describe("AddressValidationAPI", () => {
           status: 502,
           type: "service-objects-authorization-error",
         },
-        // The address is in NYS so it will return a temporary card.
-        message:
-          "This address will result in a temporary library card. You must visit an NYPL branch within the next 30 days to receive a standard card.",
+        message: "Unrecognized address.",
         originalAddress: {
           city: "New York",
           line1: "476 5th Avenue",
@@ -132,15 +132,13 @@ describe("AddressValidationAPI", () => {
       // And it bubbles up to the `validate` call.
       const response = await validate(rawAddress1);
       expect(response).toEqual({
-        cardType: "temporary",
         error: {
           message: "something went wrong",
           name: "SOIntegrationError",
           status: 502,
           type: "service-objects-integration-error",
         },
-        message:
-          "This address will result in a temporary library card. You must visit an NYPL branch within the next 30 days to receive a standard card.",
+        message: "Unrecognized address.",
         originalAddress: {
           city: "New York",
           line1: "476 5th Avenue",
@@ -184,9 +182,7 @@ describe("AddressValidationAPI", () => {
           status: 502,
           type: "service-objects-domain-specific-error",
         },
-        cardType: "temporary",
-        message:
-          "This address will result in a temporary library card. You must visit an NYPL branch within the next 30 days to receive a standard card.",
+        message: "Unrecognized address.",
         originalAddress: rawAddress1,
       });
     });
@@ -214,9 +210,7 @@ describe("AddressValidationAPI", () => {
       expect(response).toEqual({
         status: 400,
         type: "unrecognized-address",
-        cardType: "temporary",
-        message:
-          "This address will result in a temporary library card. You must visit an NYPL branch within the next 30 days to receive a standard card.",
+        message: "Unrecognized address.",
         originalAddress: rawAddress1,
         error: {
           code: "7",
@@ -241,13 +235,12 @@ describe("AddressValidationAPI", () => {
 
       expect(response).toEqual({
         type: "valid-address",
-        message: Card.RESPONSES.standardCard.message,
-        cardType: "standard",
+        message: "Valid address.",
         address: {
           ...rawAddress1,
-          county: "",
           line2: "",
           isResidential: true,
+          hasBeenValidated: true,
         },
         originalAddress: rawAddress1,
       });
@@ -266,12 +259,11 @@ describe("AddressValidationAPI", () => {
     it("returns an object with Address-like values", () => {
       const address = createAddressFromResponse(responseAddress1);
 
-      expect(address instanceof Address).toEqual(true);
-      expect(address.address.line1).toEqual(responseAddress1.Address1);
-      expect(address.address.line2).toEqual(responseAddress1.Address2);
-      expect(address.address.city).toEqual(responseAddress1.City);
-      expect(address.address.state).toEqual(responseAddress1.State);
-      expect(address.address.zip).toEqual(responseAddress1.Zip);
+      expect(address.line1).toEqual(responseAddress1.Address1);
+      expect(address.line2).toEqual(responseAddress1.Address2);
+      expect(address.city).toEqual(responseAddress1.City);
+      expect(address.state).toEqual(responseAddress1.State);
+      expect(address.zip).toEqual(responseAddress1.Zip);
     });
 
     it("returns a Service Obejcts validated address object", () => {
@@ -330,12 +322,7 @@ describe("AddressValidationAPI", () => {
       expect(parseResponse(addresses, errors, rawAddress1)).toEqual({
         type: "unrecognized-address",
         originalAddress: rawAddress1,
-        // It's an unrecognized address since SO didn't return any addresses
-        // but the address can still be checked for in or out of NYS residency.
-        // That's where it gets the "temporary" status.
-        cardType: "temporary",
-        message:
-          "This address will result in a temporary library card. You must visit an NYPL branch within the next 30 days to receive a standard card.",
+        message: "Unrecognized address.",
         error: {},
         status: 400,
       });
@@ -372,9 +359,12 @@ describe("AddressValidationAPI", () => {
 
       expect(response).toEqual({
         type: "valid-address",
-        message: Card.RESPONSES.cardDenied.message,
-        cardType: null,
-        address: address.address,
+        message: "Valid address.",
+        address: {
+          ...address.address,
+          county: undefined,
+          hasBeenValidated: true,
+        },
         originalAddress: outsideNYAddress,
       });
     });
@@ -393,13 +383,13 @@ describe("AddressValidationAPI", () => {
 
       expect(response).toEqual({
         type: "valid-address",
-        message: Card.RESPONSES.standardCard.message,
-        cardType: "standard",
+        message: "Valid address.",
         address: {
           ...rawAddress1,
-          county: "",
+          county: undefined,
           line2: "",
           isResidential: true,
+          hasBeenValidated: true,
         },
         originalAddress: rawAddress1,
       });
@@ -420,9 +410,12 @@ describe("AddressValidationAPI", () => {
 
       expect(response).toEqual({
         type: "valid-address",
-        message: Card.RESPONSES.standardCard.message,
-        cardType: "standard",
-        address: address.address,
+        message: "Valid address.",
+        address: {
+          ...address.address,
+          county: undefined,
+          hasBeenValidated: true,
+        },
         originalAddress: rawAddress1,
       });
     });

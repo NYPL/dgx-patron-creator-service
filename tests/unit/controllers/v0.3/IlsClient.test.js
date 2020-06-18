@@ -572,13 +572,21 @@ describe("IlsClient", () => {
       axios.get.mockImplementationOnce(() =>
         Promise.reject(mockedErrorResponse)
       );
-      // TODO:
       AddressValidationAPI.mockImplementation(() => ({
-        validate: () => Promise.resolve({ type: "valid-address" }),
+        validate: () =>
+          Promise.resolve({
+            type: "valid-address",
+            address: {
+              line1: "476 5th Avenue",
+              city: "New York",
+              state: "NY",
+              zip: "10018",
+              hasBeenValidated: true,
+            },
+          }),
       }));
 
       // Make sure we have a validated card.
-      // TODO mock implementation of AddressValidationAPI.
       await card.validate();
       // Mock that the ptype and agency were added to the card.
       card.setPtype();

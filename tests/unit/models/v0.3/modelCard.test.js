@@ -505,7 +505,14 @@ describe('Card', () => {
     });
     it('should return false if the card is valid but there is no ptype', async () => {
       AddressValidationAPI.mockImplementation(() => ({
-        validate: () => Promise.resolve({ type: 'valid-address' }),
+        validate: () => Promise.resolve({
+          type: 'valid-address',
+          address: {
+            line1: '476th 5th Ave.',
+            city: 'New York',
+            hasBeenValidated: true,
+          },
+        }),
       }));
       const card = new Card({
         ...basicCard,
@@ -928,9 +935,7 @@ describe('Card', () => {
 
       // The card must be denied to get the right response.
       expect(card.cardDenied(card.address)).toEqual(true);
-      expect(card.checkCardTypePolicy(card.address)).toEqual(
-        Card.RESPONSES.cardDenied,
-      );
+      expect(card.checkCardTypePolicy()).toEqual(Card.RESPONSES.cardDenied);
     });
 
     it('returns a temporary card for residential work addresses', () => {
@@ -945,7 +950,7 @@ describe('Card', () => {
       });
       const isWorkAddress = true;
 
-      expect(card.checkCardTypePolicy(card.address, isWorkAddress)).toEqual(
+      expect(card.checkCardTypePolicy(isWorkAddress)).toEqual(
         Card.RESPONSES.temporaryCard,
       );
     });
@@ -962,7 +967,7 @@ describe('Card', () => {
       });
       const isWorkAddress = false;
 
-      expect(card.checkCardTypePolicy(card.address, isWorkAddress)).toEqual(
+      expect(card.checkCardTypePolicy(isWorkAddress)).toEqual(
         Card.RESPONSES.temporaryCard,
       );
     });
@@ -979,7 +984,7 @@ describe('Card', () => {
       });
       const isWorkAddress = false;
 
-      expect(card.checkCardTypePolicy(card.address, isWorkAddress)).toEqual(
+      expect(card.checkCardTypePolicy(isWorkAddress)).toEqual(
         Card.RESPONSES.standardCard,
       );
     });
@@ -1035,10 +1040,9 @@ describe('Card', () => {
       expect(details.username).toEqual('username');
       expect(details.pin).toEqual('1234');
       expect(details.temporary).toEqual(true);
-      expect(details.message)
-        .toEqual(`Your library card is temporary because your personal information could not be
-        verified. Visit your local NYPL branch within 30 days to
-        upgrade to a standard card.`);
+      expect(details.message).toEqual(
+        'Your library card is temporary because your personal information could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.',
+      );
     });
   });
 
@@ -1062,10 +1066,9 @@ describe('Card', () => {
 
     it('returns a temporary card message with the generic "personal information" reason', () => {
       card.isTemporary = true;
-      expect(card.selectMessage())
-        .toEqual(`Your library card is temporary because your personal information could not be
-        verified. Visit your local NYPL branch within 30 days to
-        upgrade to a standard card.`);
+      expect(card.selectMessage()).toEqual(
+        'Your library card is temporary because your personal information could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.',
+      );
     });
 
     it('returns a temporary card message with the bad "address" reason', () => {
@@ -1073,10 +1076,9 @@ describe('Card', () => {
       card.isTemporary = true;
       card.address.address.isResidential = false;
 
-      expect(card.selectMessage())
-        .toEqual(`Your library card is temporary because your address could not be
-        verified. Visit your local NYPL branch within 30 days to
-        upgrade to a standard card.`);
+      expect(card.selectMessage()).toEqual(
+        'Your library card is temporary because your address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.',
+      );
     });
 
     it('returns a temporary card message with the bad "work address" reason', () => {
@@ -1089,10 +1091,9 @@ describe('Card', () => {
         isResidential: 'true',
       });
 
-      expect(card.selectMessage())
-        .toEqual(`Your library card is temporary because your work address could not be
-        verified. Visit your local NYPL branch within 30 days to
-        upgrade to a standard card.`);
+      expect(card.selectMessage()).toEqual(
+        'Your library card is temporary because your work address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.',
+      );
     });
   });
 });

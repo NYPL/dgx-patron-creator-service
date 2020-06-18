@@ -302,16 +302,16 @@ describe("Address", () => {
         expect(resp).toEqual(address);
       });
 
-      it("should return undefined if the address is not valid", async () => {
+      it("should return 'unrecognized-address' type if the address is not valid", async () => {
         // mock that the address is valid and has been validated.
         const address = new Address({
           line1: "not valid address",
         });
         address.validateInAPI = jest
           .fn()
-          .mockReturnValue({ response: "something" });
+          .mockReturnValue({ type: "unrecognized-address" });
         const resp = await address.validate();
-        expect(resp).toEqual(undefined);
+        expect(resp).toEqual({ type: "unrecognized-address" });
       });
 
       it("should try to validate the address and succeeded", async () => {

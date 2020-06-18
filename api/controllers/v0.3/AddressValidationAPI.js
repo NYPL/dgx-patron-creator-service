@@ -137,8 +137,7 @@ const AddressValidationAPI = (args = {}) => {
       // Otherwise, there's only one validated address.
       const validatedAddress = addresses[0];
 
-      // The address has been validated by SO. We still need to check if
-      // the policy allows for a standard or temporary card or none.
+      // The address has been validated by SO.
       response = {
         ...RESPONSES["valid_address"],
         address: validatedAddress,

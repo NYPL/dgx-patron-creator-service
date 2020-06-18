@@ -327,7 +327,8 @@ async function checkAddress(req, res) {
  */
 async function createPatron(req, res) {
   let address = new Address(req.body.address, soLicenseKey);
-  const policy = Policy({ policyType: req.body.policyType || "simplye" });
+  const policyType = req.body.policyType || "simplye";
+  const policy = Policy({ policyType });
   const card = new Card({
     name: req.body.name, // from req
     address: address, // created above
@@ -383,10 +384,8 @@ async function createPatron(req, res) {
         // "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{patron-id}"
         response = {
           status: resp.status,
-          data: {
-            ...resp.data,
-            barcode: card.barcode,
-          },
+          ...resp.data,
+          ...card.details(),
         };
       } catch (error) {
         // There was an error hitting the ILS to create the patron. Catch

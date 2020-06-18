@@ -78,8 +78,6 @@ const CardValidator = () => {
       card.policy.policyType
     );
 
-    // Do what you need to do with this:
-    // policyResponse = card.checkCardTypePolicy(validAddress, isWorkAddress);
     if (validAddress.address) {
       const address = new Address(
         {
@@ -480,6 +478,7 @@ class Card {
    */
   details() {
     let details = {
+      type: "card-granted",
       barcode: this.barcode,
       username: this.username,
       pin: this.pin,
@@ -520,9 +519,7 @@ class Card {
 
     // Expiration in days.
     const expiration = this.policy.policy.cardType["temporary"];
-    return `Your library card is temporary because your ${reason} could not be
-        verified. Visit your local NYPL branch within ${expiration} days to
-        upgrade to a standard card.`;
+    return `Your library card is temporary because your ${reason} could not be verified. Visit your local NYPL branch within ${expiration} days to upgrade to a standard card.`;
   }
 }
 
