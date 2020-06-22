@@ -1,7 +1,8 @@
 /* eslint-disable */
-const AddressValidationAPI = require("../../controllers/v0.3/AddressValidationAPI");
 const UsernameValidationApi = require("../../controllers/v0.3/UsernameValidationAPI");
+const Address = require("./modelAddress");
 const Barcode = require("./modelBarcode");
+
 const {
   DatabaseError,
   MissingRequiredValues,
@@ -23,6 +24,7 @@ const CardValidator = () => {
    *
    * @param {Card object} card
    */
+
   const validate = async (card) => {
     if (card.workAddress) {
       // There is a work address so the home address needs to be present,
@@ -33,10 +35,10 @@ const CardValidator = () => {
       }
 
       // The work address needs to be valid for a card.
-      card = validateAddress(card, "workAddress", true);
+      card = await validateAddress(card, "workAddress", true);
     } else {
       // Without a work address, the home address must be valid for a card.
-      card = validateAddress(card, "address");
+      card = await validateAddress(card, "address");
     }
 
     // Will throw an error if the username is not valid.
@@ -64,25 +66,32 @@ const CardValidator = () => {
   /**
    * validateAddress(card, addressType, workAddress)
    * Returns the card object with updated validated address or errors based
-   * on policy and ILS verification.
+   * on policy and Service Objects verification.
    *
    * @param {Card object} card
    * @param {string} addressType - "address" or "workAddress"
    * @param {boolean} isWorkAddress
    */
-  const validateAddress = (card, addressType, workAddress = null) => {
-    let validAddress = card[addressType].validatedVersion(workAddress);
+  const validateAddress = async (card, addressType, workAddress = null) => {
+    let validAddress = await card[addressType].validate();
 
-    if (validAddress) {
+    if (validAddress.address) {
+      const address = new Address(
+        {
+          ...validAddress.address,
+          hasBeenValidated: validAddress.address.hasBeenValidated,
+        },
+        card[addressType].soLicenseKey
+      );
       // Check card.policy for address limitations.
-      if (card.cardDenied(validAddress, workAddress)) {
+      if (card.cardDenied(address, workAddress)) {
         const message = Card.RESPONSES["cardDenied"]["message"];
         card.errors[addressType] = message;
-      } else if (validAddress.addressForTemporaryCard(workAddress)) {
+      } else if (address.addressForTemporaryCard(workAddress)) {
         card.setTemporary();
       }
       // Reset the card's address type input to the validated version.
-      card[addressType] = validAddress;
+      card[addressType] = address;
     } else {
       card.errors[addressType] = UNVALIDATED_ADDRESS_ERROR;
     }
@@ -141,7 +150,10 @@ const cardValidator = CardValidator();
 class Card {
   constructor(args) {
     this.name = args["name"];
-    this.address = args["address"];
+    this.address =
+      args["address"] instanceof Address
+        ? args["address"]
+        : new Address(args["address"]);
     this.username = args["username"];
     this.pin = args["pin"];
     this.email = args["email"] || "";
@@ -163,16 +175,10 @@ class Card {
     this.barcode = undefined;
     this.ptype = undefined;
     this.patronId = undefined;
-    this.hasValidName = undefined;
     this.hasValidUsername = undefined;
     this.expirationDate = undefined;
     this.agency = undefined;
     this.valid = false;
-
-    this.nameValidationDisabled = true;
-    // Card types for /validate/* responses
-    this.TEMPORARY_CARD_TYPE = "temporary";
-    this.STANDARD_CARD_TYPE = "standard";
   }
 
   /**
@@ -204,6 +210,7 @@ class Card {
     // Now that all values have gone through a basic validation process,
     // do the more in-depth validation.
     const validated = await cardValidator.validate(this);
+
     if (validated.valid) {
       this.valid = true;
     }
@@ -366,9 +373,8 @@ class Card {
     }
 
     // False if patron provides a home address that is not residential
-    // False if patron does not have a recognized name
     // False if patron policy is not the default (simplye)
-    return this.address.address.isResidential && this.policy.isDefault;
+    return this.address.isResidential && this.policy.isDefault;
   }
 
   /**
@@ -448,16 +454,15 @@ class Card {
   }
 
   /**
-   * checkCardTypePolicy(validAddress, workAddress)
+   * checkCardTypePolicy(workAddress)
    * Returns a response object based on the type of card that is set.
    *
-   * @param {Address object} validAddress
    * @param {boolean} workAddress
    */
-  checkCardTypePolicy(validAddress, workAddress = null) {
-    if (this.cardDenied(validAddress, workAddress)) {
+  checkCardTypePolicy(workAddress = false) {
+    if (this.cardDenied(this.address, workAddress)) {
       return Card.RESPONSES["cardDenied"];
-    } else if (validAddress.addressForTemporaryCard(workAddress)) {
+    } else if (this.address.addressForTemporaryCard(workAddress)) {
       return Card.RESPONSES["temporaryCard"];
     } else {
       return Card.RESPONSES["standardCard"];
@@ -470,6 +475,7 @@ class Card {
    */
   details() {
     let details = {
+      type: "card-granted",
       barcode: this.barcode,
       username: this.username,
       pin: this.pin,
@@ -510,9 +516,7 @@ class Card {
 
     // Expiration in days.
     const expiration = this.policy.policy.cardType["temporary"];
-    return `Your library card is temporary because your ${reason} could not be
-        verified. Visit your local NYPL branch within ${expiration} days to
-        upgrade to a standard card.`;
+    return `Your library card is temporary because your ${reason} could not be verified. Visit your local NYPL branch within ${expiration} days to upgrade to a standard card.`;
   }
 }
 

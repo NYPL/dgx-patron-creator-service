@@ -6,6 +6,7 @@ const {
 const Policy = require('../../../../api/models/v0.3/modelPolicy');
 const Address = require('../../../../api/models/v0.3/modelAddress');
 const UsernameValidationAPI = require('../../../../api/controllers/v0.3/UsernameValidationAPI');
+const AddressValidationAPI = require('../../../../api/controllers/v0.3/AddressValidationAPI');
 const IlsClient = require('../../../../api/controllers/v0.3/IlsClient');
 const {
   NoILSClient,
@@ -14,12 +15,16 @@ const {
 const Barcode = require('../../../../api/models/v0.3/modelBarcode');
 
 jest.mock('../../../../api/controllers/v0.3/UsernameValidationAPI');
+jest.mock('../../../../api/controllers/v0.3/AddressValidationAPI');
 jest.mock('../../../../api/controllers/v0.3/IlsClient');
 jest.mock('../../../../api/models/v0.3/modelBarcode');
 
 const basicCard = {
   name: 'First Last',
-  address: new Address({ line1: '476th 5th Ave.', city: 'New York' }),
+  address: new Address(
+    { line1: '476th 5th Ave.', city: 'New York' },
+    'soLicenseKey',
+  ),
   username: 'username',
   pin: '1234',
   // required for web applicants
@@ -93,6 +98,7 @@ describe('Card', () => {
   beforeEach(() => {
     // Clear all instances and calls to constructor and all methods:
     UsernameValidationAPI.mockClear();
+    AddressValidationAPI.mockClear();
     IlsClient.mockClear();
   });
 
@@ -111,7 +117,10 @@ describe('Card', () => {
       // but if you set one, it'll be used
       card = new Card({
         name: 'First Last',
-        address: new Address({ line1: '476th 5th Ave.', city: 'New York' }),
+        address: new Address(
+          { line1: '476th 5th Ave.', city: 'New York' },
+          'soLicenseKy',
+        ),
         username: 'username',
         pin: '1234',
         // required for web applicants
@@ -292,17 +301,23 @@ describe('Card', () => {
   describe('worksInCity', () => {
     const simplyePolicy = Policy();
     const webApplicant = Policy({ policyType: 'webApplicant' });
-    const workAddressNotInCity = new Address({
-      line1: 'street address',
-      city: 'Albany',
-      state: 'New York',
-    });
+    const workAddressNotInCity = new Address(
+      {
+        line1: 'street address',
+        city: 'Albany',
+        state: 'New York',
+      },
+      'soLicenseKey',
+    );
 
-    const workAddressInCity = new Address({
-      line1: 'street address',
-      city: 'New York',
-      state: 'New York',
-    });
+    const workAddressInCity = new Address(
+      {
+        line1: 'street address',
+        city: 'New York',
+        state: 'New York',
+      },
+      'soLicenseKey',
+    );
 
     it('always returns false for web applications with or without a work address', () => {
       let card = new Card({
@@ -358,17 +373,23 @@ describe('Card', () => {
   describe('livesOrWorksInCity', () => {
     const simplyePolicy = Policy();
     const webApplicant = Policy({ policyType: 'webApplicant' });
-    const addressNotInCity = new Address({
-      line1: 'street address',
-      city: 'Albany',
-      state: 'New York',
-    });
+    const addressNotInCity = new Address(
+      {
+        line1: 'street address',
+        city: 'Albany',
+        state: 'New York',
+      },
+      'soLicenseKey',
+    );
 
-    const addressInCity = new Address({
-      line1: 'street address',
-      city: 'New York',
-      state: 'New York',
-    });
+    const addressInCity = new Address(
+      {
+        line1: 'street address',
+        city: 'New York',
+        state: 'New York',
+      },
+      'soLicenseKey',
+    );
 
     it('always returns false for web applications', () => {
       let card = new Card({
@@ -397,7 +418,7 @@ describe('Card', () => {
     it('returns false because they do not live in NYC', () => {
       const card = new Card({
         ...basicCard,
-        address: new Address({ city: 'Albany' }),
+        address: new Address({ city: 'Albany' }, 'soLicenseKey'),
         policy: simplyePolicy,
       });
       expect(card.livesOrWorksInCity()).toEqual(false);
@@ -406,7 +427,7 @@ describe('Card', () => {
     it('returns true because they do not live in NYC but work there', () => {
       const card = new Card({
         ...basicCard,
-        address: new Address({ city: 'Albany' }),
+        address: new Address({ city: 'Albany' }, 'soLicenseKey'),
         workAddress: addressInCity,
         policy: simplyePolicy,
       });
@@ -433,8 +454,8 @@ describe('Card', () => {
   describe('livesInState', () => {
     const simplyePolicy = Policy();
     const webApplicant = Policy({ policyType: 'webApplicant' });
-    const addressNotNY = new Address({ state: 'New Jersey' });
-    const addressNY = new Address({ state: 'New York' });
+    const addressNotNY = new Address({ state: 'New Jersey' }, 'soLicenseKey');
+    const addressNY = new Address({ state: 'New York' }, 'soLicenseKey');
 
     it('returns false for all web applicants if they are in NY state or not', () => {
       const cardNotNY = new Card({
@@ -483,6 +504,16 @@ describe('Card', () => {
       expect(card.validForIls()).toEqual(false);
     });
     it('should return false if the card is valid but there is no ptype', async () => {
+      AddressValidationAPI.mockImplementation(() => ({
+        validate: () => Promise.resolve({
+          type: 'valid-address',
+          address: {
+            line1: '476th 5th Ave.',
+            city: 'New York',
+            hasBeenValidated: true,
+          },
+        }),
+      }));
       const card = new Card({
         ...basicCard,
         policy: Policy({ policyType: 'webApplicant' }),
@@ -904,9 +935,7 @@ describe('Card', () => {
 
       // The card must be denied to get the right response.
       expect(card.cardDenied(card.address)).toEqual(true);
-      expect(card.checkCardTypePolicy(card.address)).toEqual(
-        Card.RESPONSES.cardDenied,
-      );
+      expect(card.checkCardTypePolicy()).toEqual(Card.RESPONSES.cardDenied);
     });
 
     it('returns a temporary card for residential work addresses', () => {
@@ -921,7 +950,7 @@ describe('Card', () => {
       });
       const isWorkAddress = true;
 
-      expect(card.checkCardTypePolicy(card.address, isWorkAddress)).toEqual(
+      expect(card.checkCardTypePolicy(isWorkAddress)).toEqual(
         Card.RESPONSES.temporaryCard,
       );
     });
@@ -938,7 +967,7 @@ describe('Card', () => {
       });
       const isWorkAddress = false;
 
-      expect(card.checkCardTypePolicy(card.address, isWorkAddress)).toEqual(
+      expect(card.checkCardTypePolicy(isWorkAddress)).toEqual(
         Card.RESPONSES.temporaryCard,
       );
     });
@@ -955,7 +984,7 @@ describe('Card', () => {
       });
       const isWorkAddress = false;
 
-      expect(card.checkCardTypePolicy(card.address, isWorkAddress)).toEqual(
+      expect(card.checkCardTypePolicy(isWorkAddress)).toEqual(
         Card.RESPONSES.standardCard,
       );
     });
@@ -1011,10 +1040,9 @@ describe('Card', () => {
       expect(details.username).toEqual('username');
       expect(details.pin).toEqual('1234');
       expect(details.temporary).toEqual(true);
-      expect(details.message)
-        .toEqual(`Your library card is temporary because your personal information could not be
-        verified. Visit your local NYPL branch within 30 days to
-        upgrade to a standard card.`);
+      expect(details.message).toEqual(
+        'Your library card is temporary because your personal information could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.',
+      );
     });
   });
 
@@ -1038,10 +1066,9 @@ describe('Card', () => {
 
     it('returns a temporary card message with the generic "personal information" reason', () => {
       card.isTemporary = true;
-      expect(card.selectMessage())
-        .toEqual(`Your library card is temporary because your personal information could not be
-        verified. Visit your local NYPL branch within 30 days to
-        upgrade to a standard card.`);
+      expect(card.selectMessage()).toEqual(
+        'Your library card is temporary because your personal information could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.',
+      );
     });
 
     it('returns a temporary card message with the bad "address" reason', () => {
@@ -1049,10 +1076,9 @@ describe('Card', () => {
       card.isTemporary = true;
       card.address.address.isResidential = false;
 
-      expect(card.selectMessage())
-        .toEqual(`Your library card is temporary because your address could not be
-        verified. Visit your local NYPL branch within 30 days to
-        upgrade to a standard card.`);
+      expect(card.selectMessage()).toEqual(
+        'Your library card is temporary because your address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.',
+      );
     });
 
     it('returns a temporary card message with the bad "work address" reason', () => {
@@ -1065,10 +1091,9 @@ describe('Card', () => {
         isResidential: 'true',
       });
 
-      expect(card.selectMessage())
-        .toEqual(`Your library card is temporary because your work address could not be
-        verified. Visit your local NYPL branch within 30 days to
-        upgrade to a standard card.`);
+      expect(card.selectMessage()).toEqual(
+        'Your library card is temporary because your work address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.',
+      );
     });
   });
 });

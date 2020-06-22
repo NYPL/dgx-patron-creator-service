@@ -1,7 +1,5 @@
 /* eslint-disable */
 const modelResponse = require("../../models/v0.3/modelResponse");
-const UsernameValidationAPI = require("./UsernameValidationAPI");
-const AddressValidationAPI = require("./AddressValidationAPI");
 const axios = require("axios");
 const awsDecrypt = require("./../../../config/awsDecrypt.js");
 const IlsClient = require("./IlsClient");
@@ -10,10 +8,11 @@ const modelStreamPatron = require("./../../models/v0.2/modelStreamPatron.js")
 const streamPublish = require("./../../helpers/streamPublish");
 const logger = require("../../helpers/Logger");
 const encode = require("../../helpers/encode");
-const Address = require("../../models/v0.3/modelAddress");
 const { Card } = require("../../models/v0.3/modelCard");
+const Address = require("../../models/v0.3/modelAddress");
 const Policy = require("../../models/v0.3/modelPolicy");
 const { checkEnvVariables } = require("../../helpers/validateEnvironment");
+const UsernameValidationAPI = require("./UsernameValidationAPI");
 const {
   renderResponse,
   errorResponseDataWithTag,
@@ -266,12 +265,35 @@ async function checkUsername(req, res) {
  * @param {HTTP response} res
  */
 async function checkAddress(req, res) {
-  const { validate } = AddressValidationAPI({ soLicenseKey });
   let addressResponse;
   let status;
   try {
-    addressResponse = await validate(req.body.address, req.body.policyType);
-    status = addressResponse.status || 200;
+    const isWorkAddress = req.body.isWorkAddress || false;
+    const address = new Address(req.body.address, soLicenseKey);
+    const validatedAddress = await address.validate();
+
+    // Initialize a patron/card object _just_ to determine cardType by policy.
+    // We don't and can't actually validate this patron/card object since
+    // the rest of the needed values are not part of this call (i.e. name,
+    // username, etc).
+    const card = new Card({
+      // The response address is the SO validated one. If SO threw an error
+      // just use the original address
+      address: validatedAddress.address || address,
+      policy: Policy({ policyType: req.body.policyType }),
+    });
+
+    // We want to respond with the policy type so the user knows what type
+    // of card they'll get with the address they submitted.
+    policyResponse = card.checkCardTypePolicy(isWorkAddress);
+
+    addressResponse = {
+      ...validatedAddress,
+      ...policyResponse,
+      // This covers the case where a card is denied and cardType is null.
+      status: !policyResponse.cardType ? 400 : 200,
+    };
+    status = validatedAddress.status || 200;
   } catch (error) {
     addressResponse = modelResponse.errorResponseData(
       collectErrorResponseData(
@@ -291,8 +313,8 @@ async function checkAddress(req, res) {
 /**
  * createPatron(req, res)
  * 1. An Address, Policy, and Card objects are created from the request.
- * 2. TODO: The Address object is validated to make sure there are no errors
- *   and the address is valid.
+ * 2. The Address object is validated and a response is returned with the
+ *   type of card the address can create: none, temporary, standard.
  * 3. The Card is validated to make sure there are no errors. This includes
  *   checking to see if the username is valid and available in the ILS.
  * 4. If all the data is valid, then create a barcode and associated with
@@ -304,8 +326,9 @@ async function checkAddress(req, res) {
  * @param {HTTP response} res
  */
 async function createPatron(req, res) {
-  let address = new Address(req.body.address);
-  const policy = Policy({ policyType: req.body.policyType || "simplye" });
+  let address = new Address(req.body.address, soLicenseKey);
+  const policyType = req.body.policyType || "simplye";
+  const policy = Policy({ policyType });
   const card = new Card({
     name: req.body.name, // from req
     address: address, // created above
@@ -314,7 +337,7 @@ async function createPatron(req, res) {
     email: req.body.email, // from req
     birthdate: req.body.birthdate, // from req
     ecommunicationsPref: req.body.ecommunicationsPref, // from req
-    policy, //created above
+    policy, // created above
     ilsClient, // created above
     // SimplyE will always set the home library to the `eb` code. Eventually,
     // the web app will pass a `homeLibraryCode` parameter with a patron's
@@ -361,10 +384,8 @@ async function createPatron(req, res) {
         // "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{patron-id}"
         response = {
           status: resp.status,
-          data: {
-            ...resp.data,
-            barcode: card.barcode,
-          },
+          ...resp.data,
+          ...card.details(),
         };
       } catch (error) {
         // There was an error hitting the ILS to create the patron. Catch

@@ -95,8 +95,10 @@ describe("AddressValidationAPI", () => {
 
       const response = await validate(rawAddress1);
 
+      // The response is a validation of the address, this is then passed to
+      // the next step which checks for policy and if it's eligible for a
+      // temporary card, but not a responsibility of this API.
       expect(response).toEqual({
-        cardType: "temporary",
         error: {
           code: "1",
           message:
@@ -105,9 +107,7 @@ describe("AddressValidationAPI", () => {
           status: 502,
           type: "service-objects-authorization-error",
         },
-        // The address is in NYS so it will return a temporary card.
-        message:
-          "This address will result in a temporary library card. You must visit an NYPL branch within the next 30 days to receive a standard card.",
+        message: "Unrecognized address.",
         originalAddress: {
           city: "New York",
           line1: "476 5th Avenue",
@@ -132,15 +132,13 @@ describe("AddressValidationAPI", () => {
       // And it bubbles up to the `validate` call.
       const response = await validate(rawAddress1);
       expect(response).toEqual({
-        cardType: "temporary",
         error: {
           message: "something went wrong",
           name: "SOIntegrationError",
           status: 502,
           type: "service-objects-integration-error",
         },
-        message:
-          "This address will result in a temporary library card. You must visit an NYPL branch within the next 30 days to receive a standard card.",
+        message: "Unrecognized address.",
         originalAddress: {
           city: "New York",
           line1: "476 5th Avenue",
@@ -184,9 +182,7 @@ describe("AddressValidationAPI", () => {
           status: 502,
           type: "service-objects-domain-specific-error",
         },
-        cardType: "temporary",
-        message:
-          "This address will result in a temporary library card. You must visit an NYPL branch within the next 30 days to receive a standard card.",
+        message: "Unrecognized address.",
         originalAddress: rawAddress1,
       });
     });
@@ -214,9 +210,7 @@ describe("AddressValidationAPI", () => {
       expect(response).toEqual({
         status: 400,
         type: "unrecognized-address",
-        cardType: "temporary",
-        message:
-          "This address will result in a temporary library card. You must visit an NYPL branch within the next 30 days to receive a standard card.",
+        message: "Unrecognized address.",
         originalAddress: rawAddress1,
         error: {
           code: "7",
@@ -235,15 +229,19 @@ describe("AddressValidationAPI", () => {
         validateAddress: () => Promise.resolve([responseAddress1]),
       }));
       const policyType = "simplye";
+      const isWorkAddress = false;
       const { validate } = AddressValidationAPI({ soLicenseKey });
-      const response = await validate(rawAddress1, policyType);
-      const address = new Address({ ...rawAddress1, isResidential: true });
+      const response = await validate(rawAddress1, isWorkAddress, policyType);
 
       expect(response).toEqual({
         type: "valid-address",
-        message: Card.RESPONSES.standardCard.message,
-        cardType: "standard",
-        address: address.address,
+        message: "Valid address.",
+        address: {
+          ...rawAddress1,
+          line2: "",
+          isResidential: true,
+          hasBeenValidated: true,
+        },
         originalAddress: rawAddress1,
       });
     });
@@ -258,27 +256,28 @@ describe("AddressValidationAPI", () => {
       expect(createAddressFromResponse()).toBeUndefined();
     });
 
-    it("returns an Address instance", () => {
-      const addressInstance = createAddressFromResponse(responseAddress1);
+    it("returns an object with Address-like values", () => {
+      const address = createAddressFromResponse(responseAddress1);
 
-      expect(addressInstance instanceof Address).toEqual(true);
-      expect(addressInstance.address.line1).toEqual(responseAddress1.Address1);
-      expect(addressInstance.address.line2).toEqual(responseAddress1.Address2);
-      expect(addressInstance.address.city).toEqual(responseAddress1.City);
-      expect(addressInstance.address.state).toEqual(responseAddress1.State);
-      expect(addressInstance.address.zip).toEqual(responseAddress1.Zip);
+      expect(address.line1).toEqual(responseAddress1.Address1);
+      expect(address.line2).toEqual(responseAddress1.Address2);
+      expect(address.city).toEqual(responseAddress1.City);
+      expect(address.state).toEqual(responseAddress1.State);
+      expect(address.zip).toEqual(responseAddress1.Zip);
     });
 
-    it("returns an Address instance that is always validated", () => {
-      const addressInstance = createAddressFromResponse(responseAddress1);
-      expect(addressInstance instanceof Address).toEqual(true);
-      expect(addressInstance.hasBeenValidated).toEqual(true);
+    it("returns a Service Obejcts validated address object", () => {
+      const address = createAddressFromResponse(responseAddress1);
+      expect(address.hasBeenValidated).toEqual(true);
     });
   });
 
   describe("alternateAddressesResponse", () => {
     ServiceObjectsClient.mockImplementation(() => ({}));
-    const { alternateAddressesResponse } = AddressValidationAPI();
+    const {
+      alternateAddressesResponse,
+      createAddressFromResponse,
+    } = AddressValidationAPI();
 
     // "alternateAddressesResponse" only gets called when there are alternate
     // addresses, so this case should not happen in real life.
@@ -289,24 +288,26 @@ describe("AddressValidationAPI", () => {
         type: "alternate-addresses",
         message: "Alternate addresses have been identified.",
         addresses: [],
+        originalAddress: {},
       });
 
       expect(alternateAddressesResponse(emptyAlternates)).toEqual({
         type: "alternate-addresses",
         message: "Alternate addresses have been identified.",
         addresses: [],
+        originalAddress: {},
       });
     });
 
-    it("returns all the addresses in the response object", () => {
-      const address1 = new Address(rawAddress1);
-      const address2 = new Address(rawAddress2);
-      const addresses = [address1, address2];
+    it("returns all alternate addresses in the response object", () => {
+      const addresses = [rawAddress1, rawAddress2];
+      const originalAddress = rawAddress1;
 
-      expect(alternateAddressesResponse(addresses)).toEqual({
+      expect(alternateAddressesResponse(addresses, originalAddress)).toEqual({
         type: "alternate-addresses",
         message: "Alternate addresses have been identified.",
-        addresses: [address1.address, address2.address],
+        addresses: [rawAddress1, rawAddress2],
+        originalAddress,
       });
     });
   });
@@ -321,12 +322,7 @@ describe("AddressValidationAPI", () => {
       expect(parseResponse(addresses, errors, rawAddress1)).toEqual({
         type: "unrecognized-address",
         originalAddress: rawAddress1,
-        // It's an unrecognized address since SO didn't return any addresses
-        // but the address can still be checked for in or out of NYS residency.
-        // That's where it gets the "temporary" status.
-        cardType: "temporary",
-        message:
-          "This address will result in a temporary library card. You must visit an NYPL branch within the next 30 days to receive a standard card.",
+        message: "Unrecognized address.",
         error: {},
         status: 400,
       });
@@ -335,7 +331,7 @@ describe("AddressValidationAPI", () => {
     it("returns an 'alternate-address' response", () => {
       // These are address objects that Service Objects returns.
       const responseAddresses = [responseAddress1, responseAddress2];
-      // They need to be converted to Address objects for verification.
+      // They need to be converted to address objects to verify the test.
       const addresses = responseAddresses.map(createAddressFromResponse);
       const errors = {};
 
@@ -343,67 +339,83 @@ describe("AddressValidationAPI", () => {
         status: 400,
         type: "alternate-addresses",
         message: "Alternate addresses have been identified.",
-        addresses: addresses.map((address) => address.address),
+        addresses,
         originalAddress: rawAddress1,
       });
     });
 
     it("returns a 'valid-address' response but card denied if address is outside NY", () => {
+      const isWorkAddress = undefined;
       const policyType = "simplye";
       const errors = {};
       const response = parseResponse(
         [outsideNYresponseAddress],
         errors,
         outsideNYAddress,
+        isWorkAddress,
         policyType
       );
       const address = new Address({ ...outsideNYAddress, isResidential: true });
 
       expect(response).toEqual({
         type: "valid-address",
-        message: Card.RESPONSES.cardDenied.message,
-        cardType: null,
-        address: address.address,
+        message: "Valid address.",
+        address: {
+          ...address.address,
+          county: undefined,
+          hasBeenValidated: true,
+        },
         originalAddress: outsideNYAddress,
       });
     });
 
     it("returns a 'valid-address' response for simplye policy", () => {
+      const isWorkAddress = false;
       const policyType = "simplye";
       const errors = {};
       const response = parseResponse(
         [responseAddress1],
         errors,
         rawAddress1,
+        isWorkAddress,
         policyType
       );
-      const address = new Address({ ...rawAddress1, isResidential: true });
 
       expect(response).toEqual({
         type: "valid-address",
-        message: Card.RESPONSES.standardCard.message,
-        cardType: "standard",
-        address: address.address,
+        message: "Valid address.",
+        address: {
+          ...rawAddress1,
+          county: undefined,
+          line2: "",
+          isResidential: true,
+          hasBeenValidated: true,
+        },
         originalAddress: rawAddress1,
       });
     });
 
     it("returns a 'valid-address' response for webApplicant policy", () => {
+      const isWorkAddress = false;
       const policyType = "webApplicant";
       const errors = {};
       const response = parseResponse(
         [responseAddress1],
         errors,
         rawAddress1,
+        isWorkAddress,
         policyType
       );
       const address = new Address({ ...rawAddress1, isResidential: true });
 
       expect(response).toEqual({
         type: "valid-address",
-        message: Card.RESPONSES.standardCard.message,
-        cardType: "standard",
-        address: address.address,
+        message: "Valid address.",
+        address: {
+          ...address.address,
+          county: undefined,
+          hasBeenValidated: true,
+        },
         originalAddress: rawAddress1,
       });
     });

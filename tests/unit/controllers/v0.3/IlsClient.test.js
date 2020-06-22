@@ -1,12 +1,14 @@
 /* eslint-disable */
+const AddressValidationAPI = require("../../../../api/controllers/v0.3/AddressValidationAPI");
 const IlsClient = require("../../../../api/controllers/v0.3/IlsClient");
+const { Card } = require("../../../../api/models/v0.3/modelCard");
 const Address = require("../../../../api/models/v0.3/modelAddress");
 const Policy = require("../../../../api/models/v0.3/modelPolicy");
-const { Card } = require("../../../../api/models/v0.3/modelCard");
 const axios = require("axios");
 const { ILSIntegrationError } = require("../../../../api/helpers/errors");
 
 jest.mock("axios");
+jest.mock("../../../../api/controllers/v0.3/AddressValidationAPI");
 
 const mockedSuccessfulResponse = {
   status: 200,
@@ -171,12 +173,15 @@ describe("IlsClient", () => {
   // { lines: ['line 1', 'line 2'], type: 'a' }
   describe("formatAddress", () => {
     const ilsClient = IlsClient({});
-    const address = new Address({
-      line1: "476 5th Avenue",
-      city: "New York",
-      state: "NY",
-      zip: "10018",
-    });
+    const address = new Address(
+      {
+        line1: "476 5th Avenue",
+        city: "New York",
+        state: "NY",
+        zip: "10018",
+      },
+      "soLicenseKey"
+    );
 
     // The primary address type is 'a'.
     it("returns a primary address object for the ILS", () => {
@@ -539,12 +544,15 @@ describe("IlsClient", () => {
   // The patron object being sent to the ILS.
   describe("formatPatronData", () => {
     const ilsClient = IlsClient({});
-    const address = new Address({
-      line1: "476 5th Avenue",
-      city: "New York",
-      state: "NY",
-      zip: "10018",
-    });
+    const address = new Address(
+      {
+        line1: "476 5th Avenue",
+        city: "New York",
+        state: "NY",
+        zip: "10018",
+      },
+      "soLicenseKey"
+    );
     const policy = Policy({ policyType: "simplye" });
     const card = new Card({
       name: "First Last",
@@ -564,6 +572,19 @@ describe("IlsClient", () => {
       axios.get.mockImplementationOnce(() =>
         Promise.reject(mockedErrorResponse)
       );
+      AddressValidationAPI.mockImplementation(() => ({
+        validate: () =>
+          Promise.resolve({
+            type: "valid-address",
+            address: {
+              line1: "476 5th Avenue",
+              city: "New York",
+              state: "NY",
+              zip: "10018",
+              hasBeenValidated: true,
+            },
+          }),
+      }));
 
       // Make sure we have a validated card.
       await card.validate();
@@ -612,12 +633,15 @@ describe("IlsClient", () => {
           "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/1234",
       },
     };
-    const address = new Address({
-      line1: "476 5th Avenue",
-      city: "New York",
-      state: "NY",
-      zip: "10018",
-    });
+    const address = new Address(
+      {
+        line1: "476 5th Avenue",
+        city: "New York",
+        state: "NY",
+        zip: "10018",
+      },
+      "soLicenseKey"
+    );
     const policy = Policy({ policyType: "webApplicant" });
     const card = new Card({
       name: "First Last",
@@ -646,6 +670,7 @@ describe("IlsClient", () => {
       axios.get.mockImplementationOnce(() =>
         Promise.reject(mockedErrorResponse)
       );
+      // TODO need to mock AddressValidationAPI
       await card.validate();
 
       // Now mock the POST request to the ILS.
