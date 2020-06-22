@@ -48,9 +48,11 @@ describe("Address", () => {
         state: "New York",
       });
       const response = await address.validate();
+      const addressLength =
+        address.address.line1.length + address.address.line2.length;
       expect(response).toEqual(false);
       expect(address.errors).toEqual({
-        line1: "Address lines must be less than 100 characters combined.",
+        line1: `Address lines must be less than 100 characters combined. The address is currently at ${addressLength} characters.`,
       });
     });
   });
