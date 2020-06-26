@@ -71,10 +71,15 @@ const Policy = (args) => {
         temporary: IlsClient.TEMPORARY_EXPIRATION_TIME,
       },
       requiredFields: ['barcode'],
+      serviceArea: {
+        city: ALLOWED_CITIES,
+        county: ALLOWED_COUNTIES,
+        state: ALLOWED_STATES,
+      },
     },
   };
   const policyType = args && args.policyType ? args.policyType : DEFAULT_POLICY_TYPE;
-  const policy = ilsPolicy[policyType];
+  const policy = ilsPolicy[policyType] || ilsPolicy[DEFAULT_POLICY_TYPE];
 
   // Return an array of named, approved patron policy schemes
   const validTypes = Object.keys(ilsPolicy);

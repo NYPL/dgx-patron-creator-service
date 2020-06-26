@@ -266,9 +266,9 @@ async function checkUsername(req, res) {
  */
 async function checkAddress(req, res) {
   let addressResponse;
-  let status;
   try {
     const isWorkAddress = req.body.isWorkAddress || false;
+    const policyType = req.body.policyType || "simplye";
     const address = new Address(req.body.address, soLicenseKey);
     const validatedAddress = await address.validate();
 
@@ -280,12 +280,11 @@ async function checkAddress(req, res) {
       // The response address is the SO validated one. If SO threw an error
       // just use the original address
       address: validatedAddress.address || address,
-      policy: Policy({ policyType: req.body.policyType }),
+      policy: Policy({ policyType }),
     });
-
     // We want to respond with the policy type so the user knows what type
     // of card they'll get with the address they submitted.
-    policyResponse = card.checkCardTypePolicy(isWorkAddress);
+    policyResponse = isWorkAddress ? card.checkWorkType() : card.getCardType();
 
     addressResponse = {
       ...validatedAddress,
@@ -293,7 +292,6 @@ async function checkAddress(req, res) {
       // This covers the case where a card is denied and cardType is null.
       status: !policyResponse.cardType ? 400 : 200,
     };
-    status = validatedAddress.status || 200;
   } catch (error) {
     addressResponse = modelResponse.errorResponseData(
       collectErrorResponseData(
@@ -304,10 +302,9 @@ async function checkAddress(req, res) {
         ""
       ) // eslint-disable-line comma-dangle
     );
-    status = addressResponse.status;
   }
 
-  renderResponse(req, res, status, addressResponse);
+  renderResponse(req, res, addressResponse.status, addressResponse);
 }
 
 /**
@@ -326,12 +323,18 @@ async function checkAddress(req, res) {
  * @param {HTTP response} res
  */
 async function createPatron(req, res) {
-  let address = new Address(req.body.address, soLicenseKey);
+  let address = req.body.address
+    ? new Address(req.body.address, soLicenseKey)
+    : undefined;
+  let workAddress = req.body.workAddress
+    ? new Address(req.body.workAddress, soLicenseKey)
+    : undefined;
   const policyType = req.body.policyType || "simplye";
   const policy = Policy({ policyType });
   const card = new Card({
     name: req.body.name, // from req
     address: address, // created above
+    workAddress: workAddress,
     username: req.body.username, // from req
     pin: req.body.pin, // from req
     email: req.body.email, // from req
@@ -353,6 +356,7 @@ async function createPatron(req, res) {
     const cardValidation = await card.validate();
     validCard = cardValidation.valid;
     errors = cardValidation.errors;
+    console.log("what?", validCard, errors);
   } catch (error) {
     // If there was a problem hitting the ILS or Service Objects while
     // attempting to validate the username or address, catch that error here

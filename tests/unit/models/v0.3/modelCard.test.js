@@ -922,7 +922,7 @@ describe('Card', () => {
     });
   });
 
-  describe('checkCardTypePolicy', () => {
+  describe('getCardType', () => {
     const simplyePolicy = Policy();
     const addressNotNY = new Address({ city: 'Hoboken', state: 'New Jersey' });
 
@@ -935,7 +935,7 @@ describe('Card', () => {
 
       // The card must be denied to get the right response.
       expect(card.cardDenied(card.address)).toEqual(true);
-      expect(card.checkCardTypePolicy()).toEqual(Card.RESPONSES.cardDenied);
+      expect(card.getCardType()).toEqual(Card.RESPONSES.cardDenied);
     });
 
     it('returns a temporary card for residential work addresses', () => {
@@ -950,7 +950,7 @@ describe('Card', () => {
       });
       const isWorkAddress = true;
 
-      expect(card.checkCardTypePolicy(isWorkAddress)).toEqual(
+      expect(card.getCardType(isWorkAddress)).toEqual(
         Card.RESPONSES.temporaryCard,
       );
     });
@@ -967,7 +967,7 @@ describe('Card', () => {
       });
       const isWorkAddress = false;
 
-      expect(card.checkCardTypePolicy(isWorkAddress)).toEqual(
+      expect(card.getCardType(isWorkAddress)).toEqual(
         Card.RESPONSES.temporaryCard,
       );
     });
@@ -984,7 +984,7 @@ describe('Card', () => {
       });
       const isWorkAddress = false;
 
-      expect(card.checkCardTypePolicy(isWorkAddress)).toEqual(
+      expect(card.getCardType(isWorkAddress)).toEqual(
         Card.RESPONSES.standardCard,
       );
     });

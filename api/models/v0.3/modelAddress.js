@@ -100,42 +100,6 @@ class Address {
   }
 
   /**
-   * residentialWorkAddress(isWorkAddress)
-   * Returns true if the current address is a residential work address.
-   *
-   * @param {boolean} isWorkAddress
-   */
-  residentialWorkAddress(isWorkAddress) {
-    return isWorkAddress && this.address.isResidential;
-  }
-
-  /**
-   * nonResidentialWorkAddress(isWorkAddress)
-   * Returns true if the current address is a non-residential home address.
-   *
-   * @param {boolean} isWorkAddress
-   */
-  nonResidentialHomeAddress(isWorkAddress) {
-    return !isWorkAddress && !this.address.isResidential;
-  }
-
-  /**
-   * addressForTemporaryCard(isWorkAddress)
-   * Returns true if the current address is a residential work address or
-   * a non-residential home address for a temporary card.
-   *
-   * @param {boolean} isWorkAddress
-   */
-  addressForTemporaryCard(isWorkAddress) {
-    if (this.residentialWorkAddress(isWorkAddress)) {
-      return true;
-    } else if (this.nonResidentialHomeAddress(isWorkAddress)) {
-      return true;
-    }
-    return false;
-  }
-
-  /**
    * validateInAPI()
    */
   async validateInAPI() {
