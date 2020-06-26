@@ -27,16 +27,14 @@ const CardValidator = () => {
 
   const validate = async (card) => {
     // Will throw an error if the username is not valid.
-    // const validUsername = await card.checkValidUsername();
-    // if (!validUsername.available) {
-    //   card.errors["username"] = validUsername.response.message;
-    // }
+    const validUsername = await card.checkValidUsername();
+    if (!validUsername.available) {
+      card.errors["username"] = validUsername.response.message;
+    }
 
     // Validating the home address and an optional work address:
     card = await validateAddresses(card);
 
-    console.log("check", card.errors);
-    card.errors.address = "just a mock";
     if (card.email && !/^[^@]+@[^@]+$/.test(card.email)) {
       card.errors["email"] = "Email address must be valid";
     }
@@ -64,8 +62,6 @@ const CardValidator = () => {
     }
 
     // Work Address is optional.
-    // TODO: verify that - if the home address is in nys, then
-    // we don't have to worry about the work address.
     if (card.workAddress) {
       // The work address needs to be valid for a card. It's okay if the
       // work address is not valid, use the home address only instead.
@@ -75,12 +71,15 @@ const CardValidator = () => {
     // Now the card object has updated home and work addresses that have been
     // validated by Service Objects. Now check to see what type of card the
     // patron gets based on the policy and addresses.
-
-    // Check card.policy for address limitations.
     // it will be denied for home addresses not in nys. if not in nys but there's
     // a work address in nyc, then grant a temporary card.
-    const cardType = card.getCardType();
-    console.log("cardType", cardType);
+    card.cardType = card.getCardType();
+    // If the card is denied, return the error and don't go any further. This
+    // includes not having a work address to check if the patron at least
+    // works in NYC.
+    if (!card.cardType.cardType) {
+      card.errors["address"] = card.cardType.message;
+    }
 
     return card;
   };
@@ -190,6 +189,7 @@ class Card {
     this.expirationDate = undefined;
     this.agency = undefined;
     this.valid = false;
+    this.cardType = {};
   }
 
   /**
@@ -374,8 +374,8 @@ class Card {
     let now = new Date();
     let policy = this.policy.policy;
     let policyDays = this.isTemporary
-      ? policy.cardType["standard"]
-      : policy.cardType["temporary"];
+      ? policy.cardType["temporary"]
+      : policy.cardType["standard"];
 
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
@@ -404,7 +404,10 @@ class Card {
     // the webApplicant policy doesn't have service area.
     if (!this.policy.policy.serviceArea) {
       this.setTemporary();
-      return Card.RESPONSES["temporaryCard"];
+      return {
+        ...Card.RESPONSES["temporaryCard"],
+        reason: "The policy for this card is web applicant.",
+      };
     }
 
     // otherwise it's a simplye policy. They are denied if the card's home
@@ -413,7 +416,11 @@ class Card {
     if (!this.livesInState()) {
       if (this.worksInCity()) {
         this.setTemporary();
-        return Card.RESPONSES["temporaryCard"];
+        return {
+          ...Card.RESPONSES["temporaryCard"],
+          reason:
+            "The home address is not in New York State but the work address is in New York City.",
+        };
       }
       return Card.RESPONSES["cardDenied"];
     }
@@ -424,7 +431,10 @@ class Card {
       !(this.address.inCity(this.policy) && this.address.address.isResidential)
     ) {
       this.setTemporary();
-      return Card.RESPONSES["temporaryCard"];
+      return {
+        ...Card.RESPONSES["temporaryCard"],
+        reason: "The home address is in NYC but is not residential.",
+      };
     }
     return Card.RESPONSES["standardCard"];
   }
@@ -438,6 +448,12 @@ class Card {
       return new Date(birthdate);
     }
     return;
+  }
+
+  setPatronId(data) {
+    if (data.link) {
+      this.patronId = parseInt(data.link.split("/").pop(), 10);
+    }
   }
 
   /**
@@ -472,6 +488,7 @@ class Card {
     // Now create the patron in the ILS.
     try {
       response = await this.ilsClient.createPatron(this);
+      this.setPatronId(response.data);
     } catch (error) {
       if (this.policy.isRequiredField("barcode")) {
         // We want to catch the error from creating a patron here to be able to
@@ -502,7 +519,7 @@ class Card {
     if (this.patronId) {
       details = {
         ...details,
-        patronId: this.patronId.substring(1, 7), // from (1..7)
+        patronId: this.patronId,
       };
     }
 
@@ -515,25 +532,15 @@ class Card {
    */
   selectMessage() {
     if (!this.isTemporary) {
-      return "Your library card has been created.";
+      return this.cardType.message;
     }
 
-    const residentialWorkAddress =
-      this.workAddress && this.workAddress.address.isResidential;
-    const nonResidentialHomeAddress = this.address.address.isResidential;
-    let reason;
-
-    if (!nonResidentialHomeAddress) {
-      reason = "address";
-    } else if (residentialWorkAddress) {
-      reason = "work address";
-    } else {
-      reason = "personal information";
-    }
+    const { message, reason } = this.cardType;
 
     // Expiration in days.
     const expiration = this.policy.policy.cardType["temporary"];
-    return `Your library card is temporary because your ${reason} could not be verified. Visit your local NYPL branch within ${expiration} days to upgrade to a standard card.`;
+    const expirationString = `Visit your local NYPL branch within ${expiration} days to upgrade to a standard card.`;
+    return `${message} ${reason} ${expirationString}`;
   }
 }
 
@@ -545,12 +552,11 @@ Card.RESPONSES = {
   },
   temporaryCard: {
     cardType: "temporary",
-    message:
-      "This address will result in a temporary library card. You must visit an NYPL branch within the next 30 days to receive a standard card.",
+    message: "The library card will be a temporary library card.",
   },
   standardCard: {
     cardType: "standard",
-    message: "This valid address will result in a standard library card.",
+    message: "The library card will be a standard library card.",
   },
 };
 

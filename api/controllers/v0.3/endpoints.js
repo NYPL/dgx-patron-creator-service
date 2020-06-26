@@ -356,7 +356,6 @@ async function createPatron(req, res) {
     const cardValidation = await card.validate();
     validCard = cardValidation.valid;
     errors = cardValidation.errors;
-    console.log("what?", validCard, errors);
   } catch (error) {
     // If there was a problem hitting the ILS or Service Objects while
     // attempting to validate the username or address, catch that error here
