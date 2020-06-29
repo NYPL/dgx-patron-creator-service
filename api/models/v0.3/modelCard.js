@@ -370,13 +370,27 @@ class Card {
     this.isTemporary = true;
   }
 
-  setExpirationDate() {
-    let now = new Date();
-    let policy = this.policy.policy;
-    let policyDays = this.isTemporary
+  /**
+   * getExpirationDays()
+   * Get the number of days that the current card is set to expired
+   * based on the current policy.
+   */
+  getExpirationDays() {
+    const policy = this.policy.policy;
+    return this.isTemporary
       ? policy.cardType["temporary"]
       : policy.cardType["standard"];
-
+  }
+  /**
+   * setExpirationDate()
+   * Set's the expiration date for the account based on the current policy and
+   * whether the card is temporary or not. The card validation must be
+   * executed before this function to check whether the card is temporary or
+   * it will always be set to temporary.
+   */
+  setExpirationDate() {
+    const now = new Date();
+    const policyDays = this.getExpirationDays();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
     const currentDay = now.getDate();
@@ -389,19 +403,36 @@ class Card {
     this.expirationDate = expirationDate;
   }
 
+  /**
+   * checkWorkType()
+   * This is used in the /validations/address endpoint only.
+   * The `address` is used as a work address, so never return a standard
+   * card. Now check if the work address is in the city. If it is,
+   * it is a temporary card, otherwise it's denied.
+   */
   checkWorkType() {
-    // If the `address` is used as a work address, then never return standard,
-    // check if the work address is in the city. if it is, it is temporary,
-    // otherwise it's denied.
-    // This is used in the /validations/address endpoint only.
     return this.address.inCity(this.policy)
       ? Card.RESPONSES["temporaryCard"]
       : Card.RESPONSES["cardDenied"];
   }
 
+  /**
+   * getCardType()
+   * Returns an object response with what type of card, based on the policy and
+   * the patron's address, is processed.
+   * - Web applicants always get a temporary card.
+   * - For simplye applicants:
+   *   denied - if the home address is not in NYS and there is no work address
+   *           or the work address is not in NYC.
+   *   temporary - 1 - if the home address is not in NYS but the work address
+   *           is in NYC.
+   *             - 2 - if they are in NYC but the address is not residential
+   *   standard - the patron is in NYC and has a residential home address,
+   *           regardless if they have a work address or not.
+   */
   getCardType() {
-    // is this for a web applicant? they always get a temporary card since
-    // the webApplicant policy doesn't have service area.
+    // Is this card for a web applicant? They always get a temporary card since
+    // the webApplicant policy doesn't have a service area.
     if (!this.policy.policy.serviceArea) {
       this.setTemporary();
       return {
@@ -410,7 +441,7 @@ class Card {
       };
     }
 
-    // otherwise it's a simplye policy. They are denied if the card's home
+    // Otherwise it's a simplye policy. They are denied if the card's home
     // address is not in NY state and there is no work address, or there is a
     // work address but it's not in NYC.
     if (!this.livesInState()) {
@@ -436,6 +467,7 @@ class Card {
         reason: "The home address is in NYC but is not residential.",
       };
     }
+
     return Card.RESPONSES["standardCard"];
   }
 
@@ -450,8 +482,14 @@ class Card {
     return;
   }
 
+  /**
+   * setPatronId(data)
+   * Parses the id from the response `link` string from the ILS, and sets
+   * it on `this.patronId`.
+   * @param {object} data
+   */
   setPatronId(data) {
-    if (data.link) {
+    if (data && data.link) {
       this.patronId = parseInt(data.link.split("/").pop(), 10);
     }
   }
@@ -535,7 +573,7 @@ class Card {
       return this.cardType.message;
     }
 
-    const { message, reason } = this.cardType;
+    const { message, reason = "" } = this.cardType;
 
     // Expiration in days.
     const expiration = this.policy.policy.cardType["temporary"];
