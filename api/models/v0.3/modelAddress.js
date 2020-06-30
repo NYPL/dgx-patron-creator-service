@@ -1,5 +1,6 @@
 /* eslint-disable */
 const AddressValidationAPI = require("../../controllers/v0.3/AddressValidationAPI");
+const { SONoLicenseKeyError } = require("../../helpers/errors");
 
 /**
  * Creates objects with proper address structure and validates
@@ -103,6 +104,10 @@ class Address {
    * validateInAPI()
    */
   async validateInAPI() {
+    if (!this.soLicenseKey) {
+      throw new SONoLicenseKeyError("No license key passed in validateInAPI.");
+    }
+
     const { validate } = AddressValidationAPI({
       soLicenseKey: this.soLicenseKey,
     });
@@ -118,14 +123,20 @@ class Address {
   async validate() {
     const fullAddressLength = (this.address.line1 + this.address.line2).length;
     if (fullAddressLength > 100) {
-      this.errors[
-        "line1"
-      ] = `Address lines must be less than 100 characters combined. The address is currently at ${fullAddressLength} characters.`;
-      return false;
+      const message = `Address lines must be less than 100 characters combined. The address is currently at ${fullAddressLength} characters.`;
+      this.errors["line1"] = message;
+      return {
+        error: {
+          message,
+        },
+      };
     }
     // return the current address since it's already validated;
     if (this.hasBeenValidated) {
-      return this;
+      return {
+        type: "valid-address",
+        ...this,
+      };
     }
 
     const validation = await this.validateInAPI();

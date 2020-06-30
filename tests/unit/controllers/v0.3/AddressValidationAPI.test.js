@@ -2,7 +2,6 @@
 const AddressValidationAPI = require("../../../../api/controllers/v0.3/AddressValidationAPI");
 const ServiceObjectsClient = require("../../../../api/controllers/v0.3/ServiceObjectsClient");
 const Address = require("../../../../api/models/v0.3/modelAddress");
-const { Card } = require("../../../../api/models/v0.3/modelCard");
 const {
   SOAuthorizationError,
   SOIntegrationError,

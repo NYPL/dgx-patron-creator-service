@@ -15,7 +15,7 @@ const {
  * directly talk to an API so it's placed in this same file as a simple class.
  */
 const CardValidator = () => {
-  const UNVALIDATED_ADDRESS_ERROR = "Address has not been validated.";
+  const NO_ADDRESS_ERROR = "An address was not added to the card.";
 
   /**
    * validate(card)
@@ -53,7 +53,7 @@ const CardValidator = () => {
 
   const validateAddresses = async (card) => {
     if (!card.address) {
-      card.errors["address"] = UNVALIDATED_ADDRESS_ERROR;
+      card.errors["address"] = NO_ADDRESS_ERROR;
       // There's no home address so don't bother checking the work address.
       return card;
     } else {
@@ -92,7 +92,7 @@ const CardValidator = () => {
    * @param {Card object} card
    * @param {string} addressType - "address" or "workAddress"
    */
-  const validateAddress = async (card, addressType) => {
+  const validateAddress = async (card, addressType = "address") => {
     let addressResponse = await card[addressType].validate();
     if (addressResponse.address) {
       // The validated address from SO is not an Address object, so create it:
@@ -145,6 +145,7 @@ const CardValidator = () => {
     validate,
     // Exposing to test
     validateAddress,
+    validateAddresses,
     validateBirthdate,
   };
 };

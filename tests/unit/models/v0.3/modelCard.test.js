@@ -50,7 +50,13 @@ const invalid = {
 };
 
 describe('CardValidator', () => {
-  const { validateBirthdate } = CardValidator();
+  const cardValidator = CardValidator();
+  const {
+    // validate,
+    validateAddress,
+    validateAddresses,
+    validateBirthdate,
+  } = cardValidator;
 
   describe('validateBirthdate', () => {
     it("returns no errors if the policy doesn't require it", () => {
@@ -89,8 +95,239 @@ describe('CardValidator', () => {
     });
   });
 
-  describe('validateAddresses', () => {});
-  describe('validateAddress', () => {});
+  describe('validateAddress', () => {
+    it('should throw an error if Service Objects threw an error', async () => {
+      const card = new Card({
+        ...basicCard,
+        policy: Policy(),
+      });
+
+      const oldValidate = card.address.validate;
+      // `address.validate()` calls Service Objects, but mock an error.
+      card.address.validate = jest
+        .fn()
+        .mockRejectedValueOnce(new Error('Something happened in SO.'));
+
+      await expect(validateAddress(card, 'address')).rejects.toThrow(
+        'Something happened in SO.',
+      );
+
+      // Resetting or clearing the mock isn't working so restoring it this way:
+      card.address.validate = oldValidate;
+    });
+
+    it('should update the errors object in the card if any errors are returned', async () => {
+      const card = new Card({
+        ...basicCard,
+        workAddress: new Address({}, 'soLicenseKey'),
+        policy: Policy(),
+      });
+
+      // An error is caught and returned as an object, not as a thrown error.
+      const jestMock = jest.fn().mockReturnValue({
+        error: { message: 'something bad happened' },
+      });
+      const oldValidate = card.address.validate;
+      const oldWorkValidate = card.workAddress.validate;
+      card.address.validate = jestMock;
+      card.workAddress.validate = jestMock;
+
+      expect(card.errors).toEqual({});
+
+      // Check the card's `address` first.
+      await validateAddress(card, 'address');
+      expect(card.errors).toEqual({ address: 'something bad happened' });
+
+      // Messages get added to the `errors` object for each type of address
+      // that was checked by the `validateAddress` method. Here we check
+      // the card's `workAddress`.
+      await validateAddress(card, 'workAddress');
+      expect(card.errors).toEqual({
+        address: 'something bad happened',
+        workAddress: 'something bad happened',
+      });
+
+      card.address.validate = oldValidate;
+      card.workAddress.validate = oldWorkValidate;
+    });
+
+    it('should update the addresses based on typed and updated validated values', async () => {
+      const card = new Card({
+        ...basicCard,
+        address: new Address({ city: 'Woodside', state: 'NY' }, 'soLicenseKey'),
+        workAddress: new Address(
+          { city: 'New York', state: 'NY' },
+          'soLicenseKey',
+        ),
+        policy: Policy(),
+      });
+
+      const mockAddressValidate = jest.fn().mockReturnValue({
+        address: {
+          city: 'Woodside',
+          state: 'NY',
+          zip: '11377',
+          isResidential: true,
+          hasBeenValidated: true,
+        },
+      });
+      const mockWorkAddressValidate = jest.fn().mockReturnValue({
+        address: {
+          city: 'New York',
+          state: 'NY',
+          zip: '10018',
+          isResidential: false,
+          hasBeenValidated: true,
+        },
+      });
+
+      // Mock these functions.
+      card.address.validate = mockAddressValidate;
+      card.workAddress.validate = mockWorkAddressValidate;
+
+      // The original `address` and `workAddress` did not have a zip code
+      // and both have `hasBeenValidated`=false.
+      expect(card.address.address).toEqual({
+        city: 'Woodside',
+        county: '',
+        isResidential: false,
+        line1: '',
+        line2: '',
+        state: 'NY',
+        zip: '',
+      });
+      expect(card.address.hasBeenValidated).toEqual(false);
+      expect(card.workAddress.address).toEqual({
+        city: 'New York',
+        county: '',
+        isResidential: false,
+        line1: '',
+        line2: '',
+        state: 'NY',
+        zip: '',
+      });
+      expect(card.workAddress.hasBeenValidated).toEqual(false);
+
+      // Now call the validate function:
+      await validateAddress(card, 'address');
+      await validateAddress(card, 'workAddress');
+
+      // We expect the `card.address` object to be updated to the validated
+      // address that Service Objects returned through `address.validate`
+      // which is the function we mocked.
+      // What has changed is a new zip code, SO says it's residential only
+      // for the home address, and it's now `hasBeenValidated` = true.
+      expect(card.address.address).toEqual({
+        city: 'Woodside',
+        county: '',
+        isResidential: true,
+        line1: '',
+        line2: '',
+        state: 'NY',
+        zip: '11377',
+      });
+      expect(card.address.hasBeenValidated).toEqual(true);
+      expect(card.workAddress.address).toEqual({
+        city: 'New York',
+        county: '',
+        isResidential: false,
+        line1: '',
+        line2: '',
+        state: 'NY',
+        zip: '10018',
+      });
+      expect(card.workAddress.hasBeenValidated).toEqual(true);
+    });
+  });
+
+  // This function updates the `card`'s `cardType response value calling
+  // `card.getCardType` which has its own set of tests. Only doing a couple
+  // here since more are covered in that set of tests.
+  describe('validateAddresses', () => {
+    it('returns an error if there is no home address', async () => {
+      const card = new Card({
+        ...basicCard,
+        address: undefined,
+      });
+
+      await validateAddresses(card);
+
+      expect(card.errors).toEqual({
+        address: 'An address was not added to the card.',
+      });
+    });
+
+    it('should update the cardType response to denied for an address not in NYS', async () => {
+      let card = new Card({
+        ...basicCard,
+        address: new Address({ city: 'Hoboken', state: 'NJ' }),
+        policy: Policy(),
+      });
+
+      const mockAddressValidate = jest.fn().mockReturnValue({
+        address: {
+          city: 'Hoboken',
+          state: 'NJ',
+          zip: '07030',
+          isResidential: true,
+          hasBeenValidated: true,
+        },
+      });
+      card.address.validate = mockAddressValidate;
+
+      expect(card.cardType).toEqual({});
+      // validateAddresses returns the `card` with updated values but the
+      // real change is in `card.cardType`.
+      card = await validateAddresses(card);
+      expect(card.cardType).toEqual({
+        cardType: null,
+        message:
+          'Library cards are only available for residents of New York State or students and commuters working in New York City.',
+      });
+    });
+
+    it('should update the cardType response to temporary for an address not in NYS but work address in NYC', async () => {
+      let card = new Card({
+        ...basicCard,
+        address: new Address({ city: 'Hoboken', state: 'NJ' }),
+        workAddress: new Address({ citY: 'New York', state: 'NY' }),
+        policy: Policy(),
+      });
+
+      const mockAddressValidate = jest.fn().mockReturnValue({
+        address: {
+          city: 'Hoboken',
+          state: 'NJ',
+          zip: '07030',
+          isResidential: true,
+          hasBeenValidated: true,
+        },
+      });
+      const mockWorkAddressValidate = jest.fn().mockReturnValue({
+        address: {
+          city: 'New York',
+          state: 'NY',
+          zip: '10018',
+          isResidential: false,
+          hasBeenValidated: true,
+        },
+      });
+      card.address.validate = mockAddressValidate;
+      card.workAddress.validate = mockWorkAddressValidate;
+
+      expect(card.cardType).toEqual({});
+      // validateAddresses returns the `card` with updated values but the
+      // real change is in `card.cardType`.
+      card = await validateAddresses(card);
+      expect(card.cardType).toEqual({
+        cardType: 'temporary',
+        message: 'The library card will be a temporary library card.',
+        reason:
+          'The home address is not in New York State but the work address is in New York City.',
+      });
+    });
+  });
+
   describe('validate', () => {});
 });
 
