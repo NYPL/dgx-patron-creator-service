@@ -131,10 +131,9 @@ const CardValidator = () => {
       }
 
       if (minAge > age) {
-        // TODO acquire an appropriate error message here for below minimum age.
-        card.errors["age"] = [
-          `Date of birth is below the minimum age of ${minAge}.`,
-        ];
+        card.errors[
+          "age"
+        ] = `Date of birth is below the minimum age of ${minAge}.`;
       }
     }
     return card;

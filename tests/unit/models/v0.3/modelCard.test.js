@@ -52,7 +52,7 @@ const invalid = {
 describe('CardValidator', () => {
   const cardValidator = CardValidator();
   const {
-    // validate,
+    validate,
     validateAddress,
     validateAddresses,
     validateBirthdate,
@@ -90,7 +90,7 @@ describe('CardValidator', () => {
       const validatedCard = validateBirthdate(card);
 
       expect(validatedCard.errors).toEqual({
-        age: ['Date of birth is below the minimum age of 13.'],
+        age: 'Date of birth is below the minimum age of 13.',
       });
     });
   });
@@ -328,7 +328,149 @@ describe('CardValidator', () => {
     });
   });
 
-  describe('validate', () => {});
+  describe('validate', () => {
+    it('should fail if the username is not valid', async () => {
+      const card = new Card({
+        ...basicCard,
+        email: 'test@email.com',
+        address: new Address({ city: 'Hoboken', state: 'NJ' }),
+        policy: Policy({ policyType: 'simplye' }),
+      });
+
+      const mockAddressValidate = jest.fn().mockReturnValue({
+        address: {
+          city: 'Woodside',
+          state: 'NY',
+          zip: '11377',
+          isResidential: true,
+        },
+      });
+      card.address.validate = mockAddressValidate;
+      // Mock that the UsernameValidationAPI returned an error response:
+      card.checkValidUsername = jest.fn().mockReturnValue({
+        available: false,
+        response: { message: 'uhuh bad username' },
+      });
+
+      const result = await validate(card);
+
+      expect(result).toEqual({
+        card,
+        valid: false,
+      });
+      expect(result.card.errors).toEqual({
+        username: 'uhuh bad username',
+      });
+    });
+
+    it('should fail if email is not valid', async () => {
+      const card = new Card({
+        ...basicCard,
+        email: 'test@',
+        policy: Policy({ policyType: 'simplye' }),
+      });
+      const mockAddressValidate = jest.fn().mockReturnValue({
+        address: {
+          city: 'Woodside',
+          state: 'NY',
+          zip: '11377',
+          isResidential: true,
+        },
+      });
+      card.address.validate = mockAddressValidate;
+      // Mock that the UsernameValidationAPI returned an error response:
+      card.checkValidUsername = jest.fn().mockReturnValue({
+        available: true,
+        response: { message: 'the username is valid' },
+      });
+
+      const result = await validate(card);
+
+      expect(result).toEqual({
+        card,
+        valid: false,
+      });
+      expect(result.card.errors).toEqual({
+        email: 'Email address must be valid',
+      });
+    });
+
+    // This is for the "webApplicant" policy type only.
+    it('should fail if age is under 13', async () => {
+      const card = new Card({
+        ...basicCard,
+        birthdate: '01/01/2010',
+        email: 'test@email.com',
+        policy: Policy({ policyType: 'webApplicant' }),
+      });
+      const mockAddressValidate = jest.fn().mockReturnValue({
+        address: {
+          city: 'Woodside',
+          state: 'NY',
+          zip: '11377',
+          isResidential: true,
+        },
+      });
+      card.address.validate = mockAddressValidate;
+      // Mock that the UsernameValidationAPI returned an error response:
+      card.checkValidUsername = jest.fn().mockReturnValue({
+        available: true,
+        response: { message: 'the username is valid' },
+      });
+
+      const result = await validate(card);
+      const minimumAge = card.policy.policyField('minimumAge');
+      expect(result).toEqual({
+        card,
+        valid: false,
+      });
+      expect(result.card.errors).toEqual({
+        age: `Date of birth is below the minimum age of ${minimumAge}.`,
+      });
+    });
+
+    it('should fail if there is no home address', async () => {
+      const card = new Card({
+        ...basicCard,
+        address: undefined,
+        email: 'test@email.com',
+        policy: Policy({ policyType: 'simplye' }),
+      });
+      // Mock that the UsernameValidationAPI returned an error response:
+      card.checkValidUsername = jest.fn().mockReturnValue({
+        available: true,
+        response: { message: 'the username is valid' },
+      });
+
+      const result = await validate(card);
+      expect(result).toEqual({
+        card,
+        valid: false,
+      });
+      expect(result.card.errors).toEqual({
+        address: 'An address was not added to the card.',
+      });
+    });
+
+    it('should return a valid response along with the card if all the values are correct', async () => {
+      const card = new Card({
+        ...basicCard,
+        email: 'test@email.com',
+        policy: Policy({ policyType: 'simplye' }),
+      });
+      // Mock that the UsernameValidationAPI returned an error response:
+      card.checkValidUsername = jest.fn().mockReturnValue({
+        available: true,
+        response: { message: 'the username is valid' },
+      });
+
+      const result = await validate(card);
+      expect(result).toEqual({
+        card,
+        valid: true,
+      });
+    });
+  });
 });
 
 describe('Card', () => {
@@ -370,7 +512,118 @@ describe('Card', () => {
     });
   });
 
-  describe('validate', () => {});
+  describe('validate', () => {
+    it('should fail if there are no name, username, pin, or address values', async () => {
+      const cardNoName = new Card({
+        name: '',
+        username: 'username',
+        pin: '1234',
+        address: {},
+      });
+      const cardNoUsername = new Card({
+        name: 'name',
+        username: '',
+        pin: '1234',
+        address: {},
+      });
+      const cardNoPin = new Card({
+        name: 'name',
+        username: 'username',
+        pin: '',
+        address: {},
+      });
+      const cardNoAddress = new Card({
+        name: 'name',
+        username: 'username',
+        pin: '1234',
+        address: undefined,
+      });
+
+      await expect(cardNoName.validate()).rejects.toThrow(
+        "'name', 'address', 'username', and 'pin' are all required.",
+      );
+      await expect(cardNoUsername.validate()).rejects.toThrow(
+        "'name', 'address', 'username', and 'pin' are all required.",
+      );
+      await expect(cardNoPin.validate()).rejects.toThrow(
+        "'name', 'address', 'username', and 'pin' are all required.",
+      );
+      await expect(cardNoAddress.validate()).rejects.toThrow(
+        "'name', 'address', 'username', and 'pin' are all required.",
+      );
+    });
+
+    it('should fail the pin is not 4 digits', async () => {
+      const cardBadPin1 = new Card({
+        name: 'name',
+        username: 'username',
+        pin: '12',
+        address: {},
+      });
+      const cardBadPin2 = new Card({
+        name: 'name',
+        username: 'username',
+        pin: '12345',
+        address: {},
+      });
+
+      await expect(cardBadPin1.validate()).rejects.toThrow(
+        'PIN should be 4 numeric characters only. Please revise your PIN.',
+      );
+      await expect(cardBadPin2.validate()).rejects.toThrow(
+        'PIN should be 4 numeric characters only. Please revise your PIN.',
+      );
+    });
+
+    it('should fail for simplye policies without an email', async () => {
+      const cardNoEmail = new Card({
+        ...basicCard,
+        email: undefined,
+        policy: Policy({ policyType: 'simplye' }),
+      });
+
+      await expect(cardNoEmail.validate()).rejects.toThrow(
+        'email cannot be empty',
+      );
+    });
+    it('should fail for webApplicant policies without a birthdate', async () => {
+      const cardNoEmail = new Card({
+        ...basicCard,
+        birthdate: undefined,
+        policy: Policy({ policyType: 'webApplicant' }),
+      });
+
+      await expect(cardNoEmail.validate()).rejects.toThrow(
+        'birthdate cannot be empty',
+      );
+    });
+
+    // Internally, `card.validate` calls `CardValidator.validate` which is
+    // tested in-depth above.
+    it('should return a validated card', async () => {
+      const card = new Card({
+        ...basicCard,
+        email: 'email@email.com',
+        policy: Policy({ policyType: 'simplye' }),
+      });
+      const mockAddressValidate = jest.fn().mockReturnValue({
+        address: {
+          city: 'Woodside',
+          state: 'NY',
+          zip: '11377',
+          isResidential: true,
+        },
+      });
+      card.address.validate = mockAddressValidate;
+      // Mock that the UsernameValidationAPI returned an error response:
+      card.checkValidUsername = jest.fn().mockReturnValue({
+        available: true,
+        response: { message: 'Available username' },
+      });
+      const response = await card.validate();
+      expect(response).toEqual({ valid: true, errors: {} });
+    });
+  });
   describe('getOrCreateAddress', () => {
     const soLicenseKey = 'soLicenseKey';
     const rawAddress = {
