@@ -15,7 +15,7 @@ const {
  * directly talk to an API so it's placed in this same file as a simple class.
  */
 const CardValidator = () => {
-  const UNVALIDATED_ADDRESS_ERROR = "Address has not been validated.";
+  const NO_ADDRESS_ERROR = "An address was not added to the card.";
 
   /**
    * validate(card)
@@ -26,26 +26,14 @@ const CardValidator = () => {
    */
 
   const validate = async (card) => {
-    if (card.workAddress) {
-      // There is a work address so the home address needs to be present,
-      // confirmed, and normalized, but it doesn't need to meet the usual
-      // home address policy requirements.
-      if (!card.address || !card.address.hasBeenValidated) {
-        card.errors["address"] = UNVALIDATED_ADDRESS_ERROR;
-      }
-
-      // The work address needs to be valid for a card.
-      card = await validateAddress(card, "workAddress", true);
-    } else {
-      // Without a work address, the home address must be valid for a card.
-      card = await validateAddress(card, "address");
-    }
-
     // Will throw an error if the username is not valid.
     const validUsername = await card.checkValidUsername();
     if (!validUsername.available) {
       card.errors["username"] = validUsername.response.message;
     }
+
+    // Validating the home address and an optional work address:
+    card = await validateAddresses(card);
 
     if (card.email && !/^[^@]+@[^@]+$/.test(card.email)) {
       card.errors["email"] = "Email address must be valid";
@@ -63,6 +51,39 @@ const CardValidator = () => {
     }
   };
 
+  const validateAddresses = async (card) => {
+    if (!card.address) {
+      card.errors["address"] = NO_ADDRESS_ERROR;
+      // There's no home address so don't bother checking the work address.
+      return card;
+    } else {
+      // The home address must be validated for a card.
+      card = await validateAddress(card, "address");
+    }
+
+    // Work Address is optional.
+    if (card.workAddress) {
+      // The work address needs to be valid for a card. It's okay if the
+      // work address is not valid, use the home address only instead.
+      card = await validateAddress(card, "workAddress");
+    }
+
+    // Now the card object has updated home and work addresses that have been
+    // validated by Service Objects. Now check to see what type of card the
+    // patron gets based on the policy and addresses.
+    // it will be denied for home addresses not in nys. if not in nys but there's
+    // a work address in nyc, then grant a temporary card.
+    card.cardType = card.getCardType();
+    // If the card is denied, return the error and don't go any further. This
+    // includes not having a work address to check if the patron at least
+    // works in NYC.
+    if (!card.cardType.cardType) {
+      card.errors["address"] = card.cardType.message;
+    }
+
+    return card;
+  };
+
   /**
    * validateAddress(card, addressType, workAddress)
    * Returns the card object with updated validated address or errors based
@@ -70,30 +91,22 @@ const CardValidator = () => {
    *
    * @param {Card object} card
    * @param {string} addressType - "address" or "workAddress"
-   * @param {boolean} isWorkAddress
    */
-  const validateAddress = async (card, addressType, workAddress = null) => {
-    let validAddress = await card[addressType].validate();
-
-    if (validAddress.address) {
+  const validateAddress = async (card, addressType = "address") => {
+    let addressResponse = await card[addressType].validate();
+    if (addressResponse.address) {
+      // The validated address from SO is not an Address object, so create it:
       const address = new Address(
         {
-          ...validAddress.address,
-          hasBeenValidated: validAddress.address.hasBeenValidated,
+          ...addressResponse.address,
+          hasBeenValidated: addressResponse.address.hasBeenValidated,
         },
         card[addressType].soLicenseKey
       );
-      // Check card.policy for address limitations.
-      if (card.cardDenied(address, workAddress)) {
-        const message = Card.RESPONSES["cardDenied"]["message"];
-        card.errors[addressType] = message;
-      } else if (address.addressForTemporaryCard(workAddress)) {
-        card.setTemporary();
-      }
       // Reset the card's address type input to the validated version.
       card[addressType] = address;
     } else {
-      card.errors[addressType] = UNVALIDATED_ADDRESS_ERROR;
+      card.errors[addressType] = addressResponse.error.message;
     }
 
     return card;
@@ -118,10 +131,9 @@ const CardValidator = () => {
       }
 
       if (minAge > age) {
-        // TODO acquire an appropriate error message here for below minimum age.
-        card.errors["age"] = [
-          `Date of birth is below the minimum age of ${minAge}.`,
-        ];
+        card.errors[
+          "age"
+        ] = `Date of birth is below the minimum age of ${minAge}.`;
       }
     }
     return card;
@@ -132,6 +144,7 @@ const CardValidator = () => {
     validate,
     // Exposing to test
     validateAddress,
+    validateAddresses,
     validateBirthdate,
   };
 };
@@ -150,15 +163,12 @@ const cardValidator = CardValidator();
 class Card {
   constructor(args) {
     this.name = args["name"];
-    this.address =
-      args["address"] instanceof Address
-        ? args["address"]
-        : new Address(args["address"]);
+    this.address = this.getOrCreateAddress(args["address"]);
+    this.workAddress = this.getOrCreateAddress(args["workAddress"]);
     this.username = args["username"];
     this.pin = args["pin"];
     this.email = args["email"] || "";
     this.birthdate = this.normalizedBirthdate(args["birthdate"]);
-    this.workAddress = args["workAddress"] || "";
     this.ecommunicationsPref = args["ecommunicationsPref"] || false;
     this.policy = args["policy"] || "";
     this.isTemporary = false;
@@ -179,6 +189,20 @@ class Card {
     this.expirationDate = undefined;
     this.agency = undefined;
     this.valid = false;
+    this.cardType = {};
+  }
+
+  /**
+   * getOrCreateAddress(address)
+   * If the address argument is an Address object, then return it. Otherwise,
+   * create a new Addres object with the argument object.
+   * @param {object} address
+   */
+  getOrCreateAddress(address) {
+    if (!address) {
+      return;
+    }
+    return address instanceof Address ? address : new Address(address);
   }
 
   /**
@@ -346,14 +370,27 @@ class Card {
     this.isTemporary = true;
   }
 
+  /**
+   * getExpirationDays()
+   * Get the number of days that the current card is set to expired
+   * based on the current policy.
+   */
+  getExpirationDays() {
+    const policy = this.policy.policy;
+    return this.isTemporary
+      ? policy.cardType["temporary"]
+      : policy.cardType["standard"];
+  }
+  /**
+   * setExpirationDate()
+   * Set's the expiration date for the account based on the current policy and
+   * whether the card is temporary or not. The card validation must be
+   * executed before this function to check whether the card is temporary or
+   * it will always be set to temporary.
+   */
   setExpirationDate() {
-    let now = new Date();
-    let policy = this.policy.policy;
-
-    let policyDays = this.determinePermanentCard()
-      ? policy.cardType["standard"]
-      : policy.cardType["temporary"];
-
+    const now = new Date();
+    const policyDays = this.getExpirationDays();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
     const currentDay = now.getDate();
@@ -366,35 +403,72 @@ class Card {
     this.expirationDate = expirationDate;
   }
 
-  determinePermanentCard() {
-    // False if a patron's existing work address isn't commercial
-    if (this.workAddress && this.workAddress.isResidential) {
-      return false;
-    }
-
-    // False if patron provides a home address that is not residential
-    // False if patron policy is not the default (simplye)
-    return this.address.isResidential && this.policy.isDefault;
+  /**
+   * checkWorkType()
+   * This is used in the /validations/address endpoint only.
+   * The `address` is used as a work address, so never return a standard
+   * card. Now check if the work address is in the city. If it is,
+   * it is a temporary card, otherwise it's denied.
+   */
+  checkWorkType() {
+    return this.address.inCity(this.policy)
+      ? Card.RESPONSES["temporaryCard"]
+      : Card.RESPONSES["cardDenied"];
   }
 
   /**
-   * cardDenied()
-   * Returns true if the card's address is not in NY state. Returns false if
-   * the card is for a web applicant (no serviceArea fields), if they don't
-   * live in NY state but work in NYC.
+   * getCardType()
+   * Returns an object response with what type of card, based on the policy and
+   * the patron's address, is processed.
+   * - Web applicants always get a temporary card.
+   * - For simplye applicants:
+   *   denied - if the home address is not in NYS and there is no work address
+   *           or the work address is not in NYC.
+   *   temporary - 1 - if the home address is not in NYS but the work address
+   *           is in NYC.
+   *             - 2 - if they are in NYC but the address is not residential
+   *   standard - the patron is in NYC and has a residential home address,
+   *           regardless if they have a work address or not.
    */
-  cardDenied(address, isWorkAddress) {
-    if (this.policy.policy.serviceArea) {
-      // If they are not in NY state, check to see if the patron
-      // works in NYC.
-      if (!address.inState(this.policy)) {
-        if (isWorkAddress) {
-          return false;
-        }
-        return true;
-      }
+  getCardType() {
+    // Is this card for a web applicant? They always get a temporary card since
+    // the webApplicant policy doesn't have a service area.
+    if (!this.policy.policy.serviceArea) {
+      this.setTemporary();
+      return {
+        ...Card.RESPONSES["temporaryCard"],
+        reason: "The policy for this card is web applicant.",
+      };
     }
-    return false;
+
+    // Otherwise it's a simplye policy. They are denied if the card's home
+    // address is not in NY state and there is no work address, or there is a
+    // work address but it's not in NYC.
+    if (!this.livesInState()) {
+      if (this.worksInCity()) {
+        this.setTemporary();
+        return {
+          ...Card.RESPONSES["temporaryCard"],
+          reason:
+            "The home address is not in New York State but the work address is in New York City.",
+        };
+      }
+      return Card.RESPONSES["cardDenied"];
+    }
+
+    // they're in nys but make sure they are in nyc and is a residential
+    // address for a standard card.
+    if (
+      !(this.address.inCity(this.policy) && this.address.address.isResidential)
+    ) {
+      this.setTemporary();
+      return {
+        ...Card.RESPONSES["temporaryCard"],
+        reason: "The home address is in NYC but is not residential.",
+      };
+    }
+
+    return Card.RESPONSES["standardCard"];
   }
 
   /**
@@ -406,6 +480,18 @@ class Card {
       return new Date(birthdate);
     }
     return;
+  }
+
+  /**
+   * setPatronId(data)
+   * Parses the id from the response `link` string from the ILS, and sets
+   * it on `this.patronId`.
+   * @param {object} data
+   */
+  setPatronId(data) {
+    if (data && data.link) {
+      this.patronId = parseInt(data.link.split("/").pop(), 10);
+    }
   }
 
   /**
@@ -440,6 +526,7 @@ class Card {
     // Now create the patron in the ILS.
     try {
       response = await this.ilsClient.createPatron(this);
+      this.setPatronId(response.data);
     } catch (error) {
       if (this.policy.isRequiredField("barcode")) {
         // We want to catch the error from creating a patron here to be able to
@@ -451,22 +538,6 @@ class Card {
     }
 
     return response;
-  }
-
-  /**
-   * checkCardTypePolicy(workAddress)
-   * Returns a response object based on the type of card that is set.
-   *
-   * @param {boolean} workAddress
-   */
-  checkCardTypePolicy(workAddress = false) {
-    if (this.cardDenied(this.address, workAddress)) {
-      return Card.RESPONSES["cardDenied"];
-    } else if (this.address.addressForTemporaryCard(workAddress)) {
-      return Card.RESPONSES["temporaryCard"];
-    } else {
-      return Card.RESPONSES["standardCard"];
-    }
   }
 
   /**
@@ -486,7 +557,7 @@ class Card {
     if (this.patronId) {
       details = {
         ...details,
-        patronId: this.patronId.substring(1, 7), // from (1..7)
+        patronId: this.patronId,
       };
     }
 
@@ -499,24 +570,15 @@ class Card {
    */
   selectMessage() {
     if (!this.isTemporary) {
-      return "Your library card has been created.";
+      return this.cardType.message;
     }
 
-    const residentialWorkAddress =
-      this.workAddress && this.workAddress.address.isResidential;
-    let reason;
-
-    if (!this.address.address.isResidential) {
-      reason = "address";
-    } else if (residentialWorkAddress) {
-      reason = "work address";
-    } else {
-      reason = "personal information";
-    }
+    const { message, reason = "" } = this.cardType;
 
     // Expiration in days.
     const expiration = this.policy.policy.cardType["temporary"];
-    return `Your library card is temporary because your ${reason} could not be verified. Visit your local NYPL branch within ${expiration} days to upgrade to a standard card.`;
+    const expirationString = `Visit your local NYPL branch within ${expiration} days to upgrade to a standard card.`;
+    return `${message} ${reason} ${expirationString}`;
   }
 }
 
@@ -528,12 +590,11 @@ Card.RESPONSES = {
   },
   temporaryCard: {
     cardType: "temporary",
-    message:
-      "This address will result in a temporary library card. You must visit an NYPL branch within the next 30 days to receive a standard card.",
+    message: "The library card will be a temporary library card.",
   },
   standardCard: {
     cardType: "standard",
-    message: "This valid address will result in a standard library card.",
+    message: "The library card will be a standard library card.",
   },
 };
 

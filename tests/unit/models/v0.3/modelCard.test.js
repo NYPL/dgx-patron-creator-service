@@ -50,7 +50,13 @@ const invalid = {
 };
 
 describe('CardValidator', () => {
-  const { validateBirthdate } = CardValidator();
+  const cardValidator = CardValidator();
+  const {
+    validate,
+    validateAddress,
+    validateAddresses,
+    validateBirthdate,
+  } = cardValidator;
 
   describe('validateBirthdate', () => {
     it("returns no errors if the policy doesn't require it", () => {
@@ -84,14 +90,387 @@ describe('CardValidator', () => {
       const validatedCard = validateBirthdate(card);
 
       expect(validatedCard.errors).toEqual({
-        age: ['Date of birth is below the minimum age of 13.'],
+        age: 'Date of birth is below the minimum age of 13.',
       });
     });
   });
 
-  describe('validateAddress', () => {});
+  describe('validateAddress', () => {
+    it('should throw an error if Service Objects threw an error', async () => {
+      const card = new Card({
+        ...basicCard,
+        policy: Policy(),
+      });
 
-  describe('validate', () => {});
+      const oldValidate = card.address.validate;
+      // `address.validate()` calls Service Objects, but mock an error.
+      card.address.validate = jest
+        .fn()
+        .mockRejectedValueOnce(new Error('Something happened in SO.'));
+
+      await expect(validateAddress(card, 'address')).rejects.toThrow(
+        'Something happened in SO.',
+      );
+
+      // Resetting or clearing the mock isn't working so restoring it this way:
+      card.address.validate = oldValidate;
+    });
+
+    it('should update the errors object in the card if any errors are returned', async () => {
+      const card = new Card({
+        ...basicCard,
+        workAddress: new Address({}, 'soLicenseKey'),
+        policy: Policy(),
+      });
+
+      // An error is caught and returned as an object, not as a thrown error.
+      const jestMock = jest.fn().mockReturnValue({
+        error: { message: 'something bad happened' },
+      });
+      const oldValidate = card.address.validate;
+      const oldWorkValidate = card.workAddress.validate;
+      card.address.validate = jestMock;
+      card.workAddress.validate = jestMock;
+
+      expect(card.errors).toEqual({});
+
+      // Check the card's `address` first.
+      await validateAddress(card, 'address');
+      expect(card.errors).toEqual({ address: 'something bad happened' });
+
+      // Messages get added to the `errors` object for each type of address
+      // that was checked by the `validateAddress` method. Here we check
+      // the card's `workAddress`.
+      await validateAddress(card, 'workAddress');
+      expect(card.errors).toEqual({
+        address: 'something bad happened',
+        workAddress: 'something bad happened',
+      });
+
+      card.address.validate = oldValidate;
+      card.workAddress.validate = oldWorkValidate;
+    });
+
+    it('should update the addresses based on typed and updated validated values', async () => {
+      const card = new Card({
+        ...basicCard,
+        address: new Address({ city: 'Woodside', state: 'NY' }, 'soLicenseKey'),
+        workAddress: new Address(
+          { city: 'New York', state: 'NY' },
+          'soLicenseKey',
+        ),
+        policy: Policy(),
+      });
+
+      const mockAddressValidate = jest.fn().mockReturnValue({
+        address: {
+          city: 'Woodside',
+          state: 'NY',
+          zip: '11377',
+          isResidential: true,
+          hasBeenValidated: true,
+        },
+      });
+      const mockWorkAddressValidate = jest.fn().mockReturnValue({
+        address: {
+          city: 'New York',
+          state: 'NY',
+          zip: '10018',
+          isResidential: false,
+          hasBeenValidated: true,
+        },
+      });
+
+      // Mock these functions.
+      card.address.validate = mockAddressValidate;
+      card.workAddress.validate = mockWorkAddressValidate;
+
+      // The original `address` and `workAddress` did not have a zip code
+      // and both have `hasBeenValidated`=false.
+      expect(card.address.address).toEqual({
+        city: 'Woodside',
+        county: '',
+        isResidential: false,
+        line1: '',
+        line2: '',
+        state: 'NY',
+        zip: '',
+      });
+      expect(card.address.hasBeenValidated).toEqual(false);
+      expect(card.workAddress.address).toEqual({
+        city: 'New York',
+        county: '',
+        isResidential: false,
+        line1: '',
+        line2: '',
+        state: 'NY',
+        zip: '',
+      });
+      expect(card.workAddress.hasBeenValidated).toEqual(false);
+
+      // Now call the validate function:
+      await validateAddress(card, 'address');
+      await validateAddress(card, 'workAddress');
+
+      // We expect the `card.address` object to be updated to the validated
+      // address that Service Objects returned through `address.validate`
+      // which is the function we mocked.
+      // What has changed is a new zip code, SO says it's residential only
+      // for the home address, and it's now `hasBeenValidated` = true.
+      expect(card.address.address).toEqual({
+        city: 'Woodside',
+        county: '',
+        isResidential: true,
+        line1: '',
+        line2: '',
+        state: 'NY',
+        zip: '11377',
+      });
+      expect(card.address.hasBeenValidated).toEqual(true);
+      expect(card.workAddress.address).toEqual({
+        city: 'New York',
+        county: '',
+        isResidential: false,
+        line1: '',
+        line2: '',
+        state: 'NY',
+        zip: '10018',
+      });
+      expect(card.workAddress.hasBeenValidated).toEqual(true);
+    });
+  });
+
+  // This function updates the `card`'s `cardType response value calling
+  // `card.getCardType` which has its own set of tests. Only doing a couple
+  // here since more are covered in that set of tests.
+  describe('validateAddresses', () => {
+    it('returns an error if there is no home address', async () => {
+      const card = new Card({
+        ...basicCard,
+        address: undefined,
+      });
+
+      await validateAddresses(card);
+
+      expect(card.errors).toEqual({
+        address: 'An address was not added to the card.',
+      });
+    });
+
+    it('should update the cardType response to denied for an address not in NYS', async () => {
+      let card = new Card({
+        ...basicCard,
+        address: new Address({ city: 'Hoboken', state: 'NJ' }),
+        policy: Policy(),
+      });
+
+      const mockAddressValidate = jest.fn().mockReturnValue({
+        address: {
+          city: 'Hoboken',
+          state: 'NJ',
+          zip: '07030',
+          isResidential: true,
+          hasBeenValidated: true,
+        },
+      });
+      card.address.validate = mockAddressValidate;
+
+      expect(card.cardType).toEqual({});
+      // validateAddresses returns the `card` with updated values but the
+      // real change is in `card.cardType`.
+      card = await validateAddresses(card);
+      expect(card.cardType).toEqual({
+        cardType: null,
+        message:
+          'Library cards are only available for residents of New York State or students and commuters working in New York City.',
+      });
+    });
+
+    it('should update the cardType response to temporary for an address not in NYS but work address in NYC', async () => {
+      let card = new Card({
+        ...basicCard,
+        address: new Address({ city: 'Hoboken', state: 'NJ' }),
+        workAddress: new Address({ citY: 'New York', state: 'NY' }),
+        policy: Policy(),
+      });
+
+      const mockAddressValidate = jest.fn().mockReturnValue({
+        address: {
+          city: 'Hoboken',
+          state: 'NJ',
+          zip: '07030',
+          isResidential: true,
+          hasBeenValidated: true,
+        },
+      });
+      const mockWorkAddressValidate = jest.fn().mockReturnValue({
+        address: {
+          city: 'New York',
+          state: 'NY',
+          zip: '10018',
+          isResidential: false,
+          hasBeenValidated: true,
+        },
+      });
+      card.address.validate = mockAddressValidate;
+      card.workAddress.validate = mockWorkAddressValidate;
+
+      expect(card.cardType).toEqual({});
+      // validateAddresses returns the `card` with updated values but the
+      // real change is in `card.cardType`.
+      card = await validateAddresses(card);
+      expect(card.cardType).toEqual({
+        cardType: 'temporary',
+        message: 'The library card will be a temporary library card.',
+        reason:
+          'The home address is not in New York State but the work address is in New York City.',
+      });
+    });
+  });
+
+  describe('validate', () => {
+    it('should fail if the username is not valid', async () => {
+      const card = new Card({
+        ...basicCard,
+        email: 'test@email.com',
+        address: new Address({ city: 'Hoboken', state: 'NJ' }),
+        policy: Policy({ policyType: 'simplye' }),
+      });
+
+      const mockAddressValidate = jest.fn().mockReturnValue({
+        address: {
+          city: 'Woodside',
+          state: 'NY',
+          zip: '11377',
+          isResidential: true,
+        },
+      });
+      card.address.validate = mockAddressValidate;
+      // Mock that the UsernameValidationAPI returned an error response:
+      card.checkValidUsername = jest.fn().mockReturnValue({
+        available: false,
+        response: { message: 'uhuh bad username' },
+      });
+
+      const result = await validate(card);
+
+      expect(result).toEqual({
+        card,
+        valid: false,
+      });
+      expect(result.card.errors).toEqual({
+        username: 'uhuh bad username',
+      });
+    });
+
+    it('should fail if email is not valid', async () => {
+      const card = new Card({
+        ...basicCard,
+        email: 'test@',
+        policy: Policy({ policyType: 'simplye' }),
+      });
+      const mockAddressValidate = jest.fn().mockReturnValue({
+        address: {
+          city: 'Woodside',
+          state: 'NY',
+          zip: '11377',
+          isResidential: true,
+        },
+      });
+      card.address.validate = mockAddressValidate;
+      // Mock that the UsernameValidationAPI returned an error response:
+      card.checkValidUsername = jest.fn().mockReturnValue({
+        available: true,
+        response: { message: 'the username is valid' },
+      });
+
+      const result = await validate(card);
+
+      expect(result).toEqual({
+        card,
+        valid: false,
+      });
+      expect(result.card.errors).toEqual({
+        email: 'Email address must be valid',
+      });
+    });
+
+    // This is for the "webApplicant" policy type only.
+    it('should fail if age is under 13', async () => {
+      const card = new Card({
+        ...basicCard,
+        birthdate: '01/01/2010',
+        email: 'test@email.com',
+        policy: Policy({ policyType: 'webApplicant' }),
+      });
+      const mockAddressValidate = jest.fn().mockReturnValue({
+        address: {
+          city: 'Woodside',
+          state: 'NY',
+          zip: '11377',
+          isResidential: true,
+        },
+      });
+      card.address.validate = mockAddressValidate;
+      // Mock that the UsernameValidationAPI returned an error response:
+      card.checkValidUsername = jest.fn().mockReturnValue({
+        available: true,
+        response: { message: 'the username is valid' },
+      });
+
+      const result = await validate(card);
+      const minimumAge = card.policy.policyField('minimumAge');
+      expect(result).toEqual({
+        card,
+        valid: false,
+      });
+      expect(result.card.errors).toEqual({
+        age: `Date of birth is below the minimum age of ${minimumAge}.`,
+      });
+    });
+
+    it('should fail if there is no home address', async () => {
+      const card = new Card({
+        ...basicCard,
+        address: undefined,
+        email: 'test@email.com',
+        policy: Policy({ policyType: 'simplye' }),
+      });
+      // Mock that the UsernameValidationAPI returned an error response:
+      card.checkValidUsername = jest.fn().mockReturnValue({
+        available: true,
+        response: { message: 'the username is valid' },
+      });
+
+      const result = await validate(card);
+      expect(result).toEqual({
+        card,
+        valid: false,
+      });
+      expect(result.card.errors).toEqual({
+        address: 'An address was not added to the card.',
+      });
+    });
+
+    it('should return a valid response along with the card if all the values are correct', async () => {
+      const card = new Card({
+        ...basicCard,
+        email: 'test@email.com',
+        policy: Policy({ policyType: 'simplye' }),
+      });
+      // Mock that the UsernameValidationAPI returned an error response:
+      card.checkValidUsername = jest.fn().mockReturnValue({
+        available: true,
+        response: { message: 'the username is valid' },
+      });
+
+      const result = await validate(card);
+      expect(result).toEqual({
+        card,
+        valid: true,
+      });
+    });
+  });
 });
 
 describe('Card', () => {
@@ -133,7 +512,143 @@ describe('Card', () => {
     });
   });
 
-  describe('validate', () => {});
+  describe('validate', () => {
+    it('should fail if there are no name, username, pin, or address values', async () => {
+      const cardNoName = new Card({
+        name: '',
+        username: 'username',
+        pin: '1234',
+        address: {},
+      });
+      const cardNoUsername = new Card({
+        name: 'name',
+        username: '',
+        pin: '1234',
+        address: {},
+      });
+      const cardNoPin = new Card({
+        name: 'name',
+        username: 'username',
+        pin: '',
+        address: {},
+      });
+      const cardNoAddress = new Card({
+        name: 'name',
+        username: 'username',
+        pin: '1234',
+        address: undefined,
+      });
+
+      await expect(cardNoName.validate()).rejects.toThrow(
+        "'name', 'address', 'username', and 'pin' are all required.",
+      );
+      await expect(cardNoUsername.validate()).rejects.toThrow(
+        "'name', 'address', 'username', and 'pin' are all required.",
+      );
+      await expect(cardNoPin.validate()).rejects.toThrow(
+        "'name', 'address', 'username', and 'pin' are all required.",
+      );
+      await expect(cardNoAddress.validate()).rejects.toThrow(
+        "'name', 'address', 'username', and 'pin' are all required.",
+      );
+    });
+
+    it('should fail the pin is not 4 digits', async () => {
+      const cardBadPin1 = new Card({
+        name: 'name',
+        username: 'username',
+        pin: '12',
+        address: {},
+      });
+      const cardBadPin2 = new Card({
+        name: 'name',
+        username: 'username',
+        pin: '12345',
+        address: {},
+      });
+
+      await expect(cardBadPin1.validate()).rejects.toThrow(
+        'PIN should be 4 numeric characters only. Please revise your PIN.',
+      );
+      await expect(cardBadPin2.validate()).rejects.toThrow(
+        'PIN should be 4 numeric characters only. Please revise your PIN.',
+      );
+    });
+
+    it('should fail for simplye policies without an email', async () => {
+      const cardNoEmail = new Card({
+        ...basicCard,
+        email: undefined,
+        policy: Policy({ policyType: 'simplye' }),
+      });
+
+      await expect(cardNoEmail.validate()).rejects.toThrow(
+        'email cannot be empty',
+      );
+    });
+    it('should fail for webApplicant policies without a birthdate', async () => {
+      const cardNoEmail = new Card({
+        ...basicCard,
+        birthdate: undefined,
+        policy: Policy({ policyType: 'webApplicant' }),
+      });
+
+      await expect(cardNoEmail.validate()).rejects.toThrow(
+        'birthdate cannot be empty',
+      );
+    });
+
+    // Internally, `card.validate` calls `CardValidator.validate` which is
+    // tested in-depth above.
+    it('should return a validated card', async () => {
+      const card = new Card({
+        ...basicCard,
+        email: 'email@email.com',
+        policy: Policy({ policyType: 'simplye' }),
+      });
+      const mockAddressValidate = jest.fn().mockReturnValue({
+        address: {
+          city: 'Woodside',
+          state: 'NY',
+          zip: '11377',
+          isResidential: true,
+        },
+      });
+      card.address.validate = mockAddressValidate;
+      // Mock that the UsernameValidationAPI returned an error response:
+      card.checkValidUsername = jest.fn().mockReturnValue({
+        available: true,
+        response: { message: 'Available username' },
+      });
+      const response = await card.validate();
+      expect(response).toEqual({ valid: true, errors: {} });
+    });
+  });
+  describe('getOrCreateAddress', () => {
+    const soLicenseKey = 'soLicenseKey';
+    const rawAddress = {
+      line1: '476 5th Avenue',
+      city: 'Woodside',
+      state: 'NY',
+      zip: '10018',
+    };
+    const address = new Address(rawAddress, soLicenseKey);
+    const card = new Card(basicCard);
+
+    it('should returned undefined if no arguments were passed', () => {
+      expect(card.getOrCreateAddress()).toEqual(undefined);
+    });
+
+    it("create a new Address object is an Address instance isn't passed", () => {
+      const addressInstance = card.getOrCreateAddress(rawAddress);
+      expect(addressInstance instanceof Address).toEqual(true);
+    });
+
+    it('if an existing Address object is passed, just return it', () => {
+      const addressInstance = card.getOrCreateAddress(address);
+      expect(addressInstance).toEqual(address);
+    });
+  });
 
   describe('checkValidUsername', () => {
     const card = new Card(basicCard);
@@ -646,7 +1161,7 @@ describe('Card', () => {
         policy: simplyePolicy,
       });
 
-      // patrons in the metro area are ptype of '2'
+      // patrons in the metro area are ptype of "2"
       cardInNYC.setPtype();
       expect(cardInNYC.ptype).toEqual(2);
       cardWorksInNYC.setPtype();
@@ -660,7 +1175,7 @@ describe('Card', () => {
         policy: simplyePolicy,
       });
 
-      // patrons in the NY state area are ptype of '3'
+      // patrons in the NY state area are ptype of "3"
       cardNYState.setPtype();
       expect(cardNYState.ptype).toEqual(3);
     });
@@ -710,58 +1225,272 @@ describe('Card', () => {
     });
   });
 
-  describe('cardDenied', () => {
-    const simplyePolicy = Policy();
-    const webApplicant = Policy({ policyType: 'webApplicant' });
+  describe('getExpirationDays', () => {
+    it('it returns a standard or temporary expiration for simplye policy', () => {
+      const card = new Card({
+        ...basicCard,
+        policy: Policy({ policyType: 'simplye' }),
+      });
+
+      // A standard card has an expiration of 3 years or 1095 days.
+      expect(card.isTemporary).toEqual(false);
+      expect(card.getExpirationDays()).toEqual(1095);
+
+      // A temporary card has an expiration of 30 days.
+      card.isTemporary = true;
+      expect(card.getExpirationDays()).toEqual(30);
+    });
+
+    it('it returns a standard or temporary expiration for webApplicant policy', () => {
+      const card = new Card({
+        ...basicCard,
+        policy: Policy({ policyType: 'webApplicant' }),
+      });
+
+      // A temporary or standard card has an expiration of 90 days.
+      expect(card.isTemporary).toEqual(false);
+      expect(card.getExpirationDays()).toEqual(90);
+
+      card.isTemporary = true;
+      expect(card.getExpirationDays()).toEqual(90);
+    });
+  });
+
+  describe('setExpirationDate', () => {
+    const simplyeCard = new Card({
+      ...basicCard,
+      policy: Policy({ policyType: 'simplye' }),
+    });
+    const webCard = new Card({
+      ...basicCard,
+      policy: Policy({ policyType: 'webApplicant' }),
+    });
+
+    it('should set the temporary expiration date to 30 days for simplye policy', () => {
+      const today = new Date(2020, 6, 1);
+      const expirationDate = new Date(2020, 6, 1 + 30);
+      const spy = jest
+        .spyOn(global, 'Date')
+        .mockReturnValueOnce(today)
+        .mockReturnValueOnce(expirationDate);
+
+      simplyeCard.isTemporary = true;
+      simplyeCard.setExpirationDate();
+      expect(simplyeCard.expirationDate).toEqual(expirationDate);
+      spy.mockRestore();
+    });
+
+    it('should set the standard expiration date to 3 years for simplye policy', () => {
+      const today = new Date(2020, 6, 1);
+      const expirationDate = new Date(2023, 7, 1);
+      const spy = jest
+        .spyOn(global, 'Date')
+        .mockReturnValue(today)
+        .mockReturnValue(expirationDate);
+
+      simplyeCard.isTemporary = false;
+      simplyeCard.setExpirationDate();
+      expect(simplyeCard.expirationDate).toEqual(expirationDate);
+      spy.mockRestore();
+    });
+
+    it('should set the temporary expiration date to 90 days for webApplicant policy', () => {
+      const today = new Date(2020, 6, 1);
+      const expirationDate = new Date(2020, 9, 1);
+      const spy = jest
+        .spyOn(global, 'Date')
+        .mockReturnValue(today)
+        .mockReturnValue(expirationDate);
+
+      expect(webCard.isTemporary).toEqual(false);
+      webCard.setExpirationDate();
+      expect(webCard.expirationDate).toEqual(expirationDate);
+      spy.mockRestore();
+    });
+
+    it('should set the standard expiration date to 90 years for webApplicant policy', () => {
+      const today = new Date(2020, 6, 1);
+      const expirationDate = new Date(2023, 9, 1);
+      const spy = jest
+        .spyOn(global, 'Date')
+        .mockReturnValue(today)
+        .mockReturnValue(expirationDate);
+
+      webCard.isTemporary = true;
+      webCard.setExpirationDate();
+      expect(webCard.expirationDate).toEqual(expirationDate);
+      spy.mockRestore();
+    });
+  });
+
+  // This is used in the /validations/address endpoint only. This assumes that
+  // the `address` is meant to be a work address, so only a temporary or
+  // a denied response will be returned.
+  describe('checkWorkType', () => {
+    const workAddressInNYC = new Address({
+      line1: '476 5th Avenue',
+      city: 'New York',
+      state: 'NY',
+      zip: '10018',
+    });
+    const workAddressNotInNYC = new Address({
+      line1: '1234 1st',
+      city: 'Hoboken',
+      state: 'NJ',
+    });
+    it('should return a denied response for an address not in NYC', () => {
+      const simplyeCard = new Card({
+        ...basicCard,
+        address: workAddressNotInNYC,
+        policy: Policy({ policyType: 'simplye' }),
+      });
+      const webApplicantCard = new Card({
+        ...basicCard,
+        address: workAddressNotInNYC,
+        policy: Policy({ policyType: 'webApplicant' }),
+      });
+
+      expect(simplyeCard.checkWorkType()).toEqual({
+        cardType: null,
+        message:
+          'Library cards are only available for residents of New York State or students and commuters working in New York City.',
+      });
+      expect(webApplicantCard.checkWorkType()).toEqual({
+        cardType: null,
+        message:
+          'Library cards are only available for residents of New York State or students and commuters working in New York City.',
+      });
+    });
+
+    it('should return a temporary response for an address in NYC', () => {
+      const simplyeCard = new Card({
+        ...basicCard,
+        address: workAddressInNYC,
+        policy: Policy({ policyType: 'simplye' }),
+      });
+
+      expect(simplyeCard.checkWorkType()).toEqual({
+        cardType: 'temporary',
+        message: 'The library card will be a temporary library card.',
+      });
+    });
+  });
+
+  describe('getCardType', () => {
+    const simplyePolicy = Policy({ policyType: 'simplye' });
     const addressNotNY = new Address({ city: 'Hoboken', state: 'New Jersey' });
-    const addressNY = new Address({ city: 'New York City', state: 'New York' });
 
-    it('returns false for web applicants, anyone can get a card', () => {
+    it('returns a temporary card for web applicants', () => {
       const card = new Card({
         ...basicCard,
-        policy: webApplicant,
+        address: new Address({
+          city: 'New York',
+          state: 'New York',
+          isResidential: 'false',
+        }),
+        policy: Policy({ policyType: 'webApplicant' }),
+      });
+      const cardNotNY = new Card({
+        ...basicCard,
+        address: addressNotNY,
+        policy: Policy({ policyType: 'webApplicant' }),
       });
 
-      // It doesn't matter if it's a work address or not.
-      const isWorkAddress = undefined;
-      // It can check any address, but check its own for now.
-      expect(card.cardDenied(card.address, isWorkAddress)).toEqual(false);
+      expect(card.getCardType()).toEqual({
+        ...Card.RESPONSES.temporaryCard,
+        reason: 'The policy for this card is web applicant.',
+      });
+      expect(cardNotNY.getCardType()).toEqual({
+        ...Card.RESPONSES.temporaryCard,
+        reason: 'The policy for this card is web applicant.',
+      });
     });
 
-    it('returns true if they are not in NY state', () => {
+    it('returns a card denied response if the address is not in NYS and there is no work address', () => {
       const card = new Card({
         ...basicCard,
         address: addressNotNY,
         policy: simplyePolicy,
       });
 
-      // It doesn't matter if it's a work address or not.
-      const isWorkAddress = undefined;
-      expect(card.cardDenied(card.address, isWorkAddress)).toEqual(true);
+      // The card is denied since the address is not in NYS.
+      expect(card.getCardType()).toEqual(Card.RESPONSES.cardDenied);
     });
-
-    // Patrons get a card if they work in NYC.
-    it('returns false if they are not in NY state, but work in NYC', () => {
+    it('returns a card denied response if the address and work address are not in NYS', () => {
+      const workAddressNotInNYC = new Address({
+        city: 'Hoboken',
+        state: 'New Jersey',
+      });
       const card = new Card({
         ...basicCard,
         address: addressNotNY,
+        workAddress: workAddressNotInNYC,
         policy: simplyePolicy,
       });
 
-      const isWorkAddress = true;
-      expect(card.cardDenied(card.address, isWorkAddress)).toEqual(false);
+      expect(card.getCardType()).toEqual(Card.RESPONSES.cardDenied);
     });
 
-    it('returns false if they are in NY state', () => {
+    it('returns a temporary card if the home address is not in NYS but the work address is in NYC', () => {
       const card = new Card({
         ...basicCard,
-        address: addressNY,
+        address: addressNotNY,
+        workAddress: new Address({ city: 'New York', state: 'NY' }),
         policy: simplyePolicy,
       });
 
-      // It doesn't matter if it's a work address or not.
-      const isWorkAddress = undefined;
-      expect(card.cardDenied(card.address, isWorkAddress)).toEqual(false);
+      expect(card.getCardType()).toEqual({
+        ...Card.RESPONSES.temporaryCard,
+        reason:
+          'The home address is not in New York State but the work address is in New York City.',
+      });
+    });
+
+    it('returns a temporary card for non-residential home addresses', () => {
+      const card = new Card({
+        ...basicCard,
+        address: new Address({
+          city: 'New York',
+          state: 'New York',
+          isResidential: 'false',
+        }),
+        policy: simplyePolicy,
+      });
+
+      expect(card.getCardType()).toEqual({
+        ...Card.RESPONSES.temporaryCard,
+        reason: 'The home address is in NYC but is not residential.',
+      });
+    });
+
+    it('returns a standard card', () => {
+      const workAddressNotInNYC = new Address({ city: 'Hoboken', state: 'NY' });
+      const card = new Card({
+        ...basicCard,
+        address: new Address({
+          city: 'New York',
+          state: 'New York',
+          isResidential: 'true',
+        }),
+        policy: simplyePolicy,
+      });
+      const cardWithAddress = new Card({
+        ...basicCard,
+        address: new Address({
+          city: 'New York',
+          state: 'New York',
+          isResidential: 'true',
+        }),
+        workAddress: workAddressNotInNYC,
+        policy: simplyePolicy,
+      });
+
+      expect(card.getCardType()).toEqual(Card.RESPONSES.standardCard);
+      // It doens't matter if they have a work address outside NYC. The
+      // patron lives in NYC so they get a standard card.
+      expect(cardWithAddress.getCardType()).toEqual(
+        Card.RESPONSES.standardCard,
+      );
     });
   });
 
@@ -773,6 +1502,31 @@ describe('Card', () => {
     it('should return a new date object', () => {
       const date = '01/01/1988';
       expect(card.normalizedBirthdate(date)).toEqual(new Date(date));
+    });
+  });
+
+  describe('setPatronId', () => {
+    const card = new Card(basicCard);
+
+    it('should not set the id if there is no data object or link property', () => {
+      card.setPatronId();
+      expect(card.patronId).toEqual(undefined);
+
+      card.setPatronId({});
+      expect(card.patronId).toEqual(undefined);
+    });
+
+    it('should set the id from the link string', () => {
+      const data = {
+        link:
+          'https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/1234',
+      };
+
+      card.setPatronId();
+      expect(card.patronId).toEqual(undefined);
+
+      card.setPatronId(data);
+      expect(card.patronId).toEqual(1234);
     });
   });
 
@@ -795,7 +1549,7 @@ describe('Card', () => {
 
     it('does not attempt to create a barcode for web applicants', async () => {
       IlsClient.mockImplementation(() => ({
-        createPatron: () => 'some patron',
+        createPatron: () => Promise.resolve({ data: { link: 'some patron' } }),
       }));
       const card = new Card({
         ...basicCard,
@@ -814,7 +1568,7 @@ describe('Card', () => {
 
     it('does attempt to create a barcode for simplye applicants', async () => {
       IlsClient.mockImplementation(() => ({
-        createPatron: () => 'some patron',
+        createPatron: () => Promise.resolve({ data: { link: 'some patron' } }),
       }));
       // Mocking that a barcode fails to be generated
       Barcode.mockImplementation(() => ({
@@ -838,7 +1592,7 @@ describe('Card', () => {
 
     it('does attempt to create a barcode but fails!', async () => {
       IlsClient.mockImplementation(() => ({
-        createPatron: () => 'some patron',
+        createPatron: () => Promise.resolve({ data: { link: 'some patron' } }),
       }));
       // Mocking that a barcode fails to be generated
       Barcode.mockImplementation(() => ({
@@ -889,6 +1643,7 @@ describe('Card', () => {
       expect(spy).toHaveBeenCalled();
     });
 
+    // TODO:
     it('creates a patron', async () => {
       // Mock that the ILS fails
       IlsClient.mockImplementation(() => ({
@@ -922,74 +1677,6 @@ describe('Card', () => {
     });
   });
 
-  describe('checkCardTypePolicy', () => {
-    const simplyePolicy = Policy();
-    const addressNotNY = new Address({ city: 'Hoboken', state: 'New Jersey' });
-
-    it('returns a card denied object response for any denied card', () => {
-      const card = new Card({
-        ...basicCard,
-        address: addressNotNY,
-        policy: simplyePolicy,
-      });
-
-      // The card must be denied to get the right response.
-      expect(card.cardDenied(card.address)).toEqual(true);
-      expect(card.checkCardTypePolicy()).toEqual(Card.RESPONSES.cardDenied);
-    });
-
-    it('returns a temporary card for residential work addresses', () => {
-      const card = new Card({
-        ...basicCard,
-        address: new Address({
-          city: 'New York',
-          state: 'New York',
-          isResidential: 'true',
-        }),
-        policy: simplyePolicy,
-      });
-      const isWorkAddress = true;
-
-      expect(card.checkCardTypePolicy(isWorkAddress)).toEqual(
-        Card.RESPONSES.temporaryCard,
-      );
-    });
-
-    it('returns a temporary card for non-residential home addresses', () => {
-      const card = new Card({
-        ...basicCard,
-        address: new Address({
-          city: 'New York',
-          state: 'New York',
-          isResidential: 'false',
-        }),
-        policy: simplyePolicy,
-      });
-      const isWorkAddress = false;
-
-      expect(card.checkCardTypePolicy(isWorkAddress)).toEqual(
-        Card.RESPONSES.temporaryCard,
-      );
-    });
-
-    it('returns a standard card', () => {
-      const card = new Card({
-        ...basicCard,
-        address: new Address({
-          city: 'New York',
-          state: 'New York',
-          isResidential: 'true',
-        }),
-        policy: simplyePolicy,
-      });
-      const isWorkAddress = false;
-
-      expect(card.checkCardTypePolicy(isWorkAddress)).toEqual(
-        Card.RESPONSES.standardCard,
-      );
-    });
-  });
-
   // Mock values for now
   describe('details', () => {
     const simplyePolicy = Policy();
@@ -1007,33 +1694,38 @@ describe('Card', () => {
     card.barcode = '123456789';
 
     it('returns an object with basic details', () => {
+      card.cardType = card.getCardType();
       const details = card.details();
 
       expect(details.barcode).toEqual('123456789');
       expect(details.username).toEqual('username');
       expect(details.pin).toEqual('1234');
       expect(details.temporary).toEqual(false);
-      expect(details.message).toEqual('Your library card has been created.');
+      expect(details.message).toEqual(
+        'The library card will be a standard library card.',
+      );
     });
 
     it('adds the patron ID if it was created', () => {
       // mocked for now
       card.patronId = '123456789';
+      card.cardType = card.getCardType();
       const details = card.details();
 
       expect(details.barcode).toEqual('123456789');
       expect(details.username).toEqual('username');
       expect(details.pin).toEqual('1234');
       expect(details.temporary).toEqual(false);
-      expect(details.message).toEqual('Your library card has been created.');
-      // Only takes a certain substring.
-      // TODO: verify it's the correct substring from the source.
-      expect(details.patronId).toEqual('234567');
+      expect(details.message).toEqual(
+        'The library card will be a standard library card.',
+      );
+      expect(details.patronId).toEqual('123456789');
     });
 
     it('returns a temporary card message', () => {
       // mocked for now
       card.isTemporary = true;
+      card.cardType = card.getCardType();
       const details = card.details();
 
       expect(details.barcode).toEqual('123456789');
@@ -1041,58 +1733,119 @@ describe('Card', () => {
       expect(details.pin).toEqual('1234');
       expect(details.temporary).toEqual(true);
       expect(details.message).toEqual(
-        'Your library card is temporary because your personal information could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.',
+        'The library card will be a standard library card.  Visit your local NYPL branch within 30 days to upgrade to a standard card.',
       );
     });
   });
 
+  // Returns the type of card created and a reason if it's temporary or denied.
   describe('selectMessage', () => {
-    const simplyePolicy = Policy();
-    const card = new Card({
-      ...basicCard,
-      address: new Address({
-        city: 'New York',
-        state: 'New York',
-        isResidential: 'true',
-      }),
-      policy: simplyePolicy,
-    });
+    const simplyePolicy = Policy({ policyType: 'simplye' });
 
     it('returns a valid created card message', () => {
-      expect(card.selectMessage()).toEqual(
-        'Your library card has been created.',
-      );
-    });
-
-    it('returns a temporary card message with the generic "personal information" reason', () => {
-      card.isTemporary = true;
-      expect(card.selectMessage()).toEqual(
-        'Your library card is temporary because your personal information could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.',
-      );
-    });
-
-    it('returns a temporary card message with the bad "address" reason', () => {
-      // This happens because the address is not residential.
-      card.isTemporary = true;
-      card.address.address.isResidential = false;
-
-      expect(card.selectMessage()).toEqual(
-        'Your library card is temporary because your address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.',
-      );
-    });
-
-    it('returns a temporary card message with the bad "work address" reason', () => {
-      // This happens because the work address is residential.
-      card.isTemporary = true;
-      card.address.address.isResidential = true;
-      card.workAddress = new Address({
-        city: 'New York',
-        state: 'New York',
-        isResidential: 'true',
+      const card = new Card({
+        ...basicCard,
+        address: new Address({
+          city: 'New York',
+          state: 'New York',
+          isResidential: 'true',
+        }),
+        policy: simplyePolicy,
       });
 
+      card.cardType = card.getCardType();
       expect(card.selectMessage()).toEqual(
-        'Your library card is temporary because your work address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.',
+        'The library card will be a standard library card.',
+      );
+    });
+
+    it('returns a temporary card for web applicants', () => {
+      const card = new Card({
+        ...basicCard,
+        address: new Address({
+          city: 'Hoboken',
+          state: 'NJ',
+        }),
+        policy: Policy({ policyType: 'webApplicant' }),
+      });
+
+      card.isTemporary = true;
+      card.cardType = card.getCardType();
+      expect(card.selectMessage()).toEqual(
+        'The library card will be a temporary library card. The policy for this card is web applicant. Visit your local NYPL branch within 90 days to upgrade to a standard card.',
+      );
+    });
+
+    it('returns a temporary card message since the home address is outside NYS but the work address is in NYC', () => {
+      const card = new Card({
+        ...basicCard,
+        address: new Address({
+          city: 'Hoboken',
+          state: 'NJ',
+        }),
+        workAddress: new Address({ city: 'New York', state: 'NY' }),
+        policy: simplyePolicy,
+      });
+
+      card.isTemporary = true;
+      card.cardType = card.getCardType();
+      expect(card.selectMessage()).toEqual(
+        'The library card will be a temporary library card. The home address is not in New York State but the work address is in New York City. Visit your local NYPL branch within 30 days to upgrade to a standard card.',
+      );
+    });
+
+    it('returns a temporary card for non-residential home addresses', () => {
+      const card = new Card({
+        ...basicCard,
+        address: new Address({
+          city: 'New York',
+          state: 'New York',
+          isResidential: 'false',
+        }),
+        policy: simplyePolicy,
+      });
+
+      card.isTemporary = true;
+      card.cardType = card.getCardType();
+      expect(card.selectMessage()).toEqual(
+        'The library card will be a temporary library card. The home address is in NYC but is not residential. Visit your local NYPL branch within 30 days to upgrade to a standard card.',
+      );
+    });
+
+    it('returns a card denied response if the address is not in NYS and there is no work address', () => {
+      const addressNotInNYS = new Address({
+        city: 'Hoboken',
+        state: 'New Jersey',
+      });
+      const card = new Card({
+        ...basicCard,
+        address: addressNotInNYS,
+        policy: simplyePolicy,
+      });
+
+      card.isTemporary = true;
+      card.cardType = card.getCardType();
+      expect(card.selectMessage()).toEqual(
+        'Library cards are only available for residents of New York State or students and commuters working in New York City.  Visit your local NYPL branch within 30 days to upgrade to a standard card.',
+      );
+    });
+
+    it('returns a card denied response if the address and work address are not in NYS', () => {
+      const addressNotInNYS = new Address({
+        city: 'Hoboken',
+        state: 'New Jersey',
+      });
+      const card = new Card({
+        ...basicCard,
+        address: addressNotInNYS,
+        workAddressNotInCity: addressNotInNYS,
+        policy: simplyePolicy,
+      });
+
+      card.isTemporary = true;
+      card.cardType = card.getCardType();
+      expect(card.selectMessage()).toEqual(
+        'Library cards are only available for residents of New York State or students and commuters working in New York City.  Visit your local NYPL branch within 30 days to upgrade to a standard card.',
       );
     });
   });
