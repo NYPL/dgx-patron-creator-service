@@ -114,6 +114,55 @@
         ]
       }
     },
+    "/v0.3/patrons": {
+      "x-swagger-router-controller": "patrons",
+      "post": {
+        "tags": [
+          "patrons"
+        ],
+        "summary": "Create a Patron",
+        "description": "Create a new patron account via the ILS.",
+        "operationId": "patrons_creatorV03",
+        "parameters": [
+          {
+            "name": "patron",
+            "in": "body",
+            "description": "The information of the new patron",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PatronsCreatorDataV03"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": {
+              "$ref": "#/definitions/PatronsCreatorResponseV03"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/400ErrorResponseV03"
+            }
+          },
+          "502": {
+            "description": "Generic server error",
+            "schema": {
+              "$ref": "#/definitions/502ErrorResponseCreatePatronV03"
+            }
+          }
+        },
+        "security": [
+          {
+            "api_auth": [
+              "openid write:patron offline_access api"
+            ]
+          }
+        ]
+      }
+    },
     "/v0.3/patrons/dependents": {
       "x-swagger-router-controller": "patrons",
       "post": {
@@ -312,6 +361,104 @@
           }
         ]
       }
+    },
+    "/v0.3/validations/username": {
+      "x-swagger-router-controller": "validations/username",
+      "post": {
+        "tags": [
+          "validations"
+        ],
+        "summary": "Patron username validation and availability in the ILS",
+        "description": "Simple username validation and then makes a call to the ILS API for patron username availability.",
+        "operationId": "usernameV0.3",
+        "parameters": [
+          {
+            "name": "username",
+            "in": "body",
+            "description": "The username to be validated and checked for availability",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UsernameData"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": {
+              "$ref": "#/definitions/UsernameResponseV03"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/400ErrorResponseUsernameV03"
+            }
+          },
+          "500": {
+            "description": "Generic server error",
+            "schema": {
+              "$ref": "#/definitions/500ErrorResponseUsernameV03"
+            }
+          }
+        },
+        "security": [
+          {
+            "api_auth": [
+              "openid write:patron offline_access api"
+            ]
+          }
+        ]
+      }
+    },
+    "/v0.3/validations/address": {
+      "x-swagger-router-controller": "validations/address",
+      "post": {
+        "tags": [
+          "validations"
+        ],
+        "summary": "Address validation against Service Objects.",
+        "description": "Makes a call to the Service Objects API for patron address and work address validation.",
+        "operationId": "addressV03",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "body",
+            "description": "The address to be validated",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/AddressDataV03"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": {
+              "$ref": "#/definitions/AddressResponseV03"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/400ErrorResponseAddressV03"
+            }
+          },
+          "500": {
+            "description": "Generic server error",
+            "schema": {
+              "$ref": "#/definitions/502ErrorResponseAddressV03"
+            }
+          }
+        },
+        "security": [
+          {
+            "api_auth": [
+              "openid write:patron offline_access api"
+            ]
+          }
+        ]
+      }
     }
   },
   "definitions": {
@@ -442,6 +589,63 @@
         }
       }
     },
+    "400ErrorResponseUsernameV03": {
+      "properties": {
+        "status": {
+          "type": "number",
+          "example": 400
+        },
+        "type": {
+          "type": "string",
+          "example": "invalid-username"
+        },
+        "message": {
+          "type": "object",
+          "example": "Usernames should be 5-25 characters, letters or numbers only. Please revise your username."
+        },
+        "detail": {
+          "type": "object",
+          "example": {
+            "title": "",
+            "debug": ""
+          },
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "debug": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "400ErrorResponseAddressV03": {
+      "properties": {
+        "status": {
+          "type": "number",
+          "example": 400
+        },
+        "cardType": {
+          "type": "string",
+          "example": null
+        },
+        "type": {
+          "type": "string",
+          "example": "valid-address",
+        },
+        "message": {
+          "type": "string",
+          "example": "Library cards are only available for residents of New York State or students and commuters working in New York City."
+        },
+        "address": {
+          "$ref": "#/definitions/AddressModelValidatedV03"
+        },
+        "originalAddress": {
+          "$ref": "#/definitions/AddressModelV03"
+        }
+      }
+    },
     "400ErrorResponse": {
       "required": [
         "data"
@@ -483,6 +687,42 @@
         }
       ]
     },
+    "502ErrorResponseAddressV03": {
+      "properties": {
+        "status": {
+          "type": "number",
+          "example": 502
+        },
+        "cardType": {
+          "type": "string",
+          "example": "temporary"
+        },
+        "type": {
+          "type": "string",
+          "example": "unrecognized-address",
+        },
+        "message": {
+          "type": "string",
+          "example": "The library card will be a temporary library card."
+        },
+        "originalAddress": {
+          "$ref": "#/definitions/AddressModelV03"
+        },
+        "reason": {
+          "type": "string",
+          "example": "The home address is in NYC but is not residential."
+        },
+        "error": {
+          "type": "object",
+          "example": {
+            "type": "service-objects-integration-error",
+            "name": "SOIntegrationError",
+            "message": "Unexpected response status from Service Objects.",
+            "status": 502
+          }
+        }
+      }
+    },
     "500ErrorResponse": {
       "required": [
         "data"
@@ -523,6 +763,46 @@
           "$ref": "#/definitions/ErrorModelV01"
         }
       ]
+    },
+    "500ErrorResponseUsernameV03": {
+      "properties": {
+        "status": {
+          "type": "string",
+          "example": 502
+        },
+        "type": {
+          "type": "string",
+          "example": "ils-integration-error"
+        },
+        "message": {
+          "type": "string",
+          "example": "The ILS could not be requested when validating the username.",
+        },
+        "detail": {
+          "type": "object",
+          "example": { "title": "", "debug": {} }
+        }
+      }
+    },
+    "502ErrorResponseCreatePatronV03": {
+      "properties": {
+        "status": {
+          "type": "string",
+          "example": 502
+        },
+        "type": {
+          "type": "string",
+          "example": "ils-integration-error"
+        },
+        "message": {
+          "type": "string",
+          "example": "The ILS could not be requested when attempting to create a patron.",
+        },
+        "detail": {
+          "type": "object",
+          "example": { "title": "", "debug": {} }
+        }
+      }
     },
     "400ErrorStatusSimplePatronV01": {
       "properties": {
@@ -649,17 +929,6 @@
             "title": "Not found.",
             "debug": "Invalid endpoint: [POST] /v2/validate/address"
           }
-        }
-      }
-    },
-    "PatronsEligibilityDataV03": {
-      "required": [
-        "barcode"
-      ],
-      "properties": {
-        "barcode": {
-          "type": "string",
-          "example": "12345678912345"
         }
       }
     },
@@ -824,6 +1093,46 @@
             }
           }
         }
+      }
+    },
+    "PatronsCreatorDataV03": {
+      "required": [
+        "names",
+        "username",
+        "pin",
+        "address",
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "example": "TestFirstName, TestLastName"
+        },
+        "username": {
+          "type": "string",
+          "example": "username"
+        },
+        "pin": {
+          "type": "string",
+          "example": "1234"
+        },
+        "address": {
+          "$ref": "#/definitions/AddressModelV03"
+        },
+        "birthdate": {
+          "type": "string",
+          "example": "01-01-1988"
+        },
+        "email": {
+          "type": "string",
+          "example": "test@email.com"
+        },
+        "policyType": {
+          "type": "string",
+          "example": "simplye"
+        },
+        "workAddress": {
+          "$ref": "#/definitions/AddressModelV03"
+        },
       }
     },
     "PatronsCreatorResponseV02": {
@@ -1002,6 +1311,47 @@
             "number": "917-123-4567",
             "type": "t"
           }]
+        }
+      }
+    },
+    "PatronsCreatorResponseV03": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "number",
+          "example": 200
+        },
+        "link": {
+          "type": "string",
+          "example": "https://link.com/to/ils/1234567"
+        },
+        "type": {
+          "type": "string",
+          "example": "card-granted"
+        },
+        "barcode": {
+          "type": "string",
+          "example": "111122222222345"
+        },
+        "username": {
+          "type": "string",
+          "example": "username"
+        },
+        "pin": {
+          "type": "string",
+          "example": "1111"
+        },
+        "temporary": {
+          "type": "boolean",
+          "example": false
+        },
+        "message": {
+          "type": "string",
+          "example": "The library card will be a standard library card."
+        },
+        "patronId": {
+          "type": "number",
+          "example": "1234567"
         }
       }
     },
@@ -1198,6 +1548,30 @@
         }
       }
     },
+    "UsernameResponseV03": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/UsernameResponseModelV03"
+        }
+      }
+    },
+    "UsernameResponseModelV03": {
+      "properties": {
+        "type": {
+          "type": "string",
+          "example": "available-username"
+        },
+        "cardType": {
+          "type": "string",
+          "example": "standard"
+        },
+        "message": {
+          "type": "string",
+          "example": "This username is available."
+        }
+      }
+    },
     "AddressData": {
       "description": "The data format of the input address",
       "required": [
@@ -1211,6 +1585,54 @@
           "type": "boolean",
           "default": false,
           "example": true
+        }
+      }
+    },
+    "AddressDataV03": {
+      "description": "The data format of the input address",
+      "required": [
+        "address"
+      ],
+      "properties": {
+        "address": {
+          "$ref": "#/definitions/AddressModelV03"
+        },
+        "isWorkAddress": {
+          "type": "boolean",
+          "default": false,
+          "example": true
+        },
+        "policyType": {
+          "type": "string",
+          "default": "simplye",
+          "example": "simplye"
+        }
+      }
+    },
+    "AddressResponseV03": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "number",
+          "example": 200
+        },
+        "type": {
+          "type": "string",
+          "example": "valid-address"
+        },
+        "cardType": {
+          "type": "string",
+          "example": "standard"
+        },
+        "message": {
+          "type": "string",
+          "example": "The library card will be a standard library card."
+        },
+        "address": {
+          "$ref": "#/definitions/AddressModelValidatedV03"
+        },
+        "original_address": {
+          "$ref": "#/definitions/AddressModelV03"
         }
       }
     },
@@ -1338,6 +1760,68 @@
         "zip": {
           "type": "string",
           "example": "10018"
+        }
+      }
+    },
+    "AddressModelV03": {
+      "type": "object",
+      "properties": {
+        "line1": {
+          "type": "string",
+          "example": "123 Fake Street"
+        },
+        "line2": {
+          "type": "string",
+          "example": ""
+        },
+        "city": {
+          "type": "string",
+          "example": "New York"
+        },
+        "state": {
+          "type": "string",
+          "example": "NY"
+        },
+        "zip": {
+          "type": "string",
+          "example": "10018"
+        }
+      }
+    },
+    "AddressModelValidatedV03": {
+      "type": "object",
+      "properties": {
+        "line1": {
+          "type": "string",
+          "example": "123 Fake Street"
+        },
+        "line2": {
+          "type": "string",
+          "example": ""
+        },
+        "city": {
+          "type": "string",
+          "example": "New York"
+        },
+        "county": {
+          "type": "string",
+          "example": ""
+        },
+        "state": {
+          "type": "string",
+          "example": "NY"
+        },
+        "zip": {
+          "type": "string",
+          "example": "10018-1234"
+        },
+        "isResidential": {
+          "type": "boolean",
+          "example": true
+        },
+        "hasBeenValidated": {
+          "type": "boolean",
+          "example": true
         }
       }
     }
