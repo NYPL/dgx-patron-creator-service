@@ -632,7 +632,7 @@
         },
         "type": {
           "type": "string",
-          "example": "valid-address",
+          "example": "valid-address"
         },
         "message": {
           "type": "string",
@@ -699,7 +699,7 @@
         },
         "type": {
           "type": "string",
-          "example": "unrecognized-address",
+          "example": "unrecognized-address"
         },
         "message": {
           "type": "string",
@@ -776,7 +776,7 @@
         },
         "message": {
           "type": "string",
-          "example": "The ILS could not be requested when validating the username.",
+          "example": "The ILS could not be requested when validating the username."
         },
         "detail": {
           "type": "object",
@@ -796,7 +796,7 @@
         },
         "message": {
           "type": "string",
-          "example": "The ILS could not be requested when attempting to create a patron.",
+          "example": "The ILS could not be requested when attempting to create a patron."
         },
         "detail": {
           "type": "object",
@@ -1100,7 +1100,7 @@
         "names",
         "username",
         "pin",
-        "address",
+        "address"
       ],
       "properties": {
         "name": {
@@ -1110,6 +1110,10 @@
         "username": {
           "type": "string",
           "example": "username"
+        },
+        "usernameHasBeenValidated": {
+          "type": "boolean",
+          "example": true
         },
         "pin": {
           "type": "string",
@@ -1132,7 +1136,7 @@
         },
         "workAddress": {
           "$ref": "#/definitions/AddressModelV03"
-        },
+        }
       }
     },
     "PatronsCreatorResponseV02": {
@@ -1785,6 +1789,14 @@
         "zip": {
           "type": "string",
           "example": "10018"
+        },
+        "isResidential": {
+          "type": "boolean",
+          "example": true
+        },
+        "hasBeenValidated": {
+          "type": "boolean",
+          "example": true
         }
       }
     },

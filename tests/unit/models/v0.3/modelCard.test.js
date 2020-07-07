@@ -96,6 +96,36 @@ describe('CardValidator', () => {
   });
 
   describe('validateAddress', () => {
+    it('should not call `address.validate` if the address has been validated', async () => {
+      const cardValidAddress = {
+        name: 'First Last',
+        address: new Address(
+          { line1: '476th 5th Ave.', city: 'New York', hasBeenValidated: true },
+          'soLicenseKey',
+        ),
+        username: 'username',
+        pin: '1234',
+        // required for web applicants
+        birthdate: '01/01/1988',
+      };
+      const card = new Card({
+        ...cardValidAddress,
+        policy: Policy(),
+      });
+
+      const oldValidate = card.address.validate;
+      // The return value doesn't matter because we expect it to NOT be called.
+      const mockValidate = jest.fn().mockReturnValue("doesn't matter");
+      card.address.validate = mockValidate;
+
+      await validateAddress(card, 'address');
+
+      expect(mockValidate).not.toHaveBeenCalled();
+
+      // Resetting or clearing the mock isn't working so restoring it this way:
+      card.address.validate = oldValidate;
+    });
+
     it('should throw an error if Service Objects threw an error', async () => {
       const card = new Card({
         ...basicCard,
@@ -104,13 +134,17 @@ describe('CardValidator', () => {
 
       const oldValidate = card.address.validate;
       // `address.validate()` calls Service Objects, but mock an error.
-      card.address.validate = jest
+      const mockValidate = jest
         .fn()
         .mockRejectedValueOnce(new Error('Something happened in SO.'));
+      card.address.validate = mockValidate;
 
       await expect(validateAddress(card, 'address')).rejects.toThrow(
         'Something happened in SO.',
       );
+      // For the rest of the tests, since the `hasBeenValidated` flag is false,
+      // we expect the `address.validate` function to be called.
+      expect(mockValidate).toHaveBeenCalled();
 
       // Resetting or clearing the mock isn't working so restoring it this way:
       card.address.validate = oldValidate;
@@ -712,14 +746,41 @@ describe('Card', () => {
   describe('checkUsernameAvailability', () => {
     const card = new Card(basicCard);
 
-    it('returns an invalid username response', async () => {
+    it("doesn't call the UsernameValidationAPI if the username has already been validated", async () => {
+      const cardWithUsername = new Card({
+        ...basicCard,
+        usernameHasBeenValidated: true,
+      });
+
+      const mockValidate = jest.fn().mockReturnValue(available);
+
       // Mocking that the ILS request returned false and username is invalid.
       UsernameValidationAPI.mockImplementation(() => ({
-        validate: () => invalid,
+        validate: mockValidate,
+        responses: { available },
+      }));
+
+      const usernameAvailability = await cardWithUsername.checkUsernameAvailability();
+      expect(mockValidate).not.toHaveBeenCalled();
+      expect(usernameAvailability.available).toEqual(true);
+      expect(usernameAvailability.response).toEqual(available);
+      mockValidate.mockClear();
+    });
+
+    it('returns an invalid username response', async () => {
+      const mockValidate = jest.fn().mockReturnValue(invalid);
+      // Mocking that the ILS request returned false and username is invalid.
+      UsernameValidationAPI.mockImplementation(() => ({
+        validate: mockValidate,
         responses: { available },
       }));
 
       const usernameAvailability = await card.checkUsernameAvailability();
+      // The `UsernameValidationAPI.validate` function is now always called
+      // since we now never set `usernameHasBeenValidated` to true. This holds
+      // for the rest of the tests even though a spy isn't created.
+      expect(mockValidate).toHaveBeenCalled();
+      expect(mockValidate).toHaveBeenCalledWith('username');
       expect(usernameAvailability.available).toEqual(false);
       expect(usernameAvailability.response).toEqual(invalid);
     });

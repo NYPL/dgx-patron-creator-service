@@ -93,6 +93,15 @@ const CardValidator = () => {
    * @param {string} addressType - "address" or "workAddress"
    */
   const validateAddress = async (card, addressType = "address") => {
+    // If the address has already been validated by the
+    // /api/validations/address endpoint, then don't make a request to Service
+    // Objects to validate the address. Just return the card because the
+    // address is already correct.
+    if (card[addressType].hasBeenValidated) {
+      return card;
+    }
+
+    // Otherwise, let's make a call to Service Objects.
     let addressResponse = await card[addressType].validate();
     if (addressResponse.address) {
       // The validated address from SO is not an Address object, so create it:
@@ -166,10 +175,11 @@ class Card {
     this.address = this.getOrCreateAddress(args["address"]);
     this.workAddress = this.getOrCreateAddress(args["workAddress"]);
     this.username = args["username"];
+    this.usernameHasBeenValidated = !!args["usernameHasBeenValidated"];
     this.pin = args["pin"];
     this.email = args["email"] || "";
     this.birthdate = this.normalizedBirthdate(args["birthdate"]);
-    this.ecommunicationsPref = args["ecommunicationsPref"] || false;
+    this.ecommunicationsPref = !!args["ecommunicationsPref"];
     this.policy = args["policy"] || "";
     this.isTemporary = false;
     this.varFields = args["varFields"] || {};
@@ -266,7 +276,15 @@ class Card {
     const { responses, validate } = UsernameValidationApi({
       ilsClient: this.ilsClient,
     });
-    let userNameResponse = await validate(this.username);
+    let userNameResponse;
+
+    // If the username has already been validated using
+    // /api/validations/username, then don't make the API request to the ILS.
+    if (this.usernameHasBeenValidated) {
+      userNameResponse = responses.available;
+    } else {
+      userNameResponse = await validate(this.username);
+    }
 
     return {
       available:
