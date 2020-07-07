@@ -739,6 +739,9 @@ definitions:
       username:
         type: string
         example: username
+      usernameHasBeenValidated:
+        type: boolean
+        example: true
       pin:
         type: string
         example: '1234'
@@ -1217,6 +1220,12 @@ definitions:
       zip:
         type: string
         example: '10018'
+      isResidential:
+        type: boolean
+        example: true
+      hasBeenValidated:
+        type: boolean
+        example: true
   AddressModelValidatedV03:
     type: object
     properties:
