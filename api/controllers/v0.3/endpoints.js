@@ -323,6 +323,7 @@ async function checkAddress(req, res) {
  * @param {HTTP response} res
  */
 async function createPatron(req, res) {
+  const usernameHasBeenValidated = req.body.usernameHasBeenValidated || false;
   let address = req.body.address
     ? new Address(req.body.address, soLicenseKey)
     : undefined;
@@ -336,6 +337,7 @@ async function createPatron(req, res) {
     address: address, // created above
     workAddress: workAddress,
     username: req.body.username, // from req
+    usernameHasBeenValidated,
     pin: req.body.pin, // from req
     email: req.body.email, // from req
     birthdate: req.body.birthdate, // from req

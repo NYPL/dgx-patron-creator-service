@@ -19,7 +19,7 @@ class Address {
     };
     this.errors = {};
     this.soLicenseKey = soLicenseKey;
-    // Only set in the API call
+    // Set in the API call or through the request body.
     this.hasBeenValidated = args.hasBeenValidated || false;
   }
 

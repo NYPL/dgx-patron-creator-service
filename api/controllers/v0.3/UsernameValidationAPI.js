@@ -42,7 +42,6 @@ const UsernameValidationAPI = (args) => {
       const invalid = RESPONSES["invalid"];
       throw new BadUsername(invalid.type, invalid.message);
     } else {
-      let type;
       const available = await usernameAvailable(username);
       if (!available) {
         const unavailable = RESPONSES["unavailable"];
