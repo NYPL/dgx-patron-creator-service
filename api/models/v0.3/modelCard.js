@@ -175,11 +175,11 @@ class Card {
     this.address = this.getOrCreateAddress(args["address"]);
     this.workAddress = this.getOrCreateAddress(args["workAddress"]);
     this.username = args["username"];
-    this.usernameHasBeenValidated = args["usernameHasBeenValidated"] || false;
+    this.usernameHasBeenValidated = !!args["usernameHasBeenValidated"];
     this.pin = args["pin"];
     this.email = args["email"] || "";
     this.birthdate = this.normalizedBirthdate(args["birthdate"]);
-    this.ecommunicationsPref = args["ecommunicationsPref"] || false;
+    this.ecommunicationsPref = !!args["ecommunicationsPref"];
     this.policy = args["policy"] || "";
     this.isTemporary = false;
     this.varFields = args["varFields"] || {};
