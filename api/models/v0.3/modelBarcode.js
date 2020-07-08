@@ -2,6 +2,7 @@
 const BarcodeDb = require("../../../db");
 const luhn = require("../../helpers/luhnValidations");
 const { DatabaseError } = require("../../helpers/errors");
+const logger = require("../../helpers/Logger");
 
 /**
  * Creates Barcode objects.
@@ -50,7 +51,7 @@ class Barcode {
    *
    * @param {string} barcode
    */
-  nextLuhnValidCode(barcode) {
+  nextLuhnValidCode(barcode, addition = 1) {
     if (!barcode || barcode.length !== 14) {
       return;
     }
@@ -59,7 +60,7 @@ class Barcode {
     // 13-digit number to pass through the Luhn-algorithm.
     let newValidBarcode = Math.floor(parseInt(barcode, 10) / 10);
     // Add one to get the next valid value.
-    newValidBarcode += 1;
+    newValidBarcode += addition;
     // Pass the 13-digit value and get a new and valid 14-digit barcode.
     return luhn.calculate(newValidBarcode);
   }
@@ -169,6 +170,21 @@ class Barcode {
       // Otherwise, let's try once more with the next barcode in the sequence.
       tries -= 1;
       barcodeToTry = this.nextLuhnValidCode(barcodeToTry);
+      // If we tried "tries" times to check for a barcode and they all failed,
+      // meaning that it's not available because there are accounts with those
+      // barcodes, then let's add the last "barcodeToTry" to the database so
+      // that next time we start from the last checked database instead of
+      // older values that are in the database.
+      if (tries === 0) {
+        try {
+          barcodeToTry = this.nextLuhnValidCode(barcodeToTry, 50);
+          const resp = await this.addBarcode(barcodeToTry, true);
+        } catch (error) {
+          logger.error(
+            "Error attemping to add a barcode after all failed attempts."
+          );
+        }
+      }
     }
 
     return {
