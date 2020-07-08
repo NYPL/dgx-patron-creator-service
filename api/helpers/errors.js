@@ -119,10 +119,11 @@ class NotEligibleCard extends Error {
 }
 
 class BadUsername extends Error {
-  constructor(type, message) {
+  constructor({ type, message, cardType }) {
     super();
     this.type = type;
     this.name = "BadUsername";
+    this.cardType = cardType;
     this.message = message;
     this.status = 400;
   }

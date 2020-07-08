@@ -93,10 +93,7 @@ function modelErrorResponseData(obj) {
     status: obj.status || null,
     type: obj && obj.type ? parseTypeURL(obj.type) : '',
     message: obj.message,
-    detail: {
-      title: obj.title || '',
-      debug: obj.debug_message ? parseJSON(obj.debug_message) : {},
-    },
+    detail: obj.debugMessage ? parseJSON(obj.debugMessage) : {},
   };
 }
 

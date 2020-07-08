@@ -4,7 +4,6 @@ const IlsClient = require("../../../../api/controllers/v0.3/IlsClient");
 const {
   NoILSClient,
   ILSIntegrationError,
-  BadUsername,
 } = require("../../../../api/helpers/errors");
 
 jest.mock("../../../../api/controllers/v0.3/IlsClient");
