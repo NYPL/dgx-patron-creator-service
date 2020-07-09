@@ -238,7 +238,9 @@ class Card {
     // if a required field is missing.
     validateByPolicy.forEach((attr) => {
       if (this.requiredByPolicy(attr) && !this[attr]) {
-        throw new MissingRequiredValues(`${attr} cannot be empty`);
+        throw new MissingRequiredValues(
+          `${attr} cannot be empty for this policy type.`
+        );
       }
     });
     // Now that all values have gone through a basic validation process,
@@ -533,7 +535,6 @@ class Card {
         await this.setBarcode();
       } catch (error) {
         // Could not generate a new barcode so return that as the response.
-        // TODO: Throw a better error.
         return {
           status: 400,
           data: error.message,

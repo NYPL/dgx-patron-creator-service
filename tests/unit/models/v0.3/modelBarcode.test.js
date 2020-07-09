@@ -85,6 +85,13 @@ describe('Barcode', () => {
       const nextBarcode = barcode.nextLuhnValidCode('28888055432138');
       expect(nextBarcode).toEqual('28888055432146');
     });
+
+    it('should take a number to get the next nth Luhn-valid code', () => {
+      const barcode = new Barcode({ ilsClient: IlsClient() });
+
+      const nextBarcode = barcode.nextLuhnValidCode('28888055432138', 100);
+      expect(nextBarcode).toEqual('28888055433136');
+    });
   });
 
   describe('nextAvailableFromDB', () => {
@@ -405,13 +412,13 @@ describe('Barcode', () => {
       const barcode = new Barcode({ ilsClient: IlsClient() });
       const querySpy = jest.spyOn(barcode.db, 'query');
 
-      const addedBarcode = await barcode.addBarcode('12345');
+      const addedBarcode = await barcode.addBarcode('123456');
 
       // One row was affected in the database.
       expect(addedBarcode).toEqual(1);
       expect(querySpy).toHaveBeenCalled();
       expect(querySpy).toHaveBeenCalledWith(
-        "INSERT INTO barcodes (barcode, used) VALUES ('12345', false);",
+        "INSERT INTO barcodes (barcode, used) VALUES ('123456', false);",
       );
     });
 
@@ -420,18 +427,18 @@ describe('Barcode', () => {
       const querySpy = jest.spyOn(barcode.db, 'query');
 
       // This insertion was successful.
-      const result = await barcode.addBarcode('123456');
+      const result = await barcode.addBarcode('1234567');
       expect(result).toEqual(1);
 
       // But not this one!
-      await expect(barcode.addBarcode('123456')).rejects.toThrow(
+      await expect(barcode.addBarcode('1234567')).rejects.toThrow(
         'Barcode already in database!',
       );
 
       // The call from the previous test gets added.
       expect(querySpy).toHaveBeenCalled();
       expect(querySpy).toHaveBeenCalledWith(
-        "INSERT INTO barcodes (barcode, used) VALUES ('123456', false);",
+        "INSERT INTO barcodes (barcode, used) VALUES ('1234567', false);",
       );
     });
 
