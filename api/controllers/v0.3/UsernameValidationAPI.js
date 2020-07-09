@@ -40,12 +40,12 @@ const UsernameValidationAPI = (args) => {
   const validate = async (username) => {
     if (!username || !USERNAME_PATTERN.test(username)) {
       const invalid = RESPONSES["invalid"];
-      throw new BadUsername(invalid.type, invalid.message);
+      throw new BadUsername(invalid);
     } else {
       const available = await usernameAvailable(username);
       if (!available) {
         const unavailable = RESPONSES["unavailable"];
-        throw new BadUsername(unavailable.type, unavailable.message);
+        throw new BadUsername(unavailable);
       }
       return RESPONSES["available"];
     }

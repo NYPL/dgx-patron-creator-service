@@ -617,7 +617,7 @@ describe('Card', () => {
       });
 
       await expect(cardNoEmail.validate()).rejects.toThrow(
-        'email cannot be empty',
+        'email cannot be empty for this policy type.',
       );
     });
     it('should fail for webApplicant policies without a birthdate', async () => {
@@ -628,7 +628,7 @@ describe('Card', () => {
       });
 
       await expect(cardNoEmail.validate()).rejects.toThrow(
-        'birthdate cannot be empty',
+        'birthdate cannot be empty for this policy type.',
       );
     });
 

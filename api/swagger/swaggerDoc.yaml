@@ -110,7 +110,7 @@ paths:
       tags:
         - patrons
       summary: Create a dependent juvenile account
-      description: Create a dependent juvenile account based off a parent's patron account
+      description: Create a dependent juvenile account based on a parent's patron account.
       operationId: patrons_dependentsV03
       parameters:
         - name: barcode_and_input
@@ -254,7 +254,7 @@ paths:
           description: Bad request
           schema:
             $ref: '#/definitions/400ErrorResponseUsernameV03'
-        '500':
+        '502':
           description: Generic server error
           schema:
             $ref: '#/definitions/500ErrorResponseUsernameV03'
@@ -267,7 +267,7 @@ paths:
       tags:
         - validations
       summary: Address validation against Service Objects.
-      description: Makes a call to the Service Objects API for patron address and work address validation.
+      description: 'Makes a call to the Service Objects API for patron address and work address validation. Note that 502 server errors from Service Objects will result in a 400 from the endpoint. If there''s a server error, the address is still naively checked and a temporary card is returned. The patron is expected to contact the library.'
       operationId: addressV03
       parameters:
         - name: address
@@ -285,10 +285,6 @@ paths:
           description: Bad request
           schema:
             $ref: '#/definitions/400ErrorResponseAddressV03'
-        '500':
-          description: Generic server error
-          schema:
-            $ref: '#/definitions/502ErrorResponseAddressV03'
       security:
         - api_auth:
             - 'openid write:patron offline_access api'
@@ -391,18 +387,18 @@ definitions:
       type:
         type: string
         example: invalid-username
+      cardType:
+        type: boolean
+        example: null
       message:
         type: object
         example: 'Usernames should be 5-25 characters, letters or numbers only. Please revise your username.'
       detail:
         type: object
         example:
-          title: ''
-          debug: ''
+          error: ''
         properties:
-          title:
-            type: string
-          debug:
+          error:
             type: string
   400ErrorResponseAddressV03:
     properties:
@@ -498,14 +494,16 @@ definitions:
       type:
         type: string
         example: ils-integration-error
+      cardType:
+        type: boolean
+        example: null
       message:
         type: string
         example: The ILS could not be requested when validating the username.
       detail:
         type: object
         example:
-          title: ''
-          debug: {}
+          error: ''
   502ErrorResponseCreatePatronV03:
     properties:
       status:
@@ -520,8 +518,7 @@ definitions:
       detail:
         type: object
         example:
-          title: ''
-          debug: {}
+          error: {}
   400ErrorStatusSimplePatronV01:
     properties:
       simplePatron:
@@ -758,6 +755,12 @@ definitions:
         example: simplye
       workAddress:
         $ref: '#/definitions/AddressModelV03'
+      ecommunicationsPref:
+        type: boolean
+        example: false
+      homeLibraryCode:
+        type: string
+        example: eb
   PatronsCreatorResponseV02:
     type: object
     properties:
@@ -939,16 +942,13 @@ definitions:
         example: invalid-request
       message:
         type: object
-        example: Some value is wrong
+        example: There was an error with the request.
       detail:
         type: object
         example:
-          title: ''
-          debug: ''
+          error: ''
         properties:
-          title:
-            type: string
-          debug:
+          error:
             type: string
   400BarcodeErrorResponseV03:
     properties:
@@ -964,12 +964,9 @@ definitions:
       detail:
         type: object
         example:
-          title: ''
-          debug: ''
+          error: ''
         properties:
-          title:
-            type: string
-          debug:
+          error:
             type: string
   500ErrorResponseV02:
     properties:
@@ -999,12 +996,9 @@ definitions:
       detail:
         type: object
         example:
-          title: ''
-          debug: ''
+          error: ''
         properties:
-          title:
-            type: string
-          debug:
+          error:
             type: string
   UsernameData:
     required:
@@ -1049,10 +1043,6 @@ definitions:
         example: {}
   UsernameResponseV03:
     type: object
-    properties:
-      data:
-        $ref: '#/definitions/UsernameResponseModelV03'
-  UsernameResponseModelV03:
     properties:
       type:
         type: string
