@@ -46,13 +46,14 @@ describe('Policy', () => {
       expect(policy.policyField('requiredFields')).toEqual([
         'email',
         'barcode',
+        'birthdate',
       ]);
       expect(Object.keys(policy.policyField('serviceArea'))).toEqual([
         'city',
         'county',
         'state',
       ]);
-      expect(policy.policyField('minimumAge')).toEqual(undefined);
+      expect(policy.policyField('minimumAge')).toEqual(13);
     });
 
     it('is not a web applicant', () => {
@@ -62,7 +63,7 @@ describe('Policy', () => {
     it('verifies that `email` and `barcode` are required fields', () => {
       expect(policy.isRequiredField('email')).toEqual(true);
       expect(policy.isRequiredField('barcode')).toEqual(true);
-      expect(policy.isRequiredField('birthdate')).toEqual(false);
+      expect(policy.isRequiredField('birthdate')).toEqual(true);
     });
 
     it('returns the ptype for patrons in the metro', () => {

@@ -396,7 +396,7 @@ const IlsClient = (args) => {
   };
 };
 
-IlsClient.MINOR_AGE = 11;
+IlsClient.MINOR_AGE = 13;
 // Field tags to access patron information in ILS
 IlsClient.BIRTHDATE_FIELD_TAG = "51";
 // Barcode AND username are indexed on this tag.
