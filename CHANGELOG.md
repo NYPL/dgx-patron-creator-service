@@ -1,5 +1,18 @@
 ## Change Log
 
+### v0.6.0
+
+#### Add
+
+- Added endpoints `validations/address` and `/patrons` for the v0.3 version.
+
+#### Updated
+
+- Updated the address validations to include a work address as well as implementing validation through Service Objects.
+- Updated some of the business logic surrounding the three different policies that can used.
+- Updated the response objects returned for the v0.3 API endpoints to be more consistent.
+- Updated the README to reflect that the v0.3 endpoints are stable and linked to further documentation in the wiki for this project.
+
 ### v0.5.0
 
 #### Add
@@ -12,7 +25,7 @@
 - Added an IlsClient controller to call the ILS to create, find, and update patrons.
 - Added a Dependent Account API controller to check for a patron's eligibility to create dependent juvenile cards and to create dependent accounts.
 - Added a Username Validation API controller to find a patron by username in the ILS and return whether that username is valid and available in the ILS.
-- Added an Address Validation API controller but not it's not complete as the Service Objects API still needs to be implemented.
+- Added an Address Validation API controller but it's not complete as the Service Objects API still needs to be implemented.
 - Added tests to cover all of the added code.
 - Removed unnecessary npm packages and updated packages to remove security issues found through `npm audit`.
 - Updated encrypted credentials for QA and production for necessary third-party services.
