@@ -36,7 +36,8 @@ const Policy = (args) => {
         standard: IlsClient.STANDARD_EXPIRATION_TIME,
         temporary: IlsClient.TEMPORARY_EXPIRATION_TIME,
       },
-      requiredFields: ['email', 'barcode'],
+      requiredFields: ['email', 'barcode', 'birthdate'],
+      minimumAge: 13,
       serviceArea: {
         city: ALLOWED_CITIES,
         county: ALLOWED_COUNTIES,
@@ -104,7 +105,7 @@ const Policy = (args) => {
 
   /**
    * determinePtype(patron)
-   * Determins the ptype for a patron based on the policy type and the
+   * Determines the ptype for a patron based on the policy type and the
    * patron's address.
    *
    * @param {Patron object} patron

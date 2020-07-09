@@ -62,7 +62,7 @@ describe('CardValidator', () => {
     it("returns no errors if the policy doesn't require it", () => {
       const card = new Card({
         ...basicCard,
-        policy: Policy(),
+        policy: Policy({ policyType: 'simplyeJuvenile' }),
       });
 
       const validatedCard = validateBirthdate(card);
@@ -75,21 +75,37 @@ describe('CardValidator', () => {
         ...basicCard,
         policy: Policy({ policyType: 'webApplicant' }),
       });
+      const simplyeCard = new Card({
+        ...basicCard,
+        policy: Policy({ policyType: 'simplye' }),
+      });
 
       const validatedCard = validateBirthdate(card);
+      const validatedSimplyeCard = validateBirthdate(simplyeCard);
 
       expect(validatedCard.errors).toEqual({});
+      expect(validatedSimplyeCard.errors).toEqual({});
     });
+
     it('returns an error if the policy requires it and the birthdate is not valid', () => {
       const card = new Card({
         ...basicCard,
         birthdate: '01/01/2013',
         policy: Policy({ policyType: 'webApplicant' }),
       });
+      const simplyeCard = new Card({
+        ...basicCard,
+        birthdate: '01/01/2013',
+        policy: Policy({ policyType: 'simplye' }),
+      });
 
       const validatedCard = validateBirthdate(card);
+      const validatedSimplyeCard = validateBirthdate(simplyeCard);
 
       expect(validatedCard.errors).toEqual({
+        age: 'Date of birth is below the minimum age of 13.',
+      });
+      expect(validatedSimplyeCard.errors).toEqual({
         age: 'Date of birth is below the minimum age of 13.',
       });
     });
@@ -849,8 +865,9 @@ describe('Card', () => {
   describe('requiredByPolicy', () => {
     const simplyePolicy = Policy();
     const webApplicant = Policy({ policyType: 'webApplicant' });
+    const simplyeJuvenile = Policy({ policyType: 'simplyeJuvenile' });
 
-    it('should check for email and barcode for simplye policies', () => {
+    it('should check for email, barcode, and birthdate for simplye policies', () => {
       const card = new Card({
         ...basicCard,
         policy: simplyePolicy,
@@ -858,7 +875,7 @@ describe('Card', () => {
 
       expect(card.requiredByPolicy('email')).toEqual(true);
       expect(card.requiredByPolicy('barcode')).toEqual(true);
-      expect(card.requiredByPolicy('birthdate')).toEqual(false);
+      expect(card.requiredByPolicy('birthdate')).toEqual(true);
     });
 
     it('should check for birthdate for web applicant policies', () => {
@@ -870,6 +887,17 @@ describe('Card', () => {
       expect(card.requiredByPolicy('email')).toEqual(false);
       expect(card.requiredByPolicy('barcode')).toEqual(false);
       expect(card.requiredByPolicy('birthdate')).toEqual(true);
+    });
+
+    it('should check for barcode for simplyeJuvenile policies', () => {
+      const card = new Card({
+        ...basicCard,
+        policy: simplyeJuvenile,
+      });
+
+      expect(card.requiredByPolicy('email')).toEqual(false);
+      expect(card.requiredByPolicy('barcode')).toEqual(true);
+      expect(card.requiredByPolicy('birthdate')).toEqual(false);
     });
   });
 
