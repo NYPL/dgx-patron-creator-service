@@ -46,17 +46,17 @@ The request data format should be in JSON with required fields of "name", "dateO
 ```javascript
 {
   "simplePatron": {
-    "name": "Mikey Olson, Jr.",
-    "dateOfBirth": "11/11/1987",
-    "email": "mjolson@example.com",
+    "name": "Tom Nook",
+    "dateOfBirth": "05/30/1980",
+    "email": "tomnook@ac.com",
     "address": {
-      "line_1": "123 Fake Street",
+      "line_1": "1111 1st St.",
       "line_2": "",
-      "city": "New York",
+      "city": "Woodside",
       "state": "NY",
-      "zip": 10018
+      "zip": 11377
     },
-    "username": "mjolson54321",
+    "username": "tomnook42",
     "pin": "1234",
     "ecommunications_pref": true,
     "policy_type": "web_applicant",
@@ -77,7 +77,7 @@ Example of a successful JSON response from API v0.1:
     simplePatron: {
       "status_code_from_card_creator": 200,
       "type": "card-granted",
-      "username": "mikeolson54321",
+      "username": "tomnook42",
       "temporary": true,
       "patron_id": "6367028",
       "barcode": "6367028",
@@ -105,7 +105,7 @@ With a valid credential, a POST request to `/api/v0.1/validations/username` will
 The request data format should be in JSON with the key "username". For instance,
 
 ```javascript
-{ "username": "mikeolson" }
+{ "username": "tomnook42" }
 ```
 
 A successful JSON response example:
@@ -132,10 +132,10 @@ The request data format should be in JSON with the key "address". For instance,
 ```javascript
 {
   "address" : {
-    "line_1" : "1123 fake Street",
-    "city" : "New York",
+    "line_1" : "1111 1st St.",
+    "city" : "Woodside",
     "state" : "NY",
-    "zip" : "05150"
+    "zip" : "11377"
   },
   "is_work_or_school_address" : true
 }
@@ -153,21 +153,21 @@ A successful JSON response example:
     "message": "This valid address will result in a standard library card.",
     "detail": {},
     "address": {
-      "line_1": "1123 fake St",
+      "line_1": "1111 1st St.",
       "line_2": "",
-      "city": "New York",
+      "city": "Woodside",
       "county": "New York",
       "state": "NY",
-      "zip": "05150-2600",
+      "zip": "11377-2600",
       "is_residential": false
     },
     "original_address": {
       "line_1": "1123 fake Street",
       "line_2": "",
-      "city": "New York",
+      "city": "Woodside",
       "county": "",
       "state": "NY",
-      "zip": "05150",
+      "zip": "11377",
       "is_residential": null
     }
   }

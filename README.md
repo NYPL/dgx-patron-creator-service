@@ -76,7 +76,7 @@ For more information about the request, success response, and error response, ch
 Example request:
 
 ```javascript
-{ "username": "mikeolson" }
+{ "username": "tomnook42" }
 ```
 
 Example response:
@@ -100,10 +100,10 @@ Example request:
 ```javascript
 {
   "address": {
-    "line1": "476 5th Avenue",
-    "city": "New York",
+    "line1": "1111 1st St.",
+    "city": "Woodside",
     "state": "NY",
-    "zip": "10018"
+    "zip": "11377"
   },
   "isWorkAddress": false,
   "policyType": "simplye"
@@ -119,19 +119,19 @@ Example response:
   "message": "The library card will be a standard library card.",
   "address": {
     "address": {
-    "line1": "476 5th Avenue",
+    "line1": "1111 1st St.",
     "line2": "",
-    "city": "New York",
+    "city": "Woodside",
     "state": "NY",
-    "zip": "10018-1234",
-    "isResidential": false
+    "zip": "11377-1234",
+    "isResidential": true
   },
   "originalAddress": {
     "address": {
-    "line1": "476 5th Avenue",
-    "city": "New York",
+    "line1": "1111 1st St.",
+    "city": "Woodside",
     "state": "NY",
-    "zip": "10018"
+    "zip": "11377"
   },
 }
 ```
@@ -147,7 +147,7 @@ Example request:
 ```javascript
 {
   "usernameHasBeenValidated": false,
-  "username": "username42",
+  "username": "tomnook42",
   "name": "First Last",
   "address": {
     "line1": "1111 1st St.",
@@ -163,9 +163,9 @@ Example request:
     "zip": "10018"
   },
   "pin": "1234",
-  "birthdate": "01-01-1988",
+  "birthdate": "05-30-1988",
   "policyType": "simplye",
-  "email": "test123@gmail.com",
+  "email": "tomnook@ac.com",
   "homeLibraryCode": "eb",
   "ecommunicationsPref": false
 }
@@ -178,7 +178,7 @@ Example response:
   "type": "card-granted",
   "link": "https://link.com/to/ils/1234567",
   "barcode": "111122222222345",
-  "username": "username42",
+  "username": "tomnook42",
   "pin": "1234",
   "temporary": false,
   "message": "The library card will be a standard library card.",
@@ -194,7 +194,7 @@ For more information about the request, success response, and error response, ch
 
 Examples of requests:
 
-- `api/v0.3/patrons/dependent-eligibility?username=username`
+- `api/v0.3/patrons/dependent-eligibility?username=tomnook42`
 - `api/v0.3/patrons/dependent-eligibility?barcode=12345678912345`
 
 Example responses:
@@ -226,17 +226,17 @@ Example of a requests:
 ```javascript
 {
 	"barcode": "12222222222222",
-	"name": "dependentFirstName dependentLastName",
-	"username": "dependentUsername",
+	"name": "Isabelle Shizue",
+	"username": "isabelle1",
 	"pin": "1234"
 }
 ```
 
 ```javascript
 {
-	"parentUsername": "parentUsername",
-	"name": "dependentFirstName dependentLastName",
-	"username": "dependentUsername",
+	"parentUsername": "tomnook42",
+	"name": "Isabelle Shizue",
+	"username": "isabelle1",
 	"pin": "1234"
 }
 ```
@@ -249,8 +249,8 @@ Example of responses:
   "data": {
     "dependent": {
       "id": 12345,
-      "username": "dependentUsername",
-      "name": "DEPENDENTLASTNAME, DEPENDENTFIRSTNAME",
+      "username": "isabelle1",
+      "name": "SHIZUE, ISABELLE",
       "barcode": "15555555555555",
       "pin": "1234"
     },

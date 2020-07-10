@@ -9,7 +9,7 @@
 #### Updated
 
 - Updated the address validations to include a work address as well as implementing validation through Service Objects.
-- Updated some of the business logic surrounding the three different policies that can used.
+- Updated some of the business logic surrounding the three different policies that can be used.
 - Updated the response objects returned for the v0.3 API endpoints to be more consistent.
 - Updated the README to reflect that the v0.3 endpoints are stable and linked to further documentation in the wiki for this project.
 
