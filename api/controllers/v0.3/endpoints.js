@@ -429,7 +429,6 @@ async function createPatron(req, res) {
     modelStreamPatron
       .transformPatronRequest(modeledResponse)
       .then((streamPatron) => {
-        console.log("streamPatron", streamPatron);
         // `return` is necessary below, to wait for streamPublish to complete
         return streamPublish.streamPublish(
           process.env.PATRON_SCHEMA_NAME_V03,
