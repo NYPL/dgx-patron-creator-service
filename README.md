@@ -2,13 +2,9 @@
 
 # dgx-patron-creator-service
 
-This is the repository of the New York Public Library's Patron Creator microservice. The microservice offers the API endpoints necessary to create new patron accounts in NYPL. Examples of consuming applications are the SimplyE mobile clients and the "Get a Library Card" app.
+This is the repository of the New York Public Library's Patron Card Creator microservice. The microservice offers the API endpoints necessary to validate ILS usernames, validate addresses through Service Objects, check dependent account creation, and create new patron accounts in NYPL's ILS. Examples of consuming applications are the SimplyE mobile clients and the "Get a Library Card" app.
 
-[Github link to the repository](https://github.com/NYPL/dgx-patron-creator-service).
-
-For the v0.1 endpoints, the Library Card app form on NYPL's website will fire a POST request to the service after it has been submitted. The service will then take the information and fire another POST request to NYPL Simplified's Card Creator API. Finally, it will return the results based on the response from the Card Creator API.
-
-The Card Creator's documentation can be found [here](https://github.com/NYPL-Simplified/card-creator).
+For more information regarding the business logic surrounding card creation, check the [dgx-patron-creator-service wiki](https://github.com/NYPL/dgx-patron-creator-service/wiki).
 
 This app serves the following endpoints:
 
@@ -17,16 +13,17 @@ This app serves the following endpoints:
 - `POST /api/v0.1/validations/address`
 - `POST /api/v0.2/patrons`
 - `POST /api/v0.3/validations/username`
+- `POST /api/v0.3/validations/address`
 - `POST /api/v0.3/patrons`
+- `GET /api/v0.3/patrons/dependent-eligiblity`
 - `POST /api/v0.3/patrons/dependents`
-- `POST /api/v0.3/patrons/dependent-eligiblity`
 - `GET /docs/patron-creator`
 
 See also [PatronService](https://github.com/NYPL-discovery/patron-service), [PatronEligibilityService](https://github.com/NYPL-discovery/patron-eligibility-service), [BarcodeService](https://github.com/NYPL/barcode-service) for other patron endpoints.
 
 ## Version
 
-v0.5.0
+v0.6.0
 
 ## Technologies
 
@@ -36,7 +33,6 @@ v0.5.0
 - [aws-serverless-express](https://github.com/awslabs/aws-serverless-express) - The server is built with ExpressJS with the npm module specifically for AWS Lambda.
 - [Swagger](http://swagger.io/) - The framework for the API documentation and architecture.
 - [node-lambda](https://www.npmjs.com/package/node-lambda) - The npm module helps us deploy this Express application as an AWS Lambda instance.
-- [yamljs](https://www.npmjs.com/package/yamljs) - The npm module helps convert the YAML swagger documentation to JSON format and vice versa.
 - [AWS Nodejs SDK](https://aws.amazon.com/sdk-for-node-js/) - The SDK helps take the complexity out of coding by providing JavaScript objects for AWS services. We use it here for streaming the data to [Amazon Kinesis](https://aws.amazon.com/kinesis/) and to decrypt credentials using [Amazon KMS](https://aws.amazon.com/kms/).
 
 ## Install and Run
@@ -47,204 +43,158 @@ Clone the repo. Open your terminal and in the folder you just downloaded, run
 $ npm install
 ```
 
-### Configuration
+### Configuration and Credentials
 
-To setup the app configuration. copy the `.env.example` file to `.env` and update the necessary configuration parameters.
+You need credentials for making successful API calls to NYPL's ILS, Service Objects, and for using AWS Kinesis to stream patron data.
 
-You need credentials for making a successful API call to NYPL's Simplified Card Creator and AWS credentials to connect to Kinesis.
+A local Postgres database needs to be set up and environment variables can be set in the configuration files in the `/config` directory.
 
-_Please contact [NYPL's Simplified Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials to the Card Creator API._
-_Please contact an NYPL engineer to get AWS credentials for NYPL's AWS accounts._
+All the credentials are stored in the configuration files in the `/config` directory but you do need a personal AWS account under NYPL's account in order to be able to decrypt those values locally.
+
+_Please contact an NYPL engineer to get credentials for the services._
 
 ### Start the service
 
 To execute the service locally, run
 
 ```sh
-$ npm start
+$ NODE_ENV=development npm start
 ```
 
-The server will run on _localhost:3001_.
+The server will run on _localhost:3001_ using development environment variables. Switch to `qa` or `production` for the other environments which will use the respective configuration files in the `/config` directory.
 
-### Credentials
+## v0.3 API Routes
 
-You need credentials for making a successful API call to NYPL's Simplified Card Creator. You should set the credentials in the `.env` file. For example,
+The five current and stable endpoints are under `/v0.3`. For `/v0.1` endpoints, check the [LEGACY_ENDPOINTS_README](./LEGACY_ENDPOINTS_README.md) file.
 
-```bash
-CARD_CREATOR_USERNAME=username
-CARD_CREATOR_PASSWORD=password
+#### 1. User Name Validation `/api/v0.3/validations/username` - POST
+
+This endpoint validates a username's format and then its availability in NYPL's ILS. The update for this version is that instead of hitting the NYPL Simplified Card Creator which hits the ILS, this endpoint directly hits the ILS.
+
+For more information about the request, success response, and error response, check the [username endpoint wiki](https://github.com/NYPL/dgx-patron-creator-service/wiki/API-V0.3#username-validation---post-v03validationsusername).
+
+Example request:
+
+```javascript
+{ "username": "tomnook42" }
 ```
 
-_Please contact [NYPL's Simplified Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials to the Card Creator API._
-
-All credentials that are used as environment variables need to be encrypted through the AWS KMS service. See [NYPL Engineering General](https://github.com/NYPL/engineering-general/blob/8afa65f3af28654159f11b5b1ac91dde5812153e/security/secrets.md) for more details.
-
-### API Routes
-
-#### 1. Create a Patron `/api/v0.1/patrons` - POST
-
-With valid credentials, a POST request to `/api/v0.1/patrons` will create a new patron using the NYPL Card Creator API.
-
-The request data format should be in JSON with required fields of "name", "dateOfBirth", "address", "username", and "pin". The username must be unique. Example data for API v0.1:
+Example response:
 
 ```javascript
 {
-  "simplePatron": {
-    "name": "Mikey Olson, Jr.",
-    "dateOfBirth": "11/11/1987",
-    "email": "mjolson@example.com",
-    "address": {
-      "line_1": "123 Fake Street",
-      "line_2": "",
-      "city": "New York",
-      "state": "NY",
-      "zip": 10018
-    },
-    "username": "mjolson54321",
-    "pin": "1234",
-    "ecommunications_pref": true,
-    "policy_type": "web_applicant",
-    "patron_agency": "198"
-  }
+  "type": "username-available",
+  "cardType": "standard",
+  "message": "This username is available."
 }
 ```
 
-_Notice: `ecommunications_pref` takes a boolean type of value from "Get a Library Card" form, but it will output a string as `s` or `-` based on `true` or `false`. The reason is that the Card Creator API takes `s` or `-`._
+#### 2. Address Validation `/api/v0.3/validations/address` - POST
 
-_Notice: `patron_agency` is for telling the Card Creator which patron type is going to be created. While `198` is default and for NYC residents, `199` is for NYS residents who do not live in NYC. Other patron types are also available. See your ILS for details._
+This endpoint validates the patron's address or work address through Service Objects to see if the address is valid and residential.
 
-Example of a successful JSON response from API v0.1:
+For more information about the request, success response, and error response, check the [address endpoint wiki](https://github.com/NYPL/dgx-patron-creator-service/wiki/API-V0.3#address-validation---post-v03validationsaddress).
+
+Example request:
 
 ```javascript
 {
-  "data": {
-    simplePatron: {
-      "status_code_from_card_creator": 200,
-      "type": "card-granted",
-      "username": "mikeolson54321",
-      "temporary": true,
-      "patron_id": "6367028",
-      "barcode": "6367028",
-      "message": "Your library card is temporary because your address could not be verified. Visit your local NYPL branch within 30 days to upgrade to a standard card.",
-      "detail": {},
-    },
-    patron: {}
+  "address": {
+    "line1": "1111 1st St.",
+    "city": "Woodside",
+    "state": "NY",
+    "zip": "11377"
   },
-  "count": 1
+  "isWorkAddress": false,
+  "policyType": "simplye"
 }
 ```
 
-Three kinds of error messages could be returned from the Card Creator API.
-
-| type                         | status | title                         | detail                                                                                  | debug_message |
-| ---------------------------- | :----: | ----------------------------- | --------------------------------------------------------------------------------------- | ------------- |
-| 'remote-integration-failure' |  502   | 'Third-party service failed.' | 'The library could not complete your request because a third-party service has failed.' | -             |
-| 'invalid-request'            |  400   | 'Invalid request.'            | 'Valid request parameters are required.'                                                | Varies        |
-| 'no-available-barcodes'      |  422   | 'No available barcodes.'      | 'There are no barcodes currently available.'                                            | -             |
-
-#### 2. User Name Validation `api/v0.1/validations/username` - POST
-
-With a valid credential, a POST request to `/api/v0.1/validations/username` will run validation for a patron's username using the NYPL Card Creator API.
-
-The request data format should be in JSON with the key "username". For instance,
-
-```javascript
-{ "username": "mikeolson" }
-```
-
-A successful JSON response example:
+Example response:
 
 ```javascript
 {
-  "data": {
-    "status_code_from_card_creator": 200,
-    "valid": true,
-    "type": "available-username",
-    "card_type": "standard",
-    "message": "This username is available.",
-    "detail": {}
-  }
-}
-```
-
-#### 3. Address Validation `/api/v0.1/validations/address` - POST
-
-Make a POST request to `/api/v0.1/validations/address` for address validation using the NYPL Card Creator API.
-
-The request data format should be in JSON with the key "address". For instance,
-
-```javascript
-{
-  "address" : {
-    "line_1" : "1123 fake Street",
-    "city" : "New York",
-    "state" : "NY",
-    "zip" : "05150"
-  },
-  "is_work_or_school_address" : true
-}
-```
-
-A successful JSON response example:
-
-```javascript
-{
-  "data": {
-    "status_code_from_card_creator": 200,
-    "valid": true,
-    "type": "valid-address",
-    "card_type": "standard",
-    "message": "This valid address will result in a standard library card.",
-    "detail": {},
+  "type": "valid-address",
+  "cardType": "standard",
+  "message": "The library card will be a standard library card.",
+  "address": {
     "address": {
-      "line_1": "1123 fake St",
-      "line_2": "",
-      "city": "New York",
-      "county": "New York",
-      "state": "NY",
-      "zip": "05150-2600",
-      "is_residential": false
-    },
-    "original_address": {
-      "line_1": "1123 fake Street",
-      "line_2": "",
-      "city": "New York",
-      "county": "",
-      "state": "NY",
-      "zip": "05150",
-      "is_residential": null
-    }
-  }
+    "line1": "1111 1st St.",
+    "line2": "",
+    "city": "Woodside",
+    "state": "NY",
+    "zip": "11377-1234",
+    "isResidential": true
+  },
+  "originalAddress": {
+    "address": {
+    "line1": "1111 1st St.",
+    "city": "Woodside",
+    "state": "NY",
+    "zip": "11377"
+  },
 }
 ```
 
-#### 4. v0.2 Create a Patron `/api/v0.2/patrons` - POST
+#### 3. Create a Patron `/api/v0.3/patrons` - POST
 
-This endpoint uses the ILS to create a patron but was set up a POC and not used in production.
+This endpoint is used to create new patron accounts in NYPL's ILS. The username and addresses validations are internally run in this endpoint unless if a flag is passed indicating that the username, address, or work address have already been validated.
 
-#### 5. v0.3 User Name Validation `/api/v0.3/validations/username` - POST
+For more information about the request, success response, and error response, check the [patrons endpoint wiki](https://github.com/NYPL/dgx-patron-creator-service/wiki/API-V0.3#patron-account-creation---post-v03patrons).
 
-This is similar to the v0.1 endpoint and requires the same request body:
+Example request:
 
 ```javascript
-{ "username": "mikeolson" }
+{
+  "usernameHasBeenValidated": false,
+  "username": "tomnook42",
+  "name": "First Last",
+  "address": {
+    "line1": "1111 1st St.",
+    "line2": "",
+    "city": "Woodside",
+    "state": "NY",
+    "zip": "11377"
+  },
+  "workAddress": {
+    "line1": "476 5th Avenue",
+    "city": "New York",
+    "state": "NY",
+    "zip": "10018"
+  },
+  "pin": "1234",
+  "birthdate": "05-30-1988",
+  "policyType": "simplye",
+  "email": "tomnook@ac.com",
+  "homeLibraryCode": "eb",
+  "ecommunicationsPref": false
+}
 ```
 
-The update for this version is that instead of hitting the NYPL Card Creator which hits the ILS, this endpoint directly hits the ILS. The response says whether the username is available, unavailable or invalid.
+Example response:
 
-#### 6. v0.3 Create a Patron `/api/v0.3/patrons` - POST
+```javascript
+{
+  "type": "card-granted",
+  "link": "https://link.com/to/ils/1234567",
+  "barcode": "111122222222345",
+  "username": "tomnook42",
+  "pin": "1234",
+  "temporary": false,
+  "message": "The library card will be a standard library card.",
+  "patronId": 1234567
+}
+```
 
-Currently still under development. This endpoints creates a patron in the ILS. Instead of hitting the NYPL Card Creator which sends the patron request to the ILS, the endpoint sends the request directly.
-
-This is missing Address Validations using Service Objects so it is incomplete.
-
-#### 7. v0.3 Check Patron Dependent Eligibility `/api/v0.3/dependent-eligibility` - GET
+#### 4. Check Patron Dependent Eligibility `/api/v0.3/dependent-eligibility` - GET
 
 This endpoint is used to check whether a patron's account is eligible to create dependent juvenile patron accounts. Either a barcode or a username can be used a query parameter in the request. If the patron is not eligible, they will get an error with the reason. A patron is currently only allowed to create up to three dependent juvenile patron accounts.
 
+For more information about the request, success response, and error response, check the [patron dependent eligibility endpoint wiki](https://github.com/NYPL/dgx-patron-creator-service/wiki/API-V0.3#dependent-juvenile-account-creation-eligibility---get-v03patronsdependent-eligibility).
+
 Examples of requests:
 
-- `api/v0.3/patrons/dependent-eligibility?username=username`
+- `api/v0.3/patrons/dependent-eligibility?username=tomnook42`
 - `api/v0.3/patrons/dependent-eligibility?barcode=12345678912345`
 
 Example responses:
@@ -265,34 +215,28 @@ Example responses:
 }
 ```
 
-```javascript
-{
-  "status": 500,
-  "type": "patron-not-found",
-  "message": "The patron couldn't be found in the ILS with the barcode or username."
-}
-```
-
-#### 8. v0.3 Create a Dependent Juvenile Patron `/api/v0.3/dependents` - POST
+#### 5. Create a Dependent Juvenile Patron `/api/v0.3/dependents` - POST
 
 This endpoint is used to create dependent juvenile patron accounts. This creates a patron directly in the ILS with a specific p-type as well as a note in the account's data object linking the parent account with the dependent account. The parent account will also include a note that lists up to three of its dependent juvenile patron account barcodes. _Note: a parent patron account must pass its barcode under `barcode` or its username under `parentUsername`._
+
+For more information about the request, success response, and error response, check the [patron dependent eligibility endpoint wiki](https://github.com/NYPL/dgx-patron-creator-service/wiki/API-V0.3#dependent-juvenile-account-creation---post-v03patronsdependents).
 
 Example of a requests:
 
 ```javascript
 {
 	"barcode": "12222222222222",
-	"name": "dependentFirstName dependentLastName",
-	"username": "dependentUsername",
+	"name": "Isabelle Shizue",
+	"username": "isabelle1",
 	"pin": "1234"
 }
 ```
 
 ```javascript
 {
-	"parentUsername": "parentUsername",
-	"name": "dependentFirstName dependentLastName",
-	"username": "dependentUsername",
+	"parentUsername": "tomnook42",
+	"name": "Isabelle Shizue",
+	"username": "isabelle1",
 	"pin": "1234"
 }
 ```
@@ -305,8 +249,8 @@ Example of responses:
   "data": {
     "dependent": {
       "id": 12345,
-      "username": "dependentUsername",
-      "name": "DEPENDENTLASTNAME, DEPENDENTFIRSTNAME",
+      "username": "isabelle1",
+      "name": "SHIZUE, ISABELLE",
       "barcode": "15555555555555",
       "pin": "1234"
     },
@@ -319,7 +263,7 @@ Example of responses:
 }
 ```
 
-### JSON Documentation
+## JSON Documentation
 
 Visit `/docs/patrons-validations` for the JSON version of this service's swagger documentation.
 
@@ -336,6 +280,8 @@ Run `npm test` to run the unit tests.
 ### Integration tests
 
 Use `npm start` to run the app in one window. This is required to run the integration tests. The integration tests uses a local server the QA instance of Card Creator and the Patron Kinesis stream in the NYPL AWS Sandbox environment.
+
+Note: there are no integration tests for v0.3 endpoints yet.
 
 Use `INTEGRATION_TESTS=true npm test` in a second window to run all the tests. Check the server to ensure that you see the message "Published to stream successfully!" to verify that the integration test exercised the Kinesis stream.
 
