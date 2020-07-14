@@ -1,49 +1,36 @@
 const url = require('url');
-const logger = require('../../helpers/Logger');
-
-const ROUTE_TAG = 'CREATE_PATRON_0.3';
 
 /**
- * modelPatronCreatorResponse(data, status)
- * Model the response from creating a new patron.
+ * patronResponse(data)
+ * Model the patron data object into an object with default empty values if
+ * the needed values are not available. This is because the Kinesis stream only
+ * accepts a specific Avro schema and will fail if the values are not there,
+ * or are of the wrong type.
  *
  * @param {object} data
- * @param {number} status
- * @return {object}
  */
-function modelPatronCreatorResponse(responseData, status, requestData) {
-  let idFromResponse;
-  try {
-    idFromResponse = parseInt(responseData.link.split('/').pop(), 10);
-  } catch (error) {
-    idFromResponse = null;
-    const message = 'The ILS response is missing an ID.';
-    logger.error(
-      "status_code: '', "
-        + 'type: ils_error, '
-        + `message: ${message}, `
-        + `response: ${responseData.link}`,
-      { routeTag: ROUTE_TAG } // eslint-disable-line comma-dangle
-    );
-  }
+function patronResponse(data) {
   return {
-    id: idFromResponse,
-    names: requestData.names || [],
-    barcodes: requestData.barcodes || [],
-    expirationDate: requestData.expirationDate || '',
-    birthDate: requestData.birthDate || '',
-    emails: requestData.emails || [],
-    pin: requestData.pin || '',
-    patronType: requestData.patronType || '',
-    patronCodes: requestData.patronCodes || {
+    id: data.patronId,
+    names: data.names || [],
+    barcodes: data.barcodes || [],
+    expirationDate: data.expirationDate || '',
+    birthDate: data.birthDate || '',
+    emails: data.emails || [],
+    pin: data.pin || '',
+    patronType: data.patronType || '',
+    patronCodes: data.patronCodes || {
       pcode1: null,
       pcode2: null,
       pcode3: null,
       pcode4: null,
     },
-    blockInfo: requestData.blockInfo || null,
-    addresses: requestData.addresses || [],
-    phones: requestData.phones || [],
+    addresses: data.addresses || [],
+    phones: data.phones || [],
+    blockInfo: data.blockInfo || null,
+    varFields: data.varFields || [],
+    fixedFields: data.fixedFields || [],
+    homeLibraryCode: data.homeLibraryCode || '',
   };
 }
 
@@ -82,13 +69,13 @@ function parseTypeURL(str) {
 }
 
 /**
- * modelErrorResponse(obj)
+ * errorResponseData(obj)
  * Model the error response from creating a new patron.
  *
  * @param {object} obj
  * @return {object}
  */
-function modelErrorResponseData(obj) {
+function errorResponseData(obj) {
   return {
     status: obj.status || null,
     type: obj && obj.type ? parseTypeURL(obj.type) : '',
@@ -98,6 +85,6 @@ function modelErrorResponseData(obj) {
 }
 
 module.exports = {
-  patronCreator: modelPatronCreatorResponse,
-  errorResponseData: modelErrorResponseData,
+  patronResponse,
+  errorResponseData,
 };
