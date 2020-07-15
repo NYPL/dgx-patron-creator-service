@@ -4,10 +4,11 @@
 
 #### Add
 
-- Added endpoints `validations/address` and `/patrons` for the v0.3 version.
+- Added endpoint `validations/address` for API V0.3.
 
 #### Updated
 
+- Updated endpoint `/patrons` to use `workAddress` and to use the logic for creating the right card for API V0.3.
 - Updated the address validations to include a work address as well as implementing validation through Service Objects.
 - Updated some of the business logic surrounding the three different policies that can be used.
 - Updated the response objects returned for the v0.3 API endpoints to be more consistent.
