@@ -43,6 +43,14 @@ const DependentAccountAPI = (args) => {
     }
 
     const { barcode, username } = options;
+    // It's possible for patrons to have barcodes of length 7. Those accounts
+    // are older and temporary and we need to return the not eligible error
+    // rather than the invalid request error.
+    if (barcode && barcode.length === 7) {
+      throw new NotEligibleCard(
+        "You don’t have the correct card type to make child accounts. Please contact gethelp@nypl.org if you believe this is in error."
+      );
+    }
     if (barcode && (barcode.length < 14 || barcode.length > 16)) {
       throw new InvalidRequest(
         "The barcode passed is not a 14-digit or 16-digit number."
