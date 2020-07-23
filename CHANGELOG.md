@@ -14,6 +14,7 @@
 - Updated the response objects returned for the v0.3 API endpoints to be more consistent.
 - Updated the README to reflect that the v0.3 endpoints are stable and linked to further documentation in the wiki for this project.
 - Updated the patron data object that gets sent to the `NewPatron` Kinesis stream for successful patron creation requests.
+- Allow temporary and older accounts with 7-digit barcodes to return a valid error response when checking for eligibility to create dependent juvenile accounts.
 
 ### v0.5.0
 

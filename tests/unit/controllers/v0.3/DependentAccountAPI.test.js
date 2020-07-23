@@ -118,6 +118,15 @@ describe("DependentAccountAPI", () => {
       );
     });
 
+    it("returns a not eligible error if the barcode is 7 digits for older accounts", async () => {
+      const { isPatronEligible } = DependentAccountAPI({ ilsClient: {} });
+      const options = { barcode: "1234567", username: undefined };
+
+      await expect(isPatronEligible(options)).rejects.toThrow(
+        "You don’t have the correct card type to make child accounts. Please contact gethelp@nypl.org if you believe this is in error."
+      );
+    });
+
     it("returns an error if no patron can be found in the ILS", async () => {
       IlsClient.mockImplementation(() => ({
         getPatronFromBarcodeOrUsername: () => mockedErrorResponse,
