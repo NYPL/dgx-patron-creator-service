@@ -514,22 +514,6 @@ async function createDependent(req, res) {
     username: req.body.parentUsername,
   };
 
-  // Did not accept the terms and conditions so abort and return an error
-  // early on so no API calls are made.
-  if (!strToBool(req.body.acceptTerms)) {
-    response = modelResponse.errorResponseData(
-      collectErrorResponseData(
-        400,
-        "terms-not-accepted",
-        "The terms and conditions were not accepted.",
-        "",
-        {}
-      ) // eslint-disable-line comma-dangle
-    );
-    // There was an error so just return the error and don't continue.
-    return renderResponse(req, res, response.status, response);
-  }
-
   // Check that the patron is eligible to create dependent accounts.
   try {
     isEligible = await isPatronEligible(options);
@@ -579,8 +563,11 @@ async function createDependent(req, res) {
     // the web app will pass a `homeLibraryCode` parameter with a patron's
     // home library. For now, `eb` is hardcoded.
     homeLibraryCode: req.body.homeLibraryCode || "eb",
-    // This was already checked but is still needed for the Card model.
-    acceptTerms: req.body.acceptTerms,
+    // For phase one, this value is not needed from the request. This value is
+    // needed for the Card object to be valid so it will be set to true. Once
+    // an update has been made to the forms that make requests to this endpoint,
+    // this should be updated to req.body.acceptTerms.
+    acceptTerms: true,
   });
 
   let validCard;

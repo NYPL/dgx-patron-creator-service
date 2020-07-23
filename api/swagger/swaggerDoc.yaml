@@ -627,9 +627,6 @@ definitions:
       pin:
         type: string
         example: '1234'
-      acceptTerms:
-        type: boolean
-        example: true
   PatronsCreatorDataV02:
     required:
       - names
