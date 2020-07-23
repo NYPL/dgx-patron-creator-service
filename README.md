@@ -167,7 +167,8 @@ Example request:
   "policyType": "simplye",
   "email": "tomnook@ac.com",
   "homeLibraryCode": "eb",
-  "ecommunicationsPref": false
+  "ecommunicationsPref": false,
+  "acceptTerms": true,
 }
 ```
 
@@ -228,7 +229,8 @@ Example of a requests:
 	"barcode": "12222222222222",
 	"name": "Isabelle Shizue",
 	"username": "isabelle1",
-	"pin": "1234"
+  "pin": "1234",
+  "acceptTerms": true
 }
 ```
 
@@ -237,7 +239,8 @@ Example of a requests:
 	"parentUsername": "tomnook42",
 	"name": "Isabelle Shizue",
 	"username": "isabelle1",
-	"pin": "1234"
+  "pin": "1234",
+  "acceptTerms": true
 }
 ```
 

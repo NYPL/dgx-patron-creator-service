@@ -2,12 +2,14 @@
 const UsernameValidationApi = require("../../controllers/v0.3/UsernameValidationAPI");
 const Address = require("./modelAddress");
 const Barcode = require("./modelBarcode");
+const { strToBool } = require("../../helpers/utils");
 
 const {
   DatabaseError,
   MissingRequiredValues,
   IncorrectPin,
   NotILSValid,
+  TermsNotAccepted,
 } = require("../../helpers/errors");
 
 /**
@@ -187,6 +189,7 @@ class Card {
     // the web app will pass a `homeLibraryCode` parameter with a patron's
     // home library. For now, `eb` is hardcoded.
     this.homeLibraryCode = args["homeLibraryCode"] || "eb";
+    this.acceptTerms = strToBool(args["acceptTerms"]);
     this.errors = {};
 
     this.ilsClient = args["ilsClient"];
@@ -222,6 +225,11 @@ class Card {
    * card's address and username against the ILS.
    */
   async validate() {
+    // First check if the terms were accepted.
+    if (!this.acceptTerms) {
+      throw new TermsNotAccepted();
+    }
+
     // These four values are necessary for a Card object:
     // name, address, username, pin
     if (!this.name || !this.address || !this.username || !this.pin) {

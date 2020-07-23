@@ -1,6 +1,7 @@
 /* eslint-disable */
 const AddressValidationAPI = require("../../controllers/v0.3/AddressValidationAPI");
 const { SONoLicenseKeyError } = require("../../helpers/errors");
+const { strToBool } = require("../../helpers/utils");
 
 /**
  * Creates objects with proper address structure and validates
@@ -15,42 +16,12 @@ class Address {
       county: args.county || "",
       state: args.state || "",
       zip: args.zip || "",
-      isResidential: this.strToBool(args.isResidential),
+      isResidential: strToBool(args.isResidential),
     };
     this.errors = {};
     this.soLicenseKey = soLicenseKey;
     // Set in the API call or through the request body.
     this.hasBeenValidated = args.hasBeenValidated || false;
-  }
-
-  /**
-   * strToBool(str)
-   * Helper function to convert a string with boolean values into actual
-   * boolean values - values that may come from separate APIs.
-   *
-   * @param {string} str
-   */
-  strToBool(str) {
-    if (!str) {
-      return false;
-    }
-
-    // If the value is already a boolean, just return it.
-    if (typeof str === "boolean") {
-      return str;
-    }
-
-    const vals = ["true", "false"];
-    const valsHash = { true: true, false: false };
-    let found = "";
-    // First check if the boolean string is in the passed in string.
-    vals.forEach((val) => {
-      if (str.toLowerCase().includes(val)) {
-        found = val;
-      }
-    });
-    // Otherwise, just use the passed in string.
-    return valsHash[found || str.toLowerCase()];
   }
 
   /**

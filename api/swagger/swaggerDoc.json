@@ -957,6 +957,10 @@
         "pin": {
           "type": "string",
           "example": "1234"
+        },
+        "acceptTerms": {
+          "type": "boolean",
+          "example": true
         }
       }
     },
@@ -1142,6 +1146,10 @@
         "homeLibraryCode": {
           "type": "string",
           "example": "eb"
+        },
+        "acceptTerms": {
+          "type": "boolean",
+          "example": true
         }
       }
     },

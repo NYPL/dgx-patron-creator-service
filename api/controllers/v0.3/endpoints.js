@@ -17,6 +17,7 @@ const {
   errorResponseDataWithTag,
 } = require("../../helpers/responses");
 const DependentAccountAPI = require("./DependentAccountAPI");
+const { strToBool } = require("../../helpers/utils");
 
 const ROUTE_TAG = "CREATE_PATRON_0.3";
 // This returns a function that generates the error response object.
@@ -347,6 +348,7 @@ async function createPatron(req, res) {
     // the web app will pass a `homeLibraryCode` parameter with a patron's
     // home library. For now, `eb` is hardcoded.
     homeLibraryCode: req.body.homeLibraryCode || "eb",
+    acceptTerms: req.body.acceptTerms || false,
   });
 
   let response = {};
@@ -512,6 +514,22 @@ async function createDependent(req, res) {
     username: req.body.parentUsername,
   };
 
+  // Did not accept the terms and conditions so abort and return an error
+  // early on so no API calls are made.
+  if (!strToBool(req.body.acceptTerms)) {
+    response = modelResponse.errorResponseData(
+      collectErrorResponseData(
+        400,
+        "terms-not-accepted",
+        "The terms and conditions were not accepted.",
+        "",
+        {}
+      ) // eslint-disable-line comma-dangle
+    );
+    // There was an error so just return the error and don't continue.
+    return renderResponse(req, res, response.status, response);
+  }
+
   // Check that the patron is eligible to create dependent accounts.
   try {
     isEligible = await isPatronEligible(options);
@@ -561,6 +579,8 @@ async function createDependent(req, res) {
     // the web app will pass a `homeLibraryCode` parameter with a patron's
     // home library. For now, `eb` is hardcoded.
     homeLibraryCode: req.body.homeLibraryCode || "eb",
+    // This was already checked but is still needed for the Card model.
+    acceptTerms: req.body.acceptTerms,
   });
 
   let validCard;
