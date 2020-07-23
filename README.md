@@ -229,8 +229,7 @@ Example of a requests:
 	"barcode": "12222222222222",
 	"name": "Isabelle Shizue",
 	"username": "isabelle1",
-  "pin": "1234",
-  "acceptTerms": true
+  "pin": "1234"
 }
 ```
 
@@ -239,8 +238,7 @@ Example of a requests:
 	"parentUsername": "tomnook42",
 	"name": "Isabelle Shizue",
 	"username": "isabelle1",
-  "pin": "1234",
-  "acceptTerms": true
+  "pin": "1234"
 }
 ```
 
