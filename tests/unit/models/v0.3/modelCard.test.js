@@ -29,6 +29,7 @@ const basicCard = {
   pin: '1234',
   // required for web applicants
   birthdate: '01/01/1988',
+  acceptTerms: true,
 };
 
 // UsernameAvailabilityAPI constants
@@ -563,30 +564,86 @@ describe('Card', () => {
   });
 
   describe('validate', () => {
+    it('should fail if the terms of condition flag is not set to true', async () => {
+      const cardNoAcceptTerms = new Card({});
+      await expect(cardNoAcceptTerms.validate()).rejects.toThrow(
+        'The terms and conditions were not accepted.',
+      );
+    });
+
+    it('accepts a boolean or string set to true for the accept terms flag', async () => {
+      const cardAcceptBool = new Card({
+        name: 'Tom',
+        username: 'username',
+        pin: '1234',
+        address: {},
+        email: 'email@email.com',
+        policy: Policy({ policyType: 'simplye' }),
+        birthdate: '01/01/1988',
+        acceptTerms: true,
+      });
+      const cardAcceptString = new Card({
+        name: 'Tom',
+        username: 'username',
+        pin: '1234',
+        address: {},
+        email: 'email@email.com',
+        policy: Policy({ policyType: 'simplye' }),
+        birthdate: '01/01/1988',
+        acceptTerms: 'true',
+      });
+      const mockAddressValidate = jest.fn().mockReturnValue({
+        address: {
+          city: 'Woodside',
+          state: 'NY',
+          zip: '11377',
+          isResidential: true,
+        },
+      });
+      // Mock that the UsernameValidationAPI returned an error response:
+      const mockUsernameValidate = jest.fn().mockReturnValue({
+        available: true,
+        response: { message: 'Available username' },
+      });
+      cardAcceptBool.address.validate = mockAddressValidate;
+      cardAcceptString.address.validate = mockAddressValidate;
+      cardAcceptBool.checkValidUsername = mockUsernameValidate;
+      cardAcceptString.checkValidUsername = mockUsernameValidate;
+
+      let response = await cardAcceptBool.validate();
+      expect(response).toEqual({ valid: true, errors: {} });
+      response = await cardAcceptString.validate();
+      expect(response).toEqual({ valid: true, errors: {} });
+    });
+
     it('should fail if there are no name, username, pin, or address values', async () => {
       const cardNoName = new Card({
         name: '',
         username: 'username',
         pin: '1234',
         address: {},
+        acceptTerms: true,
       });
       const cardNoUsername = new Card({
         name: 'name',
         username: '',
         pin: '1234',
         address: {},
+        acceptTerms: true,
       });
       const cardNoPin = new Card({
         name: 'name',
         username: 'username',
         pin: '',
         address: {},
+        acceptTerms: true,
       });
       const cardNoAddress = new Card({
         name: 'name',
         username: 'username',
         pin: '1234',
         address: undefined,
+        acceptTerms: true,
       });
 
       await expect(cardNoName.validate()).rejects.toThrow(
@@ -603,18 +660,20 @@ describe('Card', () => {
       );
     });
 
-    it('should fail the pin is not 4 digits', async () => {
+    it('should fail if the pin is not 4 digits', async () => {
       const cardBadPin1 = new Card({
         name: 'name',
         username: 'username',
         pin: '12',
         address: {},
+        acceptTerms: true,
       });
       const cardBadPin2 = new Card({
         name: 'name',
         username: 'username',
         pin: '12345',
         address: {},
+        acceptTerms: true,
       });
 
       await expect(cardBadPin1.validate()).rejects.toThrow(

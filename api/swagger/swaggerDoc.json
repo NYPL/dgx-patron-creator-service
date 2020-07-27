@@ -1142,6 +1142,10 @@
         "homeLibraryCode": {
           "type": "string",
           "example": "eb"
+        },
+        "acceptTerms": {
+          "type": "boolean",
+          "example": true
         }
       }
     },

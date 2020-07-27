@@ -5,6 +5,7 @@
 #### Add
 
 - Added endpoint `validations/address` for API V0.3.
+- Added a request flag for terms of condition acceptance input.
 
 #### Updated
 
