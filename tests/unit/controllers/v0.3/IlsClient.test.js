@@ -565,6 +565,7 @@ describe("IlsClient", () => {
       ilsClient: IlsClient({}),
       varFields: [{ fieldTag: "x", content: "DEPENDENT OF 1234" }],
       acceptTerms: true,
+      ageGate: true,
     });
 
     it("returns an ILS-ready patron object", async () => {
@@ -653,6 +654,7 @@ describe("IlsClient", () => {
       policy,
       ilsClient: IlsClient({}),
       acceptTerms: true,
+      ageGate: true,
     });
     // Mock that the ptype was added to the card.
     card.setPtype();

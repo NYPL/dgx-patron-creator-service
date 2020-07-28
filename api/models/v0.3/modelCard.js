@@ -10,6 +10,7 @@ const {
   IncorrectPin,
   NotILSValid,
   TermsNotAccepted,
+  AgeGateFailure,
 } = require("../../helpers/errors");
 
 /**
@@ -181,6 +182,7 @@ class Card {
     this.pin = args["pin"];
     this.email = args["email"] || "";
     this.birthdate = this.normalizedBirthdate(args["birthdate"]);
+    this.ageGate = strToBool(args["ageGate"]);
     this.ecommunicationsPref = !!args["ecommunicationsPref"];
     this.policy = args["policy"] || "";
     this.isTemporary = false;
@@ -230,6 +232,13 @@ class Card {
       throw new TermsNotAccepted();
     }
 
+    // For "simplye" policy types, the user must pass through the age gate,
+    // which is simply a checkbox and boolean value that the patron is over
+    // the age of 13.
+    if (this.policy.policyType === "simplye" && !this.ageGate) {
+      throw new AgeGateFailure();
+    }
+
     // These four values are necessary for a Card object:
     // name, address, username, pin
     if (!this.name || !this.address || !this.username || !this.pin) {
@@ -251,6 +260,7 @@ class Card {
         );
       }
     });
+
     // Now that all values have gone through a basic validation process,
     // do the more in-depth validation.
     const validated = await cardValidator.validate(this);
