@@ -191,6 +191,16 @@ class TermsNotAccepted extends Error {
   }
 }
 
+class AgeGateFailure extends Error {
+  constructor() {
+    super();
+    this.type = "age-gate-failure";
+    this.name = "AgeGateFailure";
+    this.message = "You must be 13 years or older to continue.";
+    this.status = 400;
+  }
+}
+
 module.exports = {
   InvalidEnvironmentConfiguration,
   InvalidRequest,
@@ -211,4 +221,5 @@ module.exports = {
   SOIntegrationError,
   SONoLicenseKeyError,
   TermsNotAccepted,
+  AgeGateFailure,
 };

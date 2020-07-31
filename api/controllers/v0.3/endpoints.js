@@ -341,6 +341,7 @@ async function createPatron(req, res) {
     pin: req.body.pin, // from req
     email: req.body.email, // from req
     birthdate: req.body.birthdate, // from req
+    ageGate: req.body.ageGate, // from req
     ecommunicationsPref: req.body.ecommunicationsPref, // from req
     policy: Policy({ policyType }),
     ilsClient, // created above

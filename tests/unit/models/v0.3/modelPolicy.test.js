@@ -1,23 +1,23 @@
-const Policy = require('../../../../api/models/v0.3/modelPolicy');
-const { Card } = require('../../../../api/models/v0.3/modelCard');
-const Address = require('../../../../api/models/v0.3/modelAddress');
+const Policy = require("../../../../api/models/v0.3/modelPolicy");
+const { Card } = require("../../../../api/models/v0.3/modelCard");
+const Address = require("../../../../api/models/v0.3/modelAddress");
 
-describe('Policy', () => {
-  it('should return the three valid types', () => {
+describe("Policy", () => {
+  it("should return the three valid types", () => {
     const policy = Policy();
 
     expect(policy.validTypes).toEqual([
-      'simplye',
-      'webApplicant',
-      'simplyeJuvenile',
+      "simplye",
+      "webApplicant",
+      "simplyeJuvenile",
     ]);
   });
 
-  it('validates that the policy type is an approved type', () => {
+  it("validates that the policy type is an approved type", () => {
     const defaultPolicy = Policy();
-    const simplyePolicy = Policy({ policyType: 'simplye' });
-    const webApplicantPolicy = Policy({ policyType: 'webApplicant' });
-    const badPolicy = Policy({ policyType: 'badPolicy' });
+    const simplyePolicy = Policy({ policyType: "simplye" });
+    const webApplicantPolicy = Policy({ policyType: "webApplicant" });
+    const badPolicy = Policy({ policyType: "badPolicy" });
 
     expect(defaultPolicy.usesAnApprovedPolicy()).toEqual(true);
     expect(simplyePolicy.usesAnApprovedPolicy()).toEqual(true);
@@ -25,76 +25,76 @@ describe('Policy', () => {
     expect(badPolicy.usesAnApprovedPolicy()).toEqual(false);
   });
 
-  describe('SimplyE', () => {
+  describe("SimplyE", () => {
     const policy = Policy();
 
-    it('returns the default simplye policy and related values', () => {
-      expect(policy.policyType).toEqual('simplye');
+    it("returns the default simplye policy and related values", () => {
+      expect(policy.policyType).toEqual("simplye");
       expect(policy.isDefault).toEqual(true);
 
       // returns the full policy in `.policy`
       expect(policy.policy).toEqual(policy.ilsPolicy.simplye);
 
       // Values found in IlsClient:
-      expect(policy.policyField('agency')).toEqual('202');
-      expect(Object.keys(policy.policyField('ptype'))).toEqual([
-        'metro',
-        'default',
+      expect(policy.policyField("agency")).toEqual("202");
+      expect(Object.keys(policy.policyField("ptype"))).toEqual([
+        "metro",
+        "default",
       ]);
       // The type is for 3 years in an array of [years, months, days]
-      expect(policy.policyField('cardType').standard).toEqual(1095);
-      expect(policy.policyField('requiredFields')).toEqual([
-        'email',
-        'barcode',
-        'birthdate',
+      expect(policy.policyField("cardType").standard).toEqual(1095);
+      expect(policy.policyField("requiredFields")).toEqual([
+        "email",
+        "barcode",
+        "ageGate",
       ]);
-      expect(Object.keys(policy.policyField('serviceArea'))).toEqual([
-        'city',
-        'county',
-        'state',
+      expect(Object.keys(policy.policyField("serviceArea"))).toEqual([
+        "city",
+        "county",
+        "state",
       ]);
-      expect(policy.policyField('minimumAge')).toEqual(13);
+      expect(policy.policyField("minimumAge")).toEqual(13);
     });
 
-    it('is not a web applicant', () => {
+    it("is not a web applicant", () => {
       expect(policy.isWebApplicant).toEqual(false);
     });
 
-    it('verifies that `email` and `barcode` are required fields', () => {
-      expect(policy.isRequiredField('email')).toEqual(true);
-      expect(policy.isRequiredField('barcode')).toEqual(true);
-      expect(policy.isRequiredField('birthdate')).toEqual(true);
+    it("verifies that `email` and `barcode` are required fields", () => {
+      expect(policy.isRequiredField("email")).toEqual(true);
+      expect(policy.isRequiredField("barcode")).toEqual(true);
+      expect(policy.isRequiredField("ageGate")).toEqual(true);
     });
 
-    it('returns the ptype for patrons in the metro', () => {
+    it("returns the ptype for patrons in the metro", () => {
       // Metro residents have a city of "New York" or can also have counties
       // of Richmond, Queens, New York, Kings, and the Bronx.
       const metroAddress = new Address({
-        line1: '476th 5th Ave',
-        city: 'New York',
-        state: 'New York',
-        zip: '10018',
+        line1: "476th 5th Ave",
+        city: "New York",
+        state: "New York",
+        zip: "10018",
       });
       // Card = Patron
       const metroCard = new Card({
-        name: 'some name',
-        username: 'username',
+        name: "some name",
+        username: "username",
         address: metroAddress,
-        pin: '1234',
+        pin: "1234",
         // This cyclical dependancy seems unnecessary but will update later.
         policy,
       });
       const metroAddress2 = new Address({
-        line1: 'some address',
-        state: 'New York',
-        county: 'Queens',
-        zip: '11368',
+        line1: "some address",
+        state: "New York",
+        county: "Queens",
+        zip: "11368",
       });
       const metroCard2 = new Card({
-        name: 'some name',
-        username: 'username',
+        name: "some name",
+        username: "username",
         address: metroAddress2,
-        pin: '1234',
+        pin: "1234",
         // This cyclical dependancy seems unnecessary but will update later.
         policy,
       });
@@ -110,18 +110,18 @@ describe('Policy', () => {
       expect(ptype).toEqual(2);
     });
 
-    it('returns the ptype for patrons in the state', () => {
+    it("returns the ptype for patrons in the state", () => {
       const stateAddress = new Address({
-        line1: 'Some address',
-        city: 'Albany',
-        state: 'New York',
-        zip: '10018',
+        line1: "Some address",
+        city: "Albany",
+        state: "New York",
+        zip: "10018",
       });
       const stateCard = new Card({
-        name: 'some name',
-        username: 'username',
+        name: "some name",
+        username: "username",
         address: stateAddress,
-        pin: '1234',
+        pin: "1234",
         policy,
       });
 
@@ -134,49 +134,49 @@ describe('Policy', () => {
     });
   });
 
-  describe('Web Applicant', () => {
-    const policy = Policy({ policyType: 'webApplicant' });
+  describe("Web Applicant", () => {
+    const policy = Policy({ policyType: "webApplicant" });
 
-    it('returns a web applicant policy and policyType', () => {
-      expect(policy.policyType).toEqual('webApplicant');
+    it("returns a web applicant policy and policyType", () => {
+      expect(policy.policyType).toEqual("webApplicant");
       expect(policy.isDefault).toEqual(false);
 
       // returns the full policy in `.policy`
       expect(policy.policy).toEqual(policy.ilsPolicy.webApplicant);
 
       // Values found in IlsClient:
-      expect(policy.policyField('agency')).toEqual('198');
-      expect(Object.keys(policy.policyField('ptype'))).toEqual(['default']);
+      expect(policy.policyField("agency")).toEqual("198");
+      expect(Object.keys(policy.policyField("ptype"))).toEqual(["default"]);
       // The card type is for 90 days in an array of [years, months, days]
-      expect(policy.policyField('cardType').standard).toEqual(90);
-      expect(policy.policyField('requiredFields')).toEqual(['birthdate']);
-      expect(policy.policyField('serviceArea')).toEqual(undefined);
-      expect(policy.policyField('minimumAge')).toEqual(13);
+      expect(policy.policyField("cardType").standard).toEqual(90);
+      expect(policy.policyField("requiredFields")).toEqual(["birthdate"]);
+      expect(policy.policyField("serviceArea")).toEqual(undefined);
+      expect(policy.policyField("minimumAge")).toEqual(13);
     });
 
-    it('is not a web applicant', () => {
+    it("is not a web applicant", () => {
       expect(policy.isWebApplicant).toEqual(true);
     });
 
-    it('verifies that `birthdate` is a required field', () => {
-      expect(policy.isRequiredField('email')).toEqual(false);
-      expect(policy.isRequiredField('barcode')).toEqual(false);
-      expect(policy.isRequiredField('birthdate')).toEqual(true);
+    it("verifies that `birthdate` is a required field", () => {
+      expect(policy.isRequiredField("email")).toEqual(false);
+      expect(policy.isRequiredField("barcode")).toEqual(false);
+      expect(policy.isRequiredField("birthdate")).toEqual(true);
     });
 
-    it('always returns the default web ptype for web applications', () => {
+    it("always returns the default web ptype for web applications", () => {
       const address = new Address({
-        line1: '476th 5th Ave',
-        city: 'New York City',
-        state: 'New York',
-        zip: '10018',
+        line1: "476th 5th Ave",
+        city: "New York City",
+        state: "New York",
+        zip: "10018",
       });
       // Card = Patron
       const card = new Card({
-        name: 'some name',
-        username: 'username',
+        name: "some name",
+        username: "username",
         address,
-        pin: '1234',
+        pin: "1234",
       });
       const webApplicantPtype = policy.ilsPolicy.webApplicant.ptype;
       const webPtypeID = webApplicantPtype.default.id;

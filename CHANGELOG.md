@@ -6,6 +6,7 @@
 
 - Added endpoint `validations/address` for API V0.3.
 - Added a request flag for terms of condition acceptance input.
+- Added a request flag for the age gate input for "simplye" policy types.
 
 #### Updated
 

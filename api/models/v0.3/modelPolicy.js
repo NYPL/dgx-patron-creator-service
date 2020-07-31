@@ -1,5 +1,5 @@
-const IlsClient = require('../../controllers/v0.3/IlsClient');
-const logger = require('../../helpers/Logger');
+const IlsClient = require("../../controllers/v0.3/IlsClient");
+const logger = require("../../helpers/Logger");
 
 /**
  * Creates a policy object to find out what type of card is allowed for a
@@ -9,16 +9,16 @@ const logger = require('../../helpers/Logger');
  */
 const Policy = (args) => {
   const lowerCase = (arr) => arr.map((item) => item.toLowerCase());
-  const DEFAULT_POLICY_TYPE = 'simplye';
-  const ALLOWED_STATES = lowerCase(['NY', 'New York']);
+  const DEFAULT_POLICY_TYPE = "simplye";
+  const ALLOWED_STATES = lowerCase(["NY", "New York"]);
   const ALLOWED_COUNTIES = lowerCase([
-    'Richmond',
-    'Queens',
-    'New York',
-    'Kings',
-    'Bronx',
+    "Richmond",
+    "Queens",
+    "New York",
+    "Kings",
+    "Bronx",
   ]);
-  const ALLOWED_CITIES = lowerCase(['New York', 'New York City', 'NYC']);
+  const ALLOWED_CITIES = lowerCase(["New York", "New York City", "NYC"]);
   const ilsPolicy = {
     simplye: {
       agency: IlsClient.DEFAULT_PATRON_AGENCY,
@@ -36,7 +36,7 @@ const Policy = (args) => {
         standard: IlsClient.STANDARD_EXPIRATION_TIME,
         temporary: IlsClient.TEMPORARY_EXPIRATION_TIME,
       },
-      requiredFields: ['email', 'barcode', 'birthdate'],
+      requiredFields: ["email", "barcode", "ageGate"],
       minimumAge: 13,
       serviceArea: {
         city: ALLOWED_CITIES,
@@ -56,7 +56,7 @@ const Policy = (args) => {
         standard: IlsClient.WEB_APPLICANT_EXPIRATION_TIME,
         temporary: IlsClient.WEB_APPLICANT_EXPIRATION_TIME,
       },
-      requiredFields: ['birthdate'],
+      requiredFields: ["birthdate"],
       minimumAge: 13,
     },
     simplyeJuvenile: {
@@ -71,7 +71,7 @@ const Policy = (args) => {
         standard: IlsClient.STANDARD_EXPIRATION_TIME,
         temporary: IlsClient.TEMPORARY_EXPIRATION_TIME,
       },
-      requiredFields: ['barcode'],
+      requiredFields: ["barcode"],
       serviceArea: {
         city: ALLOWED_CITIES,
         county: ALLOWED_COUNTIES,
@@ -85,7 +85,7 @@ const Policy = (args) => {
   // Return an array of named, approved patron policy schemes
   const validTypes = Object.keys(ilsPolicy);
   const isDefault = policyType === DEFAULT_POLICY_TYPE;
-  const isWebApplicant = policyType === 'webApplicant';
+  const isWebApplicant = policyType === "webApplicant";
 
   /**
    * policyField(field)
@@ -101,7 +101,7 @@ const Policy = (args) => {
    *
    * @param {string} field
    */
-  const isRequiredField = (field) => policyField('requiredFields').includes(field);
+  const isRequiredField = (field) => policyField("requiredFields").includes(field);
 
   /**
    * determinePtype(patron)
@@ -111,10 +111,10 @@ const Policy = (args) => {
    * @param {Patron object} patron
    */
   const determinePtype = (patron = undefined) => {
-    const ptype = policyField('ptype');
-    const hasServiceArea = policyField('serviceArea')
-      && Object.keys(policyField('serviceArea')).length;
-    const hasMetroKey = Object.keys(ptype).includes('metro');
+    const ptype = policyField("ptype");
+    const hasServiceArea = policyField("serviceArea")
+      && Object.keys(policyField("serviceArea")).length;
+    const hasMetroKey = Object.keys(ptype).includes("metro");
     if (hasServiceArea && hasMetroKey) {
       if (patron.livesOrWorksInCity()) {
         return ptype.metro.id;
@@ -136,7 +136,7 @@ const Policy = (args) => {
     if (!keys.includes(policyType)) {
       logger.error(
         `${policyType} policy type is invalid, must be of type ${keys.join(
-          ', ',
+          ", ",
         )}`,
       );
       return false;
