@@ -181,6 +181,26 @@ class SONoLicenseKeyError extends Error {
   }
 }
 
+class TermsNotAccepted extends Error {
+  constructor() {
+    super();
+    this.type = "terms-not-accepted";
+    this.name = "TermsNotAccepted";
+    this.message = "The terms and conditions were not accepted.";
+    this.status = 400;
+  }
+}
+
+class AgeGateFailure extends Error {
+  constructor() {
+    super();
+    this.type = "age-gate-failure";
+    this.name = "AgeGateFailure";
+    this.message = "You must be 13 years or older to continue.";
+    this.status = 400;
+  }
+}
+
 module.exports = {
   InvalidEnvironmentConfiguration,
   InvalidRequest,
@@ -200,4 +220,6 @@ module.exports = {
   SODomainSpecificError,
   SOIntegrationError,
   SONoLicenseKeyError,
+  TermsNotAccepted,
+  AgeGateFailure,
 };

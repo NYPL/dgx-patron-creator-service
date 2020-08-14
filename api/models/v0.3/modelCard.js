@@ -2,12 +2,15 @@
 const UsernameValidationApi = require("../../controllers/v0.3/UsernameValidationAPI");
 const Address = require("./modelAddress");
 const Barcode = require("./modelBarcode");
+const { strToBool } = require("../../helpers/utils");
 
 const {
   DatabaseError,
   MissingRequiredValues,
   IncorrectPin,
   NotILSValid,
+  TermsNotAccepted,
+  AgeGateFailure,
 } = require("../../helpers/errors");
 
 /**
@@ -179,6 +182,7 @@ class Card {
     this.pin = args["pin"];
     this.email = args["email"] || "";
     this.birthdate = this.normalizedBirthdate(args["birthdate"]);
+    this.ageGate = strToBool(args["ageGate"]);
     this.ecommunicationsPref = !!args["ecommunicationsPref"];
     this.policy = args["policy"] || "";
     this.isTemporary = false;
@@ -187,6 +191,7 @@ class Card {
     // the web app will pass a `homeLibraryCode` parameter with a patron's
     // home library. For now, `eb` is hardcoded.
     this.homeLibraryCode = args["homeLibraryCode"] || "eb";
+    this.acceptTerms = strToBool(args["acceptTerms"]);
     this.errors = {};
 
     this.ilsClient = args["ilsClient"];
@@ -222,6 +227,18 @@ class Card {
    * card's address and username against the ILS.
    */
   async validate() {
+    // First check if the terms were accepted.
+    if (!this.acceptTerms) {
+      throw new TermsNotAccepted();
+    }
+
+    // For "simplye" policy types, the user must pass through the age gate,
+    // which is simply a checkbox and boolean value that the patron is over
+    // the age of 13.
+    if (this.policy.policyType === "simplye" && !this.ageGate) {
+      throw new AgeGateFailure();
+    }
+
     // These four values are necessary for a Card object:
     // name, address, username, pin
     if (!this.name || !this.address || !this.username || !this.pin) {
@@ -243,6 +260,7 @@ class Card {
         );
       }
     });
+
     // Now that all values have gone through a basic validation process,
     // do the more in-depth validation.
     const validated = await cardValidator.validate(this);

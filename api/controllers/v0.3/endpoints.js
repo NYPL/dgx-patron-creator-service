@@ -17,6 +17,7 @@ const {
   errorResponseDataWithTag,
 } = require("../../helpers/responses");
 const DependentAccountAPI = require("./DependentAccountAPI");
+const { strToBool } = require("../../helpers/utils");
 
 const ROUTE_TAG = "CREATE_PATRON_0.3";
 // This returns a function that generates the error response object.
@@ -340,6 +341,7 @@ async function createPatron(req, res) {
     pin: req.body.pin, // from req
     email: req.body.email, // from req
     birthdate: req.body.birthdate, // from req
+    ageGate: req.body.ageGate, // from req
     ecommunicationsPref: req.body.ecommunicationsPref, // from req
     policy: Policy({ policyType }),
     ilsClient, // created above
@@ -347,6 +349,7 @@ async function createPatron(req, res) {
     // the web app will pass a `homeLibraryCode` parameter with a patron's
     // home library. For now, `eb` is hardcoded.
     homeLibraryCode: req.body.homeLibraryCode || "eb",
+    acceptTerms: req.body.acceptTerms || false,
   });
 
   let response = {};
@@ -561,6 +564,11 @@ async function createDependent(req, res) {
     // the web app will pass a `homeLibraryCode` parameter with a patron's
     // home library. For now, `eb` is hardcoded.
     homeLibraryCode: req.body.homeLibraryCode || "eb",
+    // For phase one, this value is not needed from the request. This value is
+    // needed for the Card object to be valid so it will be set to true. Once
+    // an update has been made to the forms that make requests to this endpoint,
+    // this should be updated to req.body.acceptTerms.
+    acceptTerms: true,
   });
 
   let validCard;
