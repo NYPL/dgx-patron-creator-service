@@ -40,9 +40,9 @@ describe("Barcodes Database", () => {
 
       await db.init();
 
-      // Init creates the table and inserts barcode '28888055432138'.
+      // Init creates the table and inserts barcode '28888055434373'.
       const result = await db.query("SELECT * FROM barcodes");
-      expect(result.rows[0].barcode).toEqual("28888055432138");
+      expect(result.rows[0].barcode).toEqual("28888055434373");
       expect(result.rows[0].used).toEqual(true);
     });
   });
@@ -56,7 +56,7 @@ describe("Barcodes Database", () => {
 
     it("should insert data", async () => {
       const result = await db.query(
-        "INSERT INTO barcodes (barcode, used) VALUES ('28888055432435', false);"
+        "INSERT INTO barcodes (barcode, used) VALUES ('28888055434384', false);"
       );
 
       expect(result.rowCount).toEqual(1);
@@ -71,7 +71,7 @@ describe("Barcodes Database", () => {
         "SELECT barcode, used FROM barcodes WHERE used=false ORDER BY barcodes ASC limit 1;"
       );
 
-      expect(result.rows[0].barcode).toEqual("28888055432435");
+      expect(result.rows[0].barcode).toEqual("28888055434384");
       expect(result.rows[0].used).toEqual(false);
     });
   });
