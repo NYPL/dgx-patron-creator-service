@@ -1,5 +1,9 @@
 ## Change Log
 
+### v0.7.0
+
+- Added encrypted database values for QA and production.
+
 ### v0.6.0
 
 #### Add
