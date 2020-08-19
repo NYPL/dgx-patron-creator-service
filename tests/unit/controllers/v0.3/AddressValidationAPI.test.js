@@ -273,10 +273,7 @@ describe("AddressValidationAPI", () => {
 
   describe("alternateAddressesResponse", () => {
     ServiceObjectsClient.mockImplementation(() => ({}));
-    const {
-      alternateAddressesResponse,
-      createAddressFromResponse,
-    } = AddressValidationAPI();
+    const { alternateAddressesResponse } = AddressValidationAPI();
 
     // "alternateAddressesResponse" only gets called when there are alternate
     // addresses, so this case should not happen in real life.
@@ -287,26 +284,22 @@ describe("AddressValidationAPI", () => {
         type: "alternate-addresses",
         message: "Alternate addresses have been identified.",
         addresses: [],
-        originalAddress: {},
       });
 
       expect(alternateAddressesResponse(emptyAlternates)).toEqual({
         type: "alternate-addresses",
         message: "Alternate addresses have been identified.",
         addresses: [],
-        originalAddress: {},
       });
     });
 
     it("returns all alternate addresses in the response object", () => {
       const addresses = [rawAddress1, rawAddress2];
-      const originalAddress = rawAddress1;
 
-      expect(alternateAddressesResponse(addresses, originalAddress)).toEqual({
+      expect(alternateAddressesResponse(addresses)).toEqual({
         type: "alternate-addresses",
         message: "Alternate addresses have been identified.",
         addresses: [rawAddress1, rawAddress2],
-        originalAddress,
       });
     });
   });

@@ -87,13 +87,11 @@ const AddressValidationAPI = (args = {}) => {
    * alternateAddressesResponse(addresses)
    * Combines all alternate addresses into a response.
    * @param {Array} addresses - Array of address objects
-   * @param {object} originalAddress - Address object
    */
-  const alternateAddressesResponse = (addresses = [], originalAddress = {}) => {
+  const alternateAddressesResponse = (addresses = []) => {
     return {
       ...RESPONSES["alternate_addresses"],
       addresses,
-      originalAddress,
     };
   };
 
