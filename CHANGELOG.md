@@ -5,6 +5,7 @@
 #### Add
 
 - Added encrypted database values for QA and production.
+- Added a p-type for Marli.
 
 #### Update
 

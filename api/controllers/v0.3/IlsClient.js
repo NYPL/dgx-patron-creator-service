@@ -436,6 +436,7 @@ IlsClient.DISABLED_METRO_NY_PTYPE = 101;
 IlsClient.HOMEBOUND_NYC_PTYPE = 101;
 IlsClient.TEEN_METRO_PTYPE = 50;
 IlsClient.TEEN_NYS_PTYPE = 51;
+IlsClient.MARLI_PTYPE = 81;
 IlsClient.REJECTED_PTYPE = 101;
 IlsClient.ILS_ERROR = "-1";
 IlsClient.PTYPE_TO_TEXT = {
@@ -453,6 +454,7 @@ IlsClient.PTYPE_TO_TEXT = {
   SIMPLYE_YOUNG_ADULT: "SimplyE Young Adult",
   TEEN_METRO_PTYPE: "Teen Metro (3 Year)",
   TEEN_NYS_PTYPE: "Teen NY State (3 Year)",
+  MARLI_PTYPE: "Marli",
   REJECTED_PTYPE: "Rejected",
   ILS_ERROR: "Unable to create in ILS",
 };
@@ -465,6 +467,7 @@ IlsClient.CAN_CREATE_DEPENDENTS = [
   IlsClient.HOMEBOUND_NYC_PTYPE,
   IlsClient.SIMPLYE_METRO_PTYPE,
   IlsClient.SIMPLYE_NON_METRO_PTYPE,
+  IlsClient.MARLI_PTYPE,
 ];
 // Default values for certain fields
 IlsClient.DEFAULT_HOME_LIB = "";
