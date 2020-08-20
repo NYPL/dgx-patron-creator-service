@@ -9,6 +9,7 @@
 #### Update
 
 - Updated the return object response for multiple address for the `validations/address` and `patron` endpoints.
+- Updated the `webApplicant` policy type to return standard cards if the patron is in NYS and made `email` a required field.
 
 ### v0.6.0
 

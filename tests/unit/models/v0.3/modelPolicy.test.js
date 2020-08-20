@@ -147,10 +147,17 @@ describe("Policy", () => {
       // Values found in IlsClient:
       expect(policy.policyField("agency")).toEqual("198");
       expect(Object.keys(policy.policyField("ptype"))).toEqual(["default"]);
-      // The card type is for 90 days in an array of [years, months, days]
-      expect(policy.policyField("cardType").standard).toEqual(90);
-      expect(policy.policyField("requiredFields")).toEqual(["birthdate"]);
-      expect(policy.policyField("serviceArea")).toEqual(undefined);
+      // The card type is for 1095 days (3 years).
+      expect(policy.policyField("cardType").standard).toEqual(1095);
+      expect(policy.policyField("requiredFields")).toEqual([
+        "email",
+        "birthdate",
+      ]);
+      expect(Object.keys(policy.policyField("serviceArea"))).toEqual([
+        "city",
+        "county",
+        "state",
+      ]);
       expect(policy.policyField("minimumAge")).toEqual(13);
     });
 
@@ -158,8 +165,8 @@ describe("Policy", () => {
       expect(policy.isWebApplicant).toEqual(true);
     });
 
-    it("verifies that `birthdate` is a required field", () => {
-      expect(policy.isRequiredField("email")).toEqual(false);
+    it("verifies that `email` and `birthdate` are required fields", () => {
+      expect(policy.isRequiredField("email")).toEqual(true);
       expect(policy.isRequiredField("barcode")).toEqual(false);
       expect(policy.isRequiredField("birthdate")).toEqual(true);
     });
