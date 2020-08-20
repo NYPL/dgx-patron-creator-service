@@ -276,6 +276,102 @@ describe("CardValidator", () => {
       });
       expect(card.workAddress.hasBeenValidated).toEqual(true);
     });
+
+    it("should return an error if multiple addresses are returned", async () => {
+      const card = new Card({
+        ...basicCard,
+        address: new Address(
+          {
+            line1: "37 61",
+            city: "New York",
+            state: "NY",
+          },
+          "soLicenseKey",
+        ),
+        policy: Policy(),
+      });
+
+      const mockAddressValidate = jest.fn().mockReturnValue({
+        addresses: [
+          {
+            line1: "37 W 61st St",
+            line2: "",
+            city: "New York",
+            county: "New York",
+            state: "NY",
+            zip: "10023-7605",
+            isResidential: "false",
+            hasBeenValidated: true,
+          },
+          {
+            line1: "37 E 61st St",
+            line2: "",
+            city: "New York",
+            county: "New York",
+            state: "NY",
+            zip: "10065-8006",
+            isResidential: "false",
+            hasBeenValidated: true,
+          },
+        ],
+      });
+
+      // Mock these functions.
+      card.address.validate = mockAddressValidate;
+
+      expect(card.address.address).toEqual({
+        city: "New York",
+        county: "",
+        isResidential: false,
+        line1: "37 61",
+        line2: "",
+        state: "NY",
+        zip: "",
+      });
+      expect(card.address.hasBeenValidated).toEqual(false);
+
+      // Now call the validate function:
+      await validateAddress(card, "address");
+
+      expect(card.address.address).toEqual({
+        city: "New York",
+        county: "",
+        isResidential: false,
+        line1: "37 61",
+        line2: "",
+        state: "NY",
+        zip: "",
+      });
+      expect(card.address.hasBeenValidated).toEqual(false);
+      expect(card.errors).toEqual({
+        address: {
+          message:
+            "The entered address is ambiguous and will not result in a library card.",
+          addresses: [
+            {
+              line1: "37 W 61st St",
+              line2: "",
+              city: "New York",
+              county: "New York",
+              state: "NY",
+              zip: "10023-7605",
+              isResidential: "false",
+              hasBeenValidated: true,
+            },
+            {
+              line1: "37 E 61st St",
+              line2: "",
+              city: "New York",
+              county: "New York",
+              state: "NY",
+              zip: "10065-8006",
+              isResidential: "false",
+              hasBeenValidated: true,
+            },
+          ],
+        },
+      });
+    });
   });
 
   // This function updates the `card`'s `cardType response value calling

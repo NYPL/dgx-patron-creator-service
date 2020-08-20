@@ -117,6 +117,11 @@ const CardValidator = () => {
       );
       // Reset the card's address type input to the validated version.
       card[addressType] = address;
+    } else if (addressResponse.addresses) {
+      card.errors[addressType] = {
+        message: Card.RESPONSES.cardDeniedMultipleAddresses.message,
+        addresses: addressResponse.addresses,
+      };
     } else {
       card.errors[addressType] = addressResponse.error.message;
     }
@@ -624,6 +629,11 @@ Card.RESPONSES = {
     cardType: null,
     message:
       "Library cards are only available for residents of New York State or students and commuters working in New York City.",
+  },
+  cardDeniedMultipleAddresses: {
+    cardType: null,
+    message:
+      "The entered address is ambiguous and will not result in a library card.",
   },
   temporaryCard: {
     cardType: "temporary",
