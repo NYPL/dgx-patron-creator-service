@@ -56,7 +56,7 @@ const Policy = (args) => {
         standard: IlsClient.STANDARD_EXPIRATION_TIME,
         temporary: IlsClient.WEB_APPLICANT_EXPIRATION_TIME,
       },
-      requiredFields: ["email", "birthdate"],
+      requiredFields: ["email", "barcode", "birthdate"],
       minimumAge: 13,
       serviceArea: {
         city: ALLOWED_CITIES,

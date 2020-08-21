@@ -545,9 +545,9 @@ class Card {
       throw new NotILSValid("The card has not been validated or has no ptype.");
     }
 
-    // For patrons with the `simplye` policy type, the barcode is required,
-    // so let's create one. If no barcode is created, an error will be thrown
-    // an the patron won't be created in the ILS.
+    // The barcode is required for `simplye`, `webApplicant`, and
+    // `simplyeJuvenile` so let's create one. If no barcode is created,
+    // an error will be thrown an the patron won't be created in the ILS.
     if (this.policy.isRequiredField("barcode")) {
       try {
         await this.setBarcode();
