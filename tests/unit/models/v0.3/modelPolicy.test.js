@@ -151,6 +151,7 @@ describe("Policy", () => {
       expect(policy.policyField("cardType").standard).toEqual(1095);
       expect(policy.policyField("requiredFields")).toEqual([
         "email",
+        "barcode",
         "birthdate",
       ]);
       expect(Object.keys(policy.policyField("serviceArea"))).toEqual([
@@ -165,10 +166,11 @@ describe("Policy", () => {
       expect(policy.isWebApplicant).toEqual(true);
     });
 
-    it("verifies that `email` and `birthdate` are required fields", () => {
+    it("verifies that `email`, `barcode`, and `birthdate` are required fields", () => {
       expect(policy.isRequiredField("email")).toEqual(true);
-      expect(policy.isRequiredField("barcode")).toEqual(false);
+      expect(policy.isRequiredField("barcode")).toEqual(true);
       expect(policy.isRequiredField("birthdate")).toEqual(true);
+      expect(policy.isRequiredField("ageGate")).toEqual(false);
     });
 
     it("always returns the default web ptype for web applications", () => {
