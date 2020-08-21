@@ -140,6 +140,8 @@ Example response:
 
 This endpoint is used to create new patron accounts in NYPL's ILS. The username and addresses validations are internally run in this endpoint unless if a flag is passed indicating that the username, address, or work address have already been validated.
 
+Note: For the `simplye` policy type, the `ageGate` field is required. For the `webApplicant` policy type, the `birthdate` field is required. The `acceptTerms` field _must_ be true or the submission won't go through; this is passed from the client.
+
 For more information about the request, success response, and error response, check the [patrons endpoint wiki](https://github.com/NYPL/dgx-patron-creator-service/wiki/API-V0.3#patron-account-creation---post-v03patrons).
 
 Example request:
@@ -163,6 +165,7 @@ Example request:
     "zip": "10018"
   },
   "pin": "1234",
+  "ageGate": true,
   "birthdate": "05-30-1988",
   "policyType": "simplye",
   "email": "tomnook@ac.com",

@@ -1105,7 +1105,7 @@ describe("Card", () => {
         policy: webApplicant,
       });
 
-      expect(card.requiredByPolicy("barcode")).toEqual(false);
+      expect(card.requiredByPolicy("barcode")).toEqual(true);
       expect(card.requiredByPolicy("email")).toEqual(true);
       expect(card.requiredByPolicy("birthdate")).toEqual(true);
       expect(card.requiredByPolicy("ageGate")).toEqual(false);
@@ -1869,7 +1869,7 @@ describe("Card", () => {
       );
     });
 
-    it("does not attempt to create a barcode for web applicants", async () => {
+    it("attempts to create a barcode for web applicants", async () => {
       IlsClient.mockImplementation(() => ({
         createPatron: () => Promise.resolve({ data: { link: "some patron" } }),
       }));
@@ -1885,10 +1885,10 @@ describe("Card", () => {
       const spy = jest.spyOn(card, "setBarcode");
 
       await card.createIlsPatron();
-      expect(spy).not.toHaveBeenCalled();
+      expect(spy).toHaveBeenCalled();
     });
 
-    it("does attempt to create a barcode for simplye applicants", async () => {
+    it("attempts to create a barcode for simplye applicants", async () => {
       IlsClient.mockImplementation(() => ({
         createPatron: () => Promise.resolve({ data: { link: "some patron" } }),
       }));
@@ -1912,7 +1912,7 @@ describe("Card", () => {
       expect(spy).toHaveBeenCalled();
     });
 
-    it("does attempt to create a barcode but fails!", async () => {
+    it("attempts to create a barcode but fails!", async () => {
       IlsClient.mockImplementation(() => ({
         createPatron: () => Promise.resolve({ data: { link: "some patron" } }),
       }));
@@ -1965,7 +1965,6 @@ describe("Card", () => {
       expect(spy).toHaveBeenCalled();
     });
 
-    // TODO:
     it("creates a patron", async () => {
       // Mock that the ILS fails
       IlsClient.mockImplementation(() => ({

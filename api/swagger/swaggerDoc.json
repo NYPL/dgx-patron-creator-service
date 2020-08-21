@@ -1103,7 +1103,7 @@
       "properties": {
         "name": {
           "type": "string",
-          "example": "TestFirstName, TestLastName"
+          "example": "TestFirstName TestLastName"
         },
         "username": {
           "type": "string",
@@ -1119,6 +1119,10 @@
         },
         "address": {
           "$ref": "#/definitions/AddressModelV03"
+        },
+        "ageGate": {
+          "type": "boolean",
+          "example": true
         },
         "birthdate": {
           "type": "string",
