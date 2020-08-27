@@ -13,6 +13,7 @@
 - Updated the `webApplicant` policy type to return standard cards if the patron is in NYS and made `email` a required field.
 - Updated the Swagger docs to include new fields for the `/patrons` endpoint.
 - Updated the required fields for the `webApplicant` policy so a barcode is created for those accounts.
+- Updated the "simplyeJuvenile" policy type to always return a standard 3-year card.
 
 ### v0.6.0
 

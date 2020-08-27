@@ -556,7 +556,10 @@ async function createDependent(req, res) {
     fieldTag: "x",
     content: `DEPENDENT OF ${req.body.barcode}`,
   };
-  let address = new Address(formattedAddress);
+  let address = new Address({
+    ...formattedAddress,
+    hasBeenValidated: true,
+  });
   // This new patron has a new ptype.
   const policy = Policy({ policyType: "simplyeJuvenile" });
   const card = new Card({

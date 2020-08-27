@@ -74,7 +74,7 @@ const Policy = (args) => {
       },
       cardType: {
         standard: IlsClient.STANDARD_EXPIRATION_TIME,
-        temporary: IlsClient.TEMPORARY_EXPIRATION_TIME,
+        temporary: IlsClient.STANDARD_EXPIRATION_TIME,
       },
       requiredFields: ["email", "barcode"],
       serviceArea: {

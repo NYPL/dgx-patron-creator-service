@@ -1684,7 +1684,23 @@ describe("Card", () => {
 
   describe("getCardType", () => {
     const simplyePolicy = Policy({ policyType: "simplye" });
+    const simplyeJuvenilePolicy = Policy({ policyType: "simplyeJuvenile" });
     const addressNotNY = new Address({ city: "Hoboken", state: "New Jersey" });
+
+    it("always returns a standard 3-year card for 'simplyeJuvenile' accounts", () => {
+      const card = new Card({
+        ...basicCard,
+        address: new Address({
+          city: "New York",
+          state: "New York",
+          isResidential: "false",
+        }),
+        policy: simplyeJuvenilePolicy,
+      });
+      expect(card.getCardType()).toEqual({
+        ...Card.RESPONSES.standardCard,
+      });
+    });
 
     it("returns a temporary card for web applicants out of NYS or not residential but in NYS", () => {
       const card = new Card({

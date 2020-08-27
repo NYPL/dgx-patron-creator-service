@@ -463,13 +463,14 @@ class Card {
    * getCardType()
    * Returns an object response with what type of card, based on the policy and
    * the patron's address, is processed.
-   * - Web applicants get a temporary card or standard card:
+   * - "SimplyE Juveniles" always get a standard card.
+   * - "Web applicants" get a temporary card or standard card:
    *   temporary - 1 - if the home address is not in NYS but the work address
    *           is in NYC.
    *             - 2 - if they are in NYS but the address is not residential
    *   standard - the patron is in NYS and has a residential home address,
    *           regardless if they have a work address or not.
-   * - Simplye applicants get a denied, temporary, or standard card:
+   * - "Simplye" applicants get a denied, temporary, or standard card:
    *   denied - if the home address is not in NYS and there is no work address
    *           or the work address is not in NYC.
    *   temporary - 1 - if the home address is not in NYS but the work address
@@ -479,6 +480,10 @@ class Card {
    *           regardless if they have a work address or not.
    */
   getCardType() {
+    if (this.policy.policyType === "simplyeJuvenile") {
+      return Card.RESPONSES["standardCard"];
+    }
+
     // The use is denied if the card's home address is not in NY state and
     // there is no work address, or there is a work address but it's not in NYC.
     if (!this.livesInState()) {
