@@ -53,11 +53,16 @@ const Policy = (args) => {
         },
       },
       cardType: {
-        standard: IlsClient.WEB_APPLICANT_EXPIRATION_TIME,
+        standard: IlsClient.STANDARD_EXPIRATION_TIME,
         temporary: IlsClient.WEB_APPLICANT_EXPIRATION_TIME,
       },
-      requiredFields: ["birthdate"],
+      requiredFields: ["email", "barcode", "birthdate"],
       minimumAge: 13,
+      serviceArea: {
+        city: ALLOWED_CITIES,
+        county: ALLOWED_COUNTIES,
+        state: ALLOWED_STATES,
+      },
     },
     simplyeJuvenile: {
       agency: IlsClient.DEFAULT_PATRON_AGENCY,
@@ -71,7 +76,7 @@ const Policy = (args) => {
         standard: IlsClient.STANDARD_EXPIRATION_TIME,
         temporary: IlsClient.TEMPORARY_EXPIRATION_TIME,
       },
-      requiredFields: ["barcode"],
+      requiredFields: ["email", "barcode"],
       serviceArea: {
         city: ALLOWED_CITIES,
         county: ALLOWED_COUNTIES,

@@ -5,10 +5,14 @@
 #### Add
 
 - Added encrypted database values for QA and production.
+- Added a p-type for Marli.
 
 #### Update
 
-- Updated the return object response for multiple address for the `validations/address` and `patron` endpoints.
+- Updated the return object response for multiple address for the `/validations/address` and `/patrons` endpoints.
+- Updated the `webApplicant` policy type to return standard cards if the patron is in NYS and made `email` a required field.
+- Updated the Swagger docs to include new fields for the `/patrons` endpoint.
+- Updated the required fields for the `webApplicant` policy so a barcode is created for those accounts.
 
 ### v0.6.0
 

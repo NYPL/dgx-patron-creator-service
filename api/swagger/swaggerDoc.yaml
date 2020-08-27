@@ -732,7 +732,7 @@ definitions:
     properties:
       name:
         type: string
-        example: 'TestFirstName, TestLastName'
+        example: TestFirstName TestLastName
       username:
         type: string
         example: username
@@ -744,6 +744,9 @@ definitions:
         example: '1234'
       address:
         $ref: '#/definitions/AddressModelV03'
+      ageGate:
+        type: boolean
+        example: true
       birthdate:
         type: string
         example: 01-01-1988

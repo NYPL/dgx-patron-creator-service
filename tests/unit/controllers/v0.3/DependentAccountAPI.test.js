@@ -366,7 +366,7 @@ describe("DependentAccountAPI", () => {
     });
   });
 
-  // There are a total of 8 p-types that can have dependent accounts. Note:
+  // There are a total of 9 p-types that can have dependent accounts. Note:
   // Disabled Metro NY (3 Year) and Homebound NYC (3 Year) do not have
   // p-type values yet so in the code they're temporarily set to 101.
   // ConstantName: ("description", number p-type)
@@ -378,6 +378,7 @@ describe("DependentAccountAPI", () => {
   // HOMEBOUND_NYC_PTYPE: ("Homebound NYC (3 Year)", 101)
   // SIMPLYE_METRO_PTYPE: ("SimplyE Metro", 2)
   // SIMPLYE_NON_METRO_PTYPE: ("SimplyE Non-Metro", 3)
+  // MARLI_PTYPE: ("Marli", 81)
   describe("checkPType", () => {
     // Since we are mocking the IlsClient class, we have to recreate the
     // constants and array of valid p-types that can create dependents.
@@ -389,6 +390,7 @@ describe("DependentAccountAPI", () => {
     IlsClient.HOMEBOUND_NYC_PTYPE = 101;
     IlsClient.SIMPLYE_METRO_PTYPE = 2;
     IlsClient.SIMPLYE_NON_METRO_PTYPE = 3;
+    IlsClient.MARLI_PTYPE = 81;
     IlsClient.CAN_CREATE_DEPENDENTS = [
       IlsClient.ADULT_METRO_PTYPE,
       IlsClient.ADULT_NYS_PTYPE,
@@ -398,6 +400,7 @@ describe("DependentAccountAPI", () => {
       IlsClient.HOMEBOUND_NYC_PTYPE,
       IlsClient.SIMPLYE_METRO_PTYPE,
       IlsClient.SIMPLYE_NON_METRO_PTYPE,
+      IlsClient.MARLI_PTYPE,
     ];
     const ilsClient = IlsClient();
 
@@ -432,6 +435,11 @@ describe("DependentAccountAPI", () => {
       expect(valid).toEqual(true);
 
       patronType = 20; // Senior Metro
+
+      valid = checkPType(patronType);
+      expect(valid).toEqual(true);
+
+      patronType = 81; // Marli
 
       valid = checkPType(patronType);
       expect(valid).toEqual(true);
