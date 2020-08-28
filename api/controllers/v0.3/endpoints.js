@@ -275,19 +275,29 @@ async function checkAddress(req, res) {
     const address = new Address(req.body.address, soLicenseKey);
     const validatedAddress = await address.validate();
 
-    // Initialize a patron/card object _just_ to determine cardType by policy.
-    // We don't and can't actually validate this patron/card object since
-    // the rest of the needed values are not part of this call (i.e. name,
-    // username, etc).
-    const card = new Card({
-      // The response address is the SO validated one. If SO threw an error
-      // just use the original address
-      address: validatedAddress.address || address,
-      policy: Policy({ policyType }),
-    });
-    // We want to respond with the policy type so the user knows what type
-    // of card they'll get with the address they submitted.
-    policyResponse = isWorkAddress ? card.checkWorkType() : card.getCardType();
+    // If only one address is returned, attempt to get the policy response
+    // from a Card instance and the validated address or original address.
+    if (!validatedAddress.addresses) {
+      // Initialize a patron/card object _just_ to determine cardType by policy.
+      // We don't and can't actually validate this patron/card object since
+      // the rest of the needed values are not part of this call (i.e. name,
+      // username, etc).
+      const card = new Card({
+        // The response address is the SO validated one. If SO threw an error or
+        // returned multiple addresses, just use the original address
+        address: validatedAddress.address || address,
+        policy: Policy({ policyType }),
+      });
+      // We want to respond with the policy type so the user knows what type
+      // of card they'll get with the address they submitted.
+      policyResponse = isWorkAddress
+        ? card.checkWorkType()
+        : card.getCardType();
+    } else {
+      // More than one address is returned from Service Objects. The card is
+      // denied until an unambiguous address is submitted.
+      policyResponse = Card.RESPONSES.cardDeniedMultipleAddresses;
+    }
 
     addressResponse = {
       ...validatedAddress,
@@ -546,7 +556,10 @@ async function createDependent(req, res) {
     fieldTag: "x",
     content: `DEPENDENT OF ${req.body.barcode}`,
   };
-  let address = new Address(formattedAddress);
+  let address = new Address({
+    ...formattedAddress,
+    hasBeenValidated: true,
+  });
   // This new patron has a new ptype.
   const policy = Policy({ policyType: "simplyeJuvenile" });
   const card = new Card({

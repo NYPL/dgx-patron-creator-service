@@ -649,6 +649,7 @@ describe("IlsClient", () => {
       name: "First Last",
       username: "username",
       pin: "1234",
+      email: "test@test.com",
       birthdate: "01/01/1988",
       address,
       policy,
@@ -694,6 +695,7 @@ describe("IlsClient", () => {
             },
           ],
           birthDate: "1988-01-01",
+          emails: ["TEST@TEST.COM"],
           expirationDate: expirationDate.toISOString().slice(0, 10),
           // The patron is not subscribed to e-communications by default.
           patronCodes: { pcode1: "-" },
@@ -736,6 +738,7 @@ describe("IlsClient", () => {
             },
           ],
           birthDate: "1988-01-01",
+          emails: ["TEST@TEST.COM"],
           expirationDate: expirationDate.toISOString().slice(0, 10),
           patronCodes: { pcode1: "-" },
           homeLibraryCode: "eb",

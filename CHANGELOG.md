@@ -1,5 +1,20 @@
 ## Change Log
 
+### v0.7.0
+
+#### Add
+
+- Added encrypted database values for QA and production.
+- Added a p-type for Marli.
+
+#### Update
+
+- Updated the return object response for multiple address for the `/validations/address` and `/patrons` endpoints.
+- Updated the `webApplicant` policy type to return standard cards if the patron is in NYS and made `email` a required field.
+- Updated the Swagger docs to include new fields for the `/patrons` endpoint.
+- Updated the required fields for the `webApplicant` policy so a barcode is created for those accounts.
+- Updated the "simplyeJuvenile" policy type to always return a standard 3-year card.
+
 ### v0.6.0
 
 #### Add
@@ -8,7 +23,7 @@
 - Added a request flag for terms of condition acceptance input.
 - Added a request flag for the age gate input for "simplye" policy types.
 
-#### Updated
+#### Update
 
 - Updated endpoint `/patrons` to use `workAddress` and to use the logic for creating the right card for API V0.3.
 - Updated the address validations to include a work address as well as implementing validation through Service Objects.

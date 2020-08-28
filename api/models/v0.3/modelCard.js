@@ -117,6 +117,11 @@ const CardValidator = () => {
       );
       // Reset the card's address type input to the validated version.
       card[addressType] = address;
+    } else if (addressResponse.addresses) {
+      card.errors[addressType] = {
+        message: Card.RESPONSES.cardDeniedMultipleAddresses.message,
+        addresses: addressResponse.addresses,
+      };
     } else {
       card.errors[addressType] = addressResponse.error.message;
     }
@@ -458,8 +463,14 @@ class Card {
    * getCardType()
    * Returns an object response with what type of card, based on the policy and
    * the patron's address, is processed.
-   * - Web applicants always get a temporary card.
-   * - For simplye applicants:
+   * - "SimplyE Juveniles" always get a standard card.
+   * - "Web applicants" get a temporary card or standard card:
+   *   temporary - 1 - if the home address is not in NYS but the work address
+   *           is in NYC.
+   *             - 2 - if they are in NYS but the address is not residential
+   *   standard - the patron is in NYS and has a residential home address,
+   *           regardless if they have a work address or not.
+   * - "Simplye" applicants get a denied, temporary, or standard card:
    *   denied - if the home address is not in NYS and there is no work address
    *           or the work address is not in NYC.
    *   temporary - 1 - if the home address is not in NYS but the work address
@@ -469,21 +480,14 @@ class Card {
    *           regardless if they have a work address or not.
    */
   getCardType() {
-    // Is this card for a web applicant? They always get a temporary card since
-    // the webApplicant policy doesn't have a service area.
-    if (!this.policy.policy.serviceArea) {
-      this.setTemporary();
-      return {
-        ...Card.RESPONSES["temporaryCard"],
-        reason: "The policy for this card is web applicant.",
-      };
+    if (this.policy.policyType === "simplyeJuvenile") {
+      return Card.RESPONSES["standardCard"];
     }
 
-    // Otherwise it's a simplye policy. They are denied if the card's home
-    // address is not in NY state and there is no work address, or there is a
-    // work address but it's not in NYC.
+    // The use is denied if the card's home address is not in NY state and
+    // there is no work address, or there is a work address but it's not in NYC.
     if (!this.livesInState()) {
-      if (this.worksInCity()) {
+      if (this.worksInCity() || this.policy.policyType === "webApplicant") {
         this.setTemporary();
         return {
           ...Card.RESPONSES["temporaryCard"],
@@ -491,10 +495,11 @@ class Card {
             "The home address is not in New York State but the work address is in New York City.",
         };
       }
+
       return Card.RESPONSES["cardDenied"];
     }
 
-    // they're in nys but make sure they are in nyc and is a residential
+    // They're in NYS but make sure they are in NYC and is a residential
     // address for a standard card.
     if (
       !(this.address.inCity(this.policy) && this.address.address.isResidential)
@@ -545,9 +550,9 @@ class Card {
       throw new NotILSValid("The card has not been validated or has no ptype.");
     }
 
-    // For patrons with the `simplye` policy type, the barcode is required,
-    // so let's create one. If no barcode is created, an error will be thrown
-    // an the patron won't be created in the ILS.
+    // The barcode is required for `simplye`, `webApplicant`, and
+    // `simplyeJuvenile` so let's create one. If no barcode is created,
+    // an error will be thrown an the patron won't be created in the ILS.
     if (this.policy.isRequiredField("barcode")) {
       try {
         await this.setBarcode();
@@ -624,6 +629,11 @@ Card.RESPONSES = {
     cardType: null,
     message:
       "Library cards are only available for residents of New York State or students and commuters working in New York City.",
+  },
+  cardDeniedMultipleAddresses: {
+    cardType: null,
+    message:
+      "The entered address is ambiguous and will not result in a library card.",
   },
   temporaryCard: {
     cardType: "temporary",

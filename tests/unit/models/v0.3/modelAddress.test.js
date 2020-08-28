@@ -69,7 +69,7 @@ describe("Address", () => {
 
   describe("class methods", () => {
     describe("inState", () => {
-      it("should return false for web applicants in and out of NY state", () => {
+      it("should return false for web applicants out of NYS and true for in NYS", () => {
         const webApplicant = Policy({ policyType: "webApplicant" });
         const addressNotNY = new Address({
           line1: "street address",
@@ -81,7 +81,7 @@ describe("Address", () => {
         });
 
         expect(addressNotNY.inState(webApplicant)).toEqual(false);
-        expect(addressNY.inState(webApplicant)).toEqual(false);
+        expect(addressNY.inState(webApplicant)).toEqual(true);
       });
 
       it("should return false if they are not in NY state", () => {
@@ -106,7 +106,7 @@ describe("Address", () => {
     });
 
     describe("inCity", () => {
-      it("should return false for web applicants in and out of NYC", () => {
+      it("should return false for web applicants out of NYC and true for in NYC", () => {
         const webApplicant = Policy({ policyType: "webApplicant" });
         const addressNotNYC = new Address({
           line1: "street address",
@@ -118,10 +118,10 @@ describe("Address", () => {
         });
 
         expect(addressNotNYC.inCity(webApplicant)).toEqual(false);
-        expect(addressNYC.inCity(webApplicant)).toEqual(false);
+        expect(addressNYC.inCity(webApplicant)).toEqual(true);
       });
 
-      it("should return false if they are not in NYC", () => {
+      it("should return false for simplye applicants if they are not in NYC", () => {
         const simplyePolicy = Policy();
         const addressNotNYC = new Address({
           line1: "street address",
@@ -131,7 +131,7 @@ describe("Address", () => {
         expect(addressNotNYC.inCity(simplyePolicy)).toEqual(false);
       });
 
-      it("should return true if they are in NYC", () => {
+      it("should return true for simplye applicants if they are in NYC", () => {
         const simplyePolicy = Policy();
         const addressNYC = new Address({
           line1: "street address",
