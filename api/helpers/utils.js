@@ -47,9 +47,11 @@ const updateJuvenileName = (name, parentArrayName = []) => {
   // name. There is no separation of first or last name so this is the best
   // way to do it for now. There's no check to see if the parent's last name
   // is already in the child's name because it's possible for children to have
-  // a different last name than their parents' last name.
+  // a different last name than their parents' last name. The ILS stores names
+  // as "LASTNAME, FIRSTNAME" so we need the first value when we split the
+  // string.
   if (name.indexOf(" ") === -1) {
-    const parentsLastName = parentsName.split(" ")[1];
+    const parentsLastName = parentsName.split(", ")[0];
     updatedName = `${name} ${parentsLastName}`;
   }
 

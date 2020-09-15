@@ -30,14 +30,14 @@ describe("updateJuvenileName", () => {
 
   it("returns the name if it contains a last name", () => {
     // The ILS returns an account name in an array called `names`.
-    const parentNames = ["Tom Nook"];
+    const parentNames = ["NOOK, TOM"];
     const name = "Timmy Tommy";
     expect(updateJuvenileName(name, parentNames)).toEqual(name);
   });
 
   it("updates the child's name if there is no last name", () => {
-    const parentNames = ["Tom Nook"];
+    const parentNames = ["NOOK, TOM"];
     const name = "Timmy";
-    expect(updateJuvenileName(name, parentNames)).toEqual("Timmy Nook");
+    expect(updateJuvenileName(name, parentNames)).toEqual("Timmy NOOK");
   });
 });
