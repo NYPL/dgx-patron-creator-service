@@ -1,6 +1,7 @@
 /* eslint-disable */
 const axios = require("axios");
 const { ILSIntegrationError, InvalidRequest } = require("../../helpers/errors");
+const logger = require("../../helpers/Logger");
 
 /**
  * Helper class to setup API calls to the ILS. Assumes that the patron card
@@ -14,7 +15,7 @@ const IlsClient = (args) => {
   // `expirationDate` fields from the patron object (`id` is returned by
   // default), so those fields are added at the end of the endpoint request.
   const ilsResponseFields =
-    "&fields=patronType,varFields,addresses,emails,expirationDate";
+    "&fields=patronType,varFields,names,addresses,emails,expirationDate";
   // TBD if these should be moved into this file.
   // const tokenUrl = args["tokenUrl"] || "";
   // const ilsClientKey = args["ilsClientKey"] || "";
@@ -157,6 +158,8 @@ const IlsClient = (args) => {
         return response;
       })
       .catch((error) => {
+        logger.error(`Error calling ILS - ${error.response}`);
+        logger.error(`Error calling ILS URL - ${findUrl}${params}`);
         return error.response;
       });
 

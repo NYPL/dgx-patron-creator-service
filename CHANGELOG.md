@@ -1,5 +1,12 @@
 ## Change Log
 
+### v0.7.1
+
+#### Update
+
+- Updated the dependent juvenile account's name to include the parent's last name if no child last name was included.
+- Adding error logging when calling the ILS API to see in AWS Cloudwatch.
+
 ### v0.7.0
 
 #### Add

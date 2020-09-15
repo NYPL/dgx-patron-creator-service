@@ -9,6 +9,7 @@ const {
   NotEligibleCard,
 } = require("../../helpers/errors");
 const IlsClient = require("./IlsClient");
+const logger = require("../../helpers/Logger");
 
 // A parent patron is only allowed to create three dependent juvenile accounts.
 const DEPENDENT_LIMIT = 3;
@@ -146,6 +147,7 @@ const DependentAccountAPI = (args) => {
 
       if (response.status !== 200) {
         // The record wasn't found.
+        logger.error(`Patron was not found - ${response}`);
         throw new PatronNotFound();
       }
 
