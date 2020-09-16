@@ -40,9 +40,9 @@ describe("Barcodes Database", () => {
 
       await db.init();
 
-      // Init creates the table and inserts barcode '28888055434373'.
+      // Init creates the table and inserts barcode '28888855432452'.
       const result = await db.query("SELECT * FROM barcodes");
-      expect(result.rows[0].barcode).toEqual("28888055434373");
+      expect(result.rows[0].barcode).toEqual("28888855432452");
       expect(result.rows[0].used).toEqual(true);
     });
   });

@@ -1,5 +1,11 @@
 ## Change Log
 
+### v0.7.1
+
+#### Hotfix
+
+- Updated the barcode to the correct seed number.
+
 ### v0.7.0
 
 #### Add

@@ -82,15 +82,15 @@ describe("Barcode", () => {
     it("should get the next available barcode", () => {
       const barcode = new Barcode({ ilsClient: IlsClient() });
 
-      const nextBarcode = barcode.nextLuhnValidCode("28888055434373");
-      expect(nextBarcode).toEqual("28888055434381");
+      const nextBarcode = barcode.nextLuhnValidCode("28888855432452");
+      expect(nextBarcode).toEqual("28888855432460");
     });
 
     it("should take a number to get the next nth Luhn-valid code", () => {
       const barcode = new Barcode({ ilsClient: IlsClient() });
 
-      const nextBarcode = barcode.nextLuhnValidCode("28888055434373", 100);
-      expect(nextBarcode).toEqual("28888055435370");
+      const nextBarcode = barcode.nextLuhnValidCode("28888855432452", 100);
+      expect(nextBarcode).toEqual("28888855433450");
     });
   });
 
@@ -112,11 +112,11 @@ describe("Barcode", () => {
       expect(querySpy).toHaveBeenCalled();
 
       // The Luhn algorithm gets the current barcode to generate the next one.
-      expect(luhnSpy).toHaveBeenCalledWith("28888055434373");
+      expect(luhnSpy).toHaveBeenCalledWith("28888855432452");
 
-      // The next available barcode after 28888055434373 which is
+      // The next available barcode after 28888855432452 which is
       // already in the database is:
-      expect(nextBarcode.barcode).toEqual("28888055434381");
+      expect(nextBarcode.barcode).toEqual("28888855432460");
       expect(nextBarcode.newBarcode).toEqual(true);
     });
 
