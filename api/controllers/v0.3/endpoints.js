@@ -17,7 +17,7 @@ const {
   errorResponseDataWithTag,
 } = require("../../helpers/responses");
 const DependentAccountAPI = require("./DependentAccountAPI");
-const { strToBool } = require("../../helpers/utils");
+const { updateJuvenileName } = require("../../helpers/utils");
 
 const ROUTE_TAG = "CREATE_PATRON_0.3";
 // This returns a function that generates the error response object.
@@ -560,10 +560,12 @@ async function createDependent(req, res) {
     ...formattedAddress,
     hasBeenValidated: true,
   });
+  const childsName = updateJuvenileName(req.body.name, parentPatron.names);
+
   // This new patron has a new ptype.
   const policy = Policy({ policyType: "simplyeJuvenile" });
   const card = new Card({
-    name: req.body.name, // from req
+    name: childsName, // from req
     username: req.body.username, // from req
     pin: req.body.pin, // from req
     birthdate: req.body.birthdate, // from req
