@@ -29,7 +29,7 @@ const strToBool = (str) => {
 
 /**
  * updateJuvenileName
- * Update the juvenile's name in case no last named was passed with the
+ * Update the juvenile's name in case no last name was passed with the
  * parent's last name. The ILS returns names in an array called `names`.
  * @param {string} name
  * @param {array} parentArrayName
