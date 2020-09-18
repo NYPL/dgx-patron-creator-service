@@ -390,6 +390,8 @@ describe("DependentAccountAPI", () => {
     IlsClient.HOMEBOUND_NYC_PTYPE = 101;
     IlsClient.SIMPLYE_METRO_PTYPE = 2;
     IlsClient.SIMPLYE_NON_METRO_PTYPE = 3;
+    IlsClient.TEEN_METRO_PTYPE = 50;
+    IlsClient.TEEN_NYS_PTYPE = 51;
     IlsClient.MARLI_PTYPE = 81;
     IlsClient.CAN_CREATE_DEPENDENTS = [
       IlsClient.ADULT_METRO_PTYPE,
@@ -400,6 +402,8 @@ describe("DependentAccountAPI", () => {
       IlsClient.HOMEBOUND_NYC_PTYPE,
       IlsClient.SIMPLYE_METRO_PTYPE,
       IlsClient.SIMPLYE_NON_METRO_PTYPE,
+      IlsClient.TEEN_METRO_PTYPE,
+      IlsClient.TEEN_NYS_PTYPE,
       IlsClient.MARLI_PTYPE,
     ];
     const ilsClient = IlsClient();
@@ -411,12 +415,12 @@ describe("DependentAccountAPI", () => {
       let valid = checkPType(patronType);
       expect(valid).toEqual(false);
 
-      patronType = 50; // Teen Metro
+      patronType = 4; // SimplyE Juvenile
 
       valid = checkPType(patronType);
       expect(valid).toEqual(false);
 
-      patronType = 51; // Teen NYS
+      patronType = 5; // SimplyE Juvenile Only
 
       valid = checkPType(patronType);
       expect(valid).toEqual(false);
@@ -440,6 +444,11 @@ describe("DependentAccountAPI", () => {
       expect(valid).toEqual(true);
 
       patronType = 81; // Marli
+
+      valid = checkPType(patronType);
+      expect(valid).toEqual(true);
+
+      patronType = 50; // Teen Metro (3 Year)
 
       valid = checkPType(patronType);
       expect(valid).toEqual(true);

@@ -1,5 +1,11 @@
 ## Change Log
 
+### v0.7.3
+
+#### Update
+
+- Updated the list of p-types that are allowed to create juvenile accounts to include 50 and 51, Teen Metro and Teen NY State.
+
 ### v0.7.2
 
 #### Update
