@@ -42,6 +42,15 @@ const updateJuvenileName = (name, parentArrayName = []) => {
   }
 
   let updatedName = name;
+  // Some clients send the name in the "lastName, firstName" format so this
+  // covers that case by normalizing the string to be "firstName lastName".
+  // If only the first name is sent, it'll simply be "firstName" and the next
+  // "if" "will cover that case.
+  if (name.indexOf(", ") !== -1) {
+    const [last, first] = name.split(", ");
+    updatedName = `${first} ${last}`;
+  }
+
   // If there's no last name, then use the parent's last name. This is a very
   // basic check that is done by checking if there is a space in the complete
   // name. There is no separation of first or last name so this is the best
@@ -50,7 +59,7 @@ const updateJuvenileName = (name, parentArrayName = []) => {
   // a different last name than their parents' last name. The ILS stores names
   // as "LASTNAME, FIRSTNAME" so we need the first value when we split the
   // string.
-  if (name.indexOf(" ") === -1) {
+  if (updatedName.indexOf(" ") === -1) {
     const parentsLastName = parentsName.split(", ")[0];
     updatedName = `${name} ${parentsLastName}`;
   }

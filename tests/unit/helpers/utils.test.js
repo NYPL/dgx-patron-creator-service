@@ -40,4 +40,10 @@ describe("updateJuvenileName", () => {
     const name = "Timmy";
     expect(updateJuvenileName(name, parentNames)).toEqual("Timmy NOOK");
   });
+
+  it("works if the input is 'lastName, firstName'", () => {
+    const parentNames = ["NOOK, TOM"];
+    const name = "lastName, firstName";
+    expect(updateJuvenileName(name, parentNames)).toEqual("firstName lastName");
+  });
 });
