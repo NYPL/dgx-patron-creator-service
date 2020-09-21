@@ -470,6 +470,8 @@ IlsClient.CAN_CREATE_DEPENDENTS = [
   IlsClient.HOMEBOUND_NYC_PTYPE,
   IlsClient.SIMPLYE_METRO_PTYPE,
   IlsClient.SIMPLYE_NON_METRO_PTYPE,
+  IlsClient.TEEN_METRO_PTYPE,
+  IlsClient.TEEN_NYS_PTYPE,
   IlsClient.MARLI_PTYPE,
 ];
 // Default values for certain fields

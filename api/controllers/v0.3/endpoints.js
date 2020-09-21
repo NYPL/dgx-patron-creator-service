@@ -560,6 +560,12 @@ async function createDependent(req, res) {
     ...formattedAddress,
     hasBeenValidated: true,
   });
+  // Normalize the child's name. The `Card` object expects name to be in the
+  // "firstName lastName" format. If the request is in "lastName, firstName"
+  // format, it gets updated here. If the request only has the first name for
+  // the child, the parent's last name is added here.
+  // The `Card` object itself converts the name string to the ILS-preferred
+  // format before making the API call.
   const childsName = updateJuvenileName(req.body.name, parentPatron.names);
 
   // This new patron has a new ptype.
