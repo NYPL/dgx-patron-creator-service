@@ -150,7 +150,9 @@ Example request:
 {
   "usernameHasBeenValidated": false,
   "username": "tomnook42",
-  "name": "First Last",
+  "name": "Tome Nook",
+  "firstName": "Tom",
+  "lastName": "Nook",
   "address": {
     "line1": "1111 1st St.",
     "line2": "",
@@ -221,7 +223,9 @@ Example responses:
 
 #### 5. Create a Dependent Juvenile Patron `/api/v0.3/dependents` - POST
 
-This endpoint is used to create dependent juvenile patron accounts. This creates a patron directly in the ILS with a specific p-type as well as a note in the account's data object linking the parent account with the dependent account. The parent account will also include a note that lists up to three of its dependent juvenile patron account barcodes. _Note: a parent patron account must pass its barcode under `barcode` or its username under `parentUsername`._
+This endpoint is used to create dependent juvenile patron accounts. This creates a patron directly in the ILS with a specific p-type as well as a note in the account's data object linking the parent account with the dependent account. The parent account will also include a note that lists up to three of its dependent juvenile patron account barcodes. If the child's name doesn't include a last name, it will be updated to have the parent's last name before sending the request to the ILS.
+
+_Note: a parent patron account must pass its barcode under `barcode` or its username under `parentUsername`._
 
 For more information about the request, success response, and error response, check the [patron dependent eligibility endpoint wiki](https://github.com/NYPL/dgx-patron-creator-service/wiki/API-V0.3#dependent-juvenile-account-creation---post-v03patronsdependents).
 
@@ -230,16 +234,31 @@ Example of a requests:
 ```javascript
 {
 	"barcode": "12222222222222",
-	"name": "Isabelle Shizue",
+  "name": "Isabelle Shizue",
+  "firstName": "Isabelle",
+  "lastName": "Shizue",
 	"username": "isabelle1",
   "pin": "1234"
 }
 ```
 
 ```javascript
+// In this case, the child's last name will be updated to be
+// the parent's last name.
+{
+	"barcode": "12222222222222",
+  "name": "Isabelle",
+	"username": "isabelle1",
+  "pin": "1234"
+}
+```
+
+```javascript
+// In this case, the child's last name will be updated to be
+// the parent's last name.
 {
 	"parentUsername": "tomnook42",
-	"name": "Isabelle Shizue",
+  "firstName": "Isabelle",
 	"username": "isabelle1",
   "pin": "1234"
 }
