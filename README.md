@@ -150,7 +150,7 @@ Example request:
 {
   "usernameHasBeenValidated": false,
   "username": "tomnook42",
-  "name": "Tome Nook",
+  "name": "Tom Nook",
   "firstName": "Tom",
   "lastName": "Nook",
   "address": {
