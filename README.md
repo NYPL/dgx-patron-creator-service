@@ -233,11 +233,11 @@ Example of a requests:
 
 ```javascript
 {
-	"barcode": "12222222222222",
+  "barcode": "12222222222222",
   "name": "Isabelle Shizue",
   "firstName": "Isabelle",
   "lastName": "Shizue",
-	"username": "isabelle1",
+  "username": "isabelle1",
   "pin": "1234"
 }
 ```
@@ -246,9 +246,9 @@ Example of a requests:
 // In this case, the child's last name will be updated to be
 // the parent's last name.
 {
-	"barcode": "12222222222222",
+  "barcode": "12222222222222",
   "name": "Isabelle",
-	"username": "isabelle1",
+  "username": "isabelle1",
   "pin": "1234"
 }
 ```
@@ -257,9 +257,9 @@ Example of a requests:
 // In this case, the child's last name will be updated to be
 // the parent's last name.
 {
-	"parentUsername": "tomnook42",
+  "parentUsername": "tomnook42",
   "firstName": "Isabelle",
-	"username": "isabelle1",
+  "username": "isabelle1",
   "pin": "1234"
 }
 ```
