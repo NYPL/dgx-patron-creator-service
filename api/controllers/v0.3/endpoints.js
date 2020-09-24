@@ -17,7 +17,7 @@ const {
   errorResponseDataWithTag,
 } = require("../../helpers/responses");
 const DependentAccountAPI = require("./DependentAccountAPI");
-const { updateJuvenileName } = require("../../helpers/utils");
+const { normalizeName, updateJuvenileName } = require("../../helpers/utils");
 
 const ROUTE_TAG = "CREATE_PATRON_0.3";
 // This returns a function that generates the error response object.
@@ -342,8 +342,13 @@ async function createPatron(req, res) {
     ? new Address(req.body.workAddress, soLicenseKey)
     : undefined;
   const policyType = req.body.policyType || "simplye";
+  const updatedName = normalizeName(
+    req.body.name,
+    req.body.firstName,
+    req.body.lastName
+  );
   const card = new Card({
-    name: req.body.name, // from req
+    name: updatedName,
     address: address, // created above
     workAddress: workAddress,
     username: req.body.username, // from req
@@ -560,13 +565,20 @@ async function createDependent(req, res) {
     ...formattedAddress,
     hasBeenValidated: true,
   });
+
   // Normalize the child's name. The `Card` object expects name to be in the
   // "firstName lastName" format. If the request is in "lastName, firstName"
   // format, it gets updated here. If the request only has the first name for
   // the child, the parent's last name is added here.
   // The `Card` object itself converts the name string to the ILS-preferred
   // format before making the API call.
-  const childsName = updateJuvenileName(req.body.name, parentPatron.names);
+  const updatedName = normalizeName(
+    req.body.name,
+    req.body.firstName,
+    req.body.lastName
+  );
+  // If no last name was in the input, use the parent's last name.
+  const childsName = updateJuvenileName(updatedName, parentPatron.names);
 
   // This new patron has a new ptype.
   const policy = Policy({ policyType: "simplyeJuvenile" });

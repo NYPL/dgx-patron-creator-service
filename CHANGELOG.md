@@ -1,5 +1,11 @@
 ## Change Log
 
+### v0.7.4
+
+#### Added
+
+- Added `lastName` and `firstName` request inputs for the endpoints to create a patron and to create dependent juvenile accounts. The previously used `name` is still available. There is now a function that takes in all possible values and normalizes the format to be "firstName lastName". This is to clear confusion where some clients send the `name` input as "lastName, firstName". Now there's an option to send each name individually.
+
 ### v0.7.3
 
 #### Update

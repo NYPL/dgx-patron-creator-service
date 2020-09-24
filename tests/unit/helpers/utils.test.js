@@ -1,4 +1,8 @@
-const { strToBool, updateJuvenileName } = require("../../../api/helpers/utils");
+const {
+  strToBool,
+  normalizeName,
+  updateJuvenileName,
+} = require("../../../api/helpers/utils");
 
 describe("strToBool", () => {
   it("returns undefined for bad string", () => {
@@ -40,10 +44,37 @@ describe("updateJuvenileName", () => {
     const name = "Timmy";
     expect(updateJuvenileName(name, parentNames)).toEqual("Timmy NOOK");
   });
+});
 
-  it("works if the input is 'lastName, firstName'", () => {
-    const parentNames = ["NOOK, TOM"];
-    const name = "lastName, firstName";
-    expect(updateJuvenileName(name, parentNames)).toEqual("firstName lastName");
+describe("normalizeName", () => {
+  it("returns the name if it's in the preferred format", () => {
+    const name = "James Bond";
+    expect(normalizeName(name)).toEqual(name);
+  });
+
+  it("returned the normalized name if the request name is 'lastName, firstName'", () => {
+    const name = "Bond, James";
+    expect(normalizeName(name)).toEqual("James Bond");
+  });
+
+  it("returns the combined first and last name inputs", () => {
+    // This is to show how it would work through Express' `req.body` object.
+    const body = {
+      name: undefined,
+      firstName: "James",
+      lastName: "Bond",
+    };
+    const { name, firstName, lastName } = body;
+    expect(normalizeName(name, firstName, lastName)).toEqual("James Bond");
+  });
+
+  it("returns the name even if the last name is not added", () => {
+    const body = {
+      name: undefined,
+      firstName: "James",
+      lastName: undefined,
+    };
+    const { name, firstName, lastName } = body;
+    expect(normalizeName(name, firstName, lastName)).toEqual("James");
   });
 });

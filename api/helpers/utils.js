@@ -28,9 +28,40 @@ const strToBool = (str) => {
 };
 
 /**
+ * normalizeName
+ * Normalize the format of the patron's full name to be "firstName lastName".
+ * This can be either from the `name` or the `firstName` and `lastName` request
+ * input.
+ * @param {string} fullName
+ * @param {string} firstName
+ * @param {string} lastName
+ */
+const normalizeName = (fullName = "", firstName = "", lastName = "") => {
+  // If the request has the name in separate fields, then just combine them
+  // and return them. If the client only sends a `firstName`, that's okay since
+  // it'll get trimmed here.
+  if (!fullName) {
+    return `${firstName} ${lastName}`.trim();
+  }
+
+  // If clients send the `fullName` in the "firstName lastName" format, then
+  // we're done because it's the format we want. Some clients may send only
+  // the first name in `fullName`.
+  let updatedName = fullName;
+  // But some clients send the `fullName` in the "lastName, firstName" format.
+  // This covers that case by normalizing the string to be "firstName lastName".
+  if (fullName.indexOf(", ") !== -1) {
+    const [last, first] = fullName.split(", ");
+    updatedName = `${first} ${last}`;
+  }
+
+  return updatedName;
+};
+
+/**
  * updateJuvenileName
  * Update the juvenile's name in case no last name was passed with the
- * parent's last name. The ILS returns names in an array called `names`.
+ * parent's ILS last name. The ILS returns names in an array called `names`.
  * @param {string} name
  * @param {array} parentArrayName
  */
@@ -42,15 +73,6 @@ const updateJuvenileName = (name, parentArrayName = []) => {
   }
 
   let updatedName = name;
-  // Some clients send the name in the "lastName, firstName" format so this
-  // covers that case by normalizing the string to be "firstName lastName".
-  // If only the first name is sent, it'll simply be "firstName" and the next
-  // "if" "will cover that case.
-  if (name.indexOf(", ") !== -1) {
-    const [last, first] = name.split(", ");
-    updatedName = `${first} ${last}`;
-  }
-
   // If there's no last name, then use the parent's last name. This is a very
   // basic check that is done by checking if there is a space in the complete
   // name. There is no separation of first or last name so this is the best
@@ -69,5 +91,6 @@ const updateJuvenileName = (name, parentArrayName = []) => {
 
 module.exports = {
   strToBool,
+  normalizeName,
   updateJuvenileName,
 };
