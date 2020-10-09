@@ -1,6 +1,7 @@
 /* eslint-disable */
 const ServiceObjectsClient = require("./ServiceObjectsClient");
 const { SONoLicenseKeyError } = require("../../helpers/errors");
+const { strToBool } = require("../../helpers/utils");
 
 /**
  * A class that uses Service Objects to validate addresses.
@@ -16,15 +17,15 @@ const AddressValidationAPI = (args = {}) => {
   const RESPONSES = {
     unrecognized_address: {
       type: UNRECOGNIZED_ADDRESS_TYPE,
-      message: "Unrecognized address.",
+      title: "Unrecognized address.",
     },
     alternate_addresses: {
       type: ALTERNATE_ADDRESSES_TYPE,
-      message: "Alternate addresses have been identified.",
+      title: "Alternate addresses have been identified.",
     },
     valid_address: {
       type: VALID_ADDRESS_TYPE,
-      message: "Valid address.",
+      title: "Valid address.",
     },
   };
 
@@ -77,7 +78,7 @@ const AddressValidationAPI = (args = {}) => {
       state: address["State"],
       // Yes, SO takes a "PostalCode" key but returns a "Zip" key.
       zip: address["Zip"],
-      isResidential: address["IsResidential"],
+      isResidential: strToBool(address["IsResidential"]),
       // This is from Service Objects, so it's been validated.
       hasBeenValidated: true,
     };
@@ -109,6 +110,10 @@ const AddressValidationAPI = (args = {}) => {
     let errorResponse = {};
     let response = {};
 
+    // There was an error calling Service Objects. Instead of throwing the
+    // error, we want to return it as part of the larger error response to the
+    // client. This is because we still want to proceed doing basic validation
+    // of the address and always return temporary if there are errors.
     if ((errorParam && errorParam.message) || !addressesParam) {
       errorResponse = {
         status: 400,

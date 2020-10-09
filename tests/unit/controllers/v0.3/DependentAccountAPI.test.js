@@ -77,7 +77,7 @@ const mockedILSIntegrationError = {
     data: {
       name: "Internal server error",
       description: "Something went wrong in the ILS.",
-      message: "Something went wrong in the ILS.",
+      detail: "Something went wrong in the ILS.",
     },
   },
 };

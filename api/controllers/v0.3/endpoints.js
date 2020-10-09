@@ -10,7 +10,9 @@ const encode = require("../../helpers/encode");
 const { Card } = require("../../models/v0.3/modelCard");
 const Address = require("../../models/v0.3/modelAddress");
 const Policy = require("../../models/v0.3/modelPolicy");
-const { checkEnvVariables } = require("../../helpers/validateEnvironment");
+const {
+  checkEnvironmentVariables,
+} = require("../../helpers/validateEnvironment");
 const UsernameValidationAPI = require("./UsernameValidationAPI");
 const {
   renderResponse,
@@ -18,6 +20,11 @@ const {
 } = require("../../helpers/responses");
 const DependentAccountAPI = require("./DependentAccountAPI");
 const { normalizeName, updateJuvenileName } = require("../../helpers/utils");
+const {
+  ILSIntegrationError,
+  KMSDecryption,
+  InvalidRequest,
+} = require("../../helpers/errors");
 
 const ROUTE_TAG = "CREATE_PATRON_0.3";
 // This returns a function that generates the error response object.
@@ -74,17 +81,12 @@ function getIlsToken(req, res, key, secret) {
       ilsToken = response.data.access_token;
       ilsTokenTimestamp = new Date();
     })
-    .catch((ilsError) => {
-      const errorResponseData = modelResponse.errorResponseData(
-        collectErrorResponseData(
-          503,
-          "ils-integration-error",
-          `The ILS is not currently available. ${ilsError}`,
-          "",
-          ""
-        ) // eslint-disable-line comma-dangle
+    .catch((error) => {
+      const ilsError = new ILSIntegrationError(
+        `Problem calling the ILS token url, ${error.response.data.name}`
       );
-      renderResponse(req, res, 503, errorResponseData);
+      const errorResponseData = collectErrorResponseData(ilsError);
+      renderResponse(req, res, errorResponseData.status, errorResponseData);
     });
 }
 
@@ -103,16 +105,15 @@ function getIlsToken(req, res, key, secret) {
  * @param {HTTP response} res
  */
 async function setupEndpoint(endpointFn, req, res) {
-  const hasValidEnvVariables = await checkEnvVariables(
-    req,
+  const hasValidEnvVariables = await checkEnvironmentVariables(
     res,
     ROUTE_TAG,
     envVariableNames
   );
 
   if (!hasValidEnvVariables) {
-    // `checkEnvVariables` already sent the error response so return the
-    // function so it doesn't continue to process the current request.
+    // `checkEnvironmentVariables` already sent the error response so return
+    // the function so it doesn't continue to process the current request.
     return;
   }
 
@@ -127,19 +128,11 @@ async function setupEndpoint(endpointFn, req, res) {
     soLicenseKey =
       soLicenseKey || (await awsDecrypt.decryptKMS(process.env.SO_LICENSE_KEY));
   } catch (error) {
-    const localErrorMessage =
-      "The ILS client key and/or secret, or the Service Objects license key were not decrypted";
-
-    const errorResponseData = modelResponse.errorResponseData(
-      collectErrorResponseData(
-        500,
-        "configuration-error",
-        localErrorMessage,
-        "",
-        ""
-      ) // eslint-disable-line comma-dangle
+    const kmsError = new KMSDecryption(
+      "The ILS client key and/or secret, or the Service Objects license key were not decrypted"
     );
-    renderResponse(req, res, 500, errorResponseData);
+    const errorResponseData = collectErrorResponseData(kmsError);
+    renderResponse(req, res, errorResponseData.status, errorResponseData);
   }
 
   // Now, let's generate a token that will be used to make authenticated
@@ -244,15 +237,7 @@ async function checkUsername(req, res) {
     status = 200;
   } catch (error) {
     usernameResponse = {
-      ...modelResponse.errorResponseData(
-        collectErrorResponseData(
-          error.status,
-          error.type || "",
-          error.message,
-          "",
-          ""
-        ) // eslint-disable-line comma-dangle
-      ),
+      ...collectErrorResponseData(error),
       cardType: error.cardType || null,
     };
     status = usernameResponse.status;
@@ -273,11 +258,27 @@ async function checkAddress(req, res) {
     const isWorkAddress = req.body.isWorkAddress || false;
     const policyType = req.body.policyType || "simplye";
     const address = new Address(req.body.address, soLicenseKey);
-    const validatedAddress = await address.validate();
+    let validatedAddress = await address.validate();
+    let policyResponse = {};
 
-    // If only one address is returned, attempt to get the policy response
-    // from a Card instance and the validated address or original address.
-    if (!validatedAddress.addresses) {
+    // If there's an error, return that error to the user and don't attempt to
+    // get a policy response since it's an invalid request.
+    if (validatedAddress.error) {
+      validatedAddress = {
+        ...validatedAddress,
+        originalAddress: address.address,
+        cardType: null,
+      };
+      if (!validatedAddress.type) {
+        const invalidError = new InvalidRequest("Address validation error");
+        validatedAddress = {
+          ...validatedAddress,
+          ...collectErrorResponseData(invalidError),
+        };
+      }
+      // If only one address is returned, attempt to get the policy response
+      // from a Card instance and the validated address or original address.
+    } else if (!validatedAddress.addresses) {
       // Initialize a patron/card object _just_ to determine cardType by policy.
       // We don't and can't actually validate this patron/card object since
       // the rest of the needed values are not part of this call (i.e. name,
@@ -296,7 +297,10 @@ async function checkAddress(req, res) {
     } else {
       // More than one address is returned from Service Objects. The card is
       // denied until an unambiguous address is submitted.
-      policyResponse = Card.RESPONSES.cardDeniedMultipleAddresses;
+      policyResponse = {
+        ...Card.RESPONSES.cardDeniedMultipleAddresses,
+        detail: Card.RESPONSES.cardDeniedMultipleAddresses.message,
+      };
     }
 
     addressResponse = {
@@ -305,15 +309,7 @@ async function checkAddress(req, res) {
       status: validatedAddress.status || 200,
     };
   } catch (error) {
-    addressResponse = modelResponse.errorResponseData(
-      collectErrorResponseData(
-        error.status,
-        error.type || "",
-        error.message,
-        "",
-        ""
-      ) // eslint-disable-line comma-dangle
-    );
+    addressResponse = collectErrorResponseData(error);
   }
 
   renderResponse(req, res, addressResponse.status, addressResponse);
@@ -336,10 +332,18 @@ async function checkAddress(req, res) {
  */
 async function createPatron(req, res) {
   let address = req.body.address
-    ? new Address(req.body.address, soLicenseKey)
+    ? new Address(
+        req.body.address,
+        soLicenseKey,
+        req.body.address.hasBeenValidated
+      )
     : undefined;
   let workAddress = req.body.workAddress
-    ? new Address(req.body.workAddress, soLicenseKey)
+    ? new Address(
+        req.body.workAddress,
+        soLicenseKey,
+        req.body.workAddress.hasBeenValidated
+      )
     : undefined;
   const policyType = req.body.policyType || "simplye";
   const updatedName = normalizeName(
@@ -380,15 +384,7 @@ async function createPatron(req, res) {
     // attempting to validate the username or address, catch that error here
     // and return it.
     response = {
-      ...modelResponse.errorResponseData(
-        collectErrorResponseData(
-          error.status || 400,
-          error.type || "",
-          "There was an error with the request.",
-          "",
-          { error: error.message }
-        ) // eslint-disable-line comma-dangle
-      ),
+      ...collectErrorResponseData(error),
       cardType: null,
     };
   }
@@ -397,15 +393,10 @@ async function createPatron(req, res) {
   // etc., or if the username is unavailable, render that error.
   if (errors && Object.keys(errors).length !== 0) {
     response = {
-      ...modelResponse.errorResponseData(
-        collectErrorResponseData(
-          400,
-          "invalid-request",
-          "There was an error with the request.",
-          "",
-          errors
-        ) // eslint-disable-line comma-dangle
+      ...collectErrorResponseData(
+        new InvalidRequest("There was an error with the request.")
       ),
+      error: errors,
       cardType: null,
     };
   } else {
@@ -424,15 +415,7 @@ async function createPatron(req, res) {
       } catch (error) {
         // There was an error hitting the ILS to create the patron. Catch
         // and return the error.
-        response = modelResponse.errorResponseData(
-          collectErrorResponseData(
-            error.status || 400,
-            error.type || "",
-            error.message,
-            "",
-            ""
-          ) // eslint-disable-line comma-dangle
-        );
+        response = collectErrorResponseData(error);
       }
     }
   }
@@ -492,15 +475,7 @@ async function checkDependentEligibility(req, res) {
     response = await isPatronEligible(options);
     status = 200;
   } catch (error) {
-    response = modelResponse.errorResponseData(
-      collectErrorResponseData(
-        error.status || 400,
-        error.type || "",
-        error.message,
-        "",
-        ""
-      ) // eslint-disable-line comma-dangle
-    );
+    response = collectErrorResponseData(error);
     status = response.status;
   }
 
@@ -530,19 +505,23 @@ async function createDependent(req, res) {
     username: req.body.parentUsername,
   };
 
+  if (!req.body.name && !req.body.firstName && !req.body.lastName) {
+    const noNameError = collectErrorResponseData(
+      new InvalidRequest(
+        "No name, firstName, or lastName was passed for the child."
+      )
+    );
+    return renderResponse(req, res, noNameError.status, noNameError);
+  }
+
   // Check that the patron is eligible to create dependent accounts.
   try {
     isEligible = await isPatronEligible(options);
   } catch (error) {
-    response = modelResponse.errorResponseData(
-      collectErrorResponseData(
-        error.status || 400,
-        error.type || "",
-        "There was an error with the request.",
-        "",
-        { error: error.message }
-      ) // eslint-disable-line comma-dangle
-    );
+    response = {
+      ...collectErrorResponseData(error),
+      error: error.message,
+    };
     // There was an error so just return the error and don't continue.
     return renderResponse(req, res, response.status, response);
   }
@@ -617,23 +596,20 @@ async function createDependent(req, res) {
     // If there was a problem hitting the ILS or Service Objects while
     // attempting to validate the username or address, catch that error here
     // and return it.
-    response = modelResponse.errorResponseData(
-      collectErrorResponseData(
-        error.status || 400,
-        error.type || "",
-        "There was an error with the request.",
-        "",
-        { error: error.message }
-      ) // eslint-disable-line comma-dangle
-    );
+    response = {
+      ...collectErrorResponseData(error),
+      error: error.message,
+    };
   }
 
   // If there are any errors with the request, such as missing pin, birthdate,
   // etc., or if the username is unavailable, render that error.
   if (errors && Object.keys(errors).length !== 0) {
-    response = modelResponse.errorResponseData(
-      collectErrorResponseData(400, "", errors, "", "") // eslint-disable-line comma-dangle
-    );
+    const badInput = new InvalidRequest("There was an error with the request");
+    response = {
+      ...collectErrorResponseData(badInput),
+      error: errors,
+    };
   } else {
     // If the card is valid, attempt to create the dependent patron in the ILS!
     if (validCard) {
@@ -683,15 +659,7 @@ async function createDependent(req, res) {
       } catch (error) {
         // There was an error hitting the ILS to create the patron or to update
         // the parent's account. Catch either error and return it.
-        response = modelResponse.errorResponseData(
-          collectErrorResponseData(
-            error.status || 502,
-            error.type || "",
-            error.message,
-            "",
-            ""
-          ) // eslint-disable-line comma-dangle
-        );
+        response = collectErrorResponseData(error);
       }
     }
   }

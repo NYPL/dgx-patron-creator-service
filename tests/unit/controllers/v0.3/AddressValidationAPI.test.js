@@ -84,8 +84,8 @@ describe("AddressValidationAPI", () => {
         validateAddress: () =>
           Promise.reject(
             new SOAuthorizationError(
-              "1",
-              "Please provide a valid license key for this web service."
+              "Please provide a valid license key for this web service.",
+              "1"
             )
           ),
       }));
@@ -100,13 +100,16 @@ describe("AddressValidationAPI", () => {
       expect(response).toEqual({
         error: {
           code: "1",
+          // detail:
+          // "SO Authorization Error: Please provide a valid license key for this web service.",
           message:
             "SO Authorization Error: Please provide a valid license key for this web service.",
-          name: "SOAuthorizationError",
+          // name: "SOAuthorizationError",
+          title: "SO Authorization Error",
           status: 502,
           type: "service-objects-authorization-error",
         },
-        message: "Unrecognized address.",
+        title: "Unrecognized address.",
         originalAddress: {
           city: "New York",
           line1: "476 5th Avenue",
@@ -133,11 +136,11 @@ describe("AddressValidationAPI", () => {
       expect(response).toEqual({
         error: {
           message: "something went wrong",
-          name: "SOIntegrationError",
+          title: "SO Integration Error",
           status: 502,
           type: "service-objects-integration-error",
         },
-        message: "Unrecognized address.",
+        title: "Unrecognized address.",
         originalAddress: {
           city: "New York",
           line1: "476 5th Avenue",
@@ -161,8 +164,8 @@ describe("AddressValidationAPI", () => {
         validateAddress: () =>
           Promise.reject(
             new SODomainSpecificError(
-              addressNotFound["DescCode"],
-              addressNotFound["Desc"]
+              addressNotFound["Desc"],
+              addressNotFound["DescCode"]
             )
           ),
       }));
@@ -177,11 +180,11 @@ describe("AddressValidationAPI", () => {
         error: {
           code: "1",
           message: "Address not found",
-          name: "SODomainSpecificError",
+          title: "SO Domain Specific Error",
           status: 502,
           type: "service-objects-domain-specific-error",
         },
-        message: "Unrecognized address.",
+        title: "Unrecognized address.",
         originalAddress: rawAddress1,
       });
     });
@@ -198,8 +201,8 @@ describe("AddressValidationAPI", () => {
         validateAddress: () =>
           Promise.reject(
             new SODomainSpecificError(
-              streetNotFound["DescCode"],
-              streetNotFound["Desc"]
+              streetNotFound["Desc"],
+              streetNotFound["DescCode"]
             )
           ),
       }));
@@ -209,12 +212,12 @@ describe("AddressValidationAPI", () => {
       expect(response).toEqual({
         status: 400,
         type: "unrecognized-address",
-        message: "Unrecognized address.",
+        title: "Unrecognized address.",
         originalAddress: rawAddress1,
         error: {
           code: "7",
           message: "Street not found",
-          name: "SODomainSpecificError",
+          title: "SO Domain Specific Error",
           status: 502,
           type: "service-objects-domain-specific-error",
         },
@@ -234,9 +237,10 @@ describe("AddressValidationAPI", () => {
 
       expect(response).toEqual({
         type: "valid-address",
-        message: "Valid address.",
+        title: "Valid address.",
         address: {
           ...rawAddress1,
+          county: undefined,
           line2: "",
           isResidential: true,
           hasBeenValidated: true,
@@ -282,13 +286,13 @@ describe("AddressValidationAPI", () => {
 
       expect(alternateAddressesResponse()).toEqual({
         type: "alternate-addresses",
-        message: "Alternate addresses have been identified.",
+        title: "Alternate addresses have been identified.",
         addresses: [],
       });
 
       expect(alternateAddressesResponse(emptyAlternates)).toEqual({
         type: "alternate-addresses",
-        message: "Alternate addresses have been identified.",
+        title: "Alternate addresses have been identified.",
         addresses: [],
       });
     });
@@ -298,7 +302,7 @@ describe("AddressValidationAPI", () => {
 
       expect(alternateAddressesResponse(addresses)).toEqual({
         type: "alternate-addresses",
-        message: "Alternate addresses have been identified.",
+        title: "Alternate addresses have been identified.",
         addresses: [rawAddress1, rawAddress2],
       });
     });
@@ -314,7 +318,7 @@ describe("AddressValidationAPI", () => {
       expect(parseResponse(addresses, errors, rawAddress1)).toEqual({
         type: "unrecognized-address",
         originalAddress: rawAddress1,
-        message: "Unrecognized address.",
+        title: "Unrecognized address.",
         error: {},
         status: 400,
       });
@@ -330,7 +334,7 @@ describe("AddressValidationAPI", () => {
       expect(parseResponse(responseAddresses, errors, rawAddress1)).toEqual({
         status: 400,
         type: "alternate-addresses",
-        message: "Alternate addresses have been identified.",
+        title: "Alternate addresses have been identified.",
         addresses,
         originalAddress: rawAddress1,
       });
@@ -351,7 +355,7 @@ describe("AddressValidationAPI", () => {
 
       expect(response).toEqual({
         type: "valid-address",
-        message: "Valid address.",
+        title: "Valid address.",
         address: {
           ...address.address,
           county: undefined,
@@ -375,7 +379,7 @@ describe("AddressValidationAPI", () => {
 
       expect(response).toEqual({
         type: "valid-address",
-        message: "Valid address.",
+        title: "Valid address.",
         address: {
           ...rawAddress1,
           county: undefined,
@@ -402,7 +406,7 @@ describe("AddressValidationAPI", () => {
 
       expect(response).toEqual({
         type: "valid-address",
-        message: "Valid address.",
+        title: "Valid address.",
         address: {
           ...address.address,
           county: undefined,

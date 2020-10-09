@@ -1,208 +1,297 @@
-/* eslint-disable */
+/* eslint-disable max-classes-per-file */
+class ProblemDetail extends Error {
+  constructor(status, type, title, detail) {
+    super();
+    this.status = status;
+    this.type = type;
+    this.title = title;
+    this.message = detail;
+  }
+}
+
 // Thrown when parameter(s) are missing/invalid
 // See https://httpstatuses.com/422
-class InvalidEnvironmentConfiguration extends Error {
-  constructor(message) {
+class InvalidEnvironmentConfiguration extends ProblemDetail {
+  constructor(detail) {
     super();
-    this.name = "InvalidEnvironmentConfiguration";
-    this.message = message;
+    this.status = 422;
+    this.type = "invalid-environment-configuration";
+    this.title = "An environment variable is missing.";
+    this.message = detail;
   }
 }
 
-class UnableToCreatePatronWithAxios extends Error {
-  constructor(message) {
+class KMSDecryption extends ProblemDetail {
+  constructor(detail) {
     super();
-    this.name = "UnableToCreatePatronWithAxios";
-    this.message = message;
+    this.status = 500;
+    this.type = "aws-kms-decryption-error";
+    this.title = "AWS KMS decryption error";
+    this.message = detail;
   }
 }
 
-class InvalidRequest extends Error {
-  constructor(message) {
+class UnableToCreatePatronWithAxios extends ProblemDetail {
+  constructor(detail) {
     super();
-    this.name = "InvalidRequest";
+    this.status = 400;
+    this.type = "unable-to-create-patron";
+    this.title = "Unable to create patron with axios";
+    this.message = detail;
+  }
+}
+
+class InvalidRequest extends ProblemDetail {
+  constructor(detail) {
+    super();
+    this.status = 400;
     this.type = "invalid-request";
-    this.state = 400;
-    this.message = message;
+    this.title = "Invalid Request";
+    this.message = detail;
+    // To support older versions of API where client expect these values:
+    this.name = this.title;
+    // A client error object displays `detail` rather than `message` to follow
+    // the problem detail structure, but some clients expect `message` in the
+    // error response, so include it here.
+    this.displayMessageToClient = true;
   }
 }
 
-class NoILSClient extends Error {
-  constructor(message) {
+class NoILSClient extends ProblemDetail {
+  constructor(detail) {
     super();
+    this.status = 500;
     this.type = "no-ils-client";
-    this.name = "NoILSClient";
-    this.message = message;
-    this.status = 500;
+    this.title = "No ILS Client";
+    this.message = detail;
+    // To support older versions of API where client expect these values:
+    this.name = this.title;
+    // A client error object displays `detail` rather than `message` to follow
+    // the problem detail structure, but some clients expect `message` in the
+    // error response, so include it here.
+    this.displayMessageToClient = true;
   }
 }
 
-class ILSIntegrationError extends Error {
-  constructor(message) {
+class ILSIntegrationError extends ProblemDetail {
+  constructor(detail) {
     super();
+    this.status = 502;
     this.type = "ils-integration-error";
-    this.name = "ILSIntegrationError";
-    this.message = message;
-    this.status = 502;
+    this.title = "ILS Integration Error";
+    this.message = detail;
+    // To support older versions of API where client expect these values:
+    this.name = this.title;
+    // A client error object displays `detail` rather than `message` to follow
+    // the problem detail structure, but some clients expect `message` in the
+    // error response, so include it here.
+    this.displayMessageToClient = true;
   }
 }
 
-class PatronNotFound extends Error {
+class PatronNotFound extends ProblemDetail {
   constructor() {
     super();
+    this.status = 502;
     this.type = "patron-not-found";
-    this.name = "PatronNotFound";
-    this.message =
-      "The patron couldn't be found in the ILS with the barcode or username.";
-    this.status = 502;
+    this.title = "Patron Not Found in ILS";
+    this.message = "The patron couldn't be found in the ILS with the barcode or username.";
+    // To support older versions of API where client expect these values:
+    this.name = this.title;
+    // A client error object displays `detail` rather than `message` to follow
+    // the problem detail structure, but some clients expect `message` in the
+    // error response, so include it here.
+    this.displayMessageToClient = true;
   }
 }
 
-class NoBarcode extends Error {
-  constructor(message) {
+class NoBarcode extends ProblemDetail {
+  constructor(detail) {
     super();
+    this.status = 502;
     this.type = "no-barcode";
-    this.name = "NoBarcode";
-    this.message = message;
-    this.status = 502;
+    this.title = "No Barcode";
+    this.message = detail;
+    // To support older versions of API where client expect these values:
+    this.name = this.title;
+    // A client error object displays `detail` rather than `message` to follow
+    // the problem detail structure, but some clients expect `message` in the
+    // error response, so include it here.
+    this.displayMessageToClient = true;
   }
 }
 
-class DatabaseError extends Error {
-  constructor(message) {
+class DatabaseError extends ProblemDetail {
+  constructor(detail) {
     super();
-    this.type = "database-error";
-    this.name = "DatabaseError";
-    this.message = message;
     this.status = 500;
+    this.type = "database-error";
+    this.title = "Database Error";
+    this.message = detail;
+    // To support older versions of API where client expect these values:
+    this.name = this.title;
+    // A client error object displays `detail` rather than `message` to follow
+    // the problem detail structure, but some clients expect `message` in the
+    // error response, so include it here.
+    this.displayMessageToClient = true;
   }
 }
 
-class MissingRequiredValues extends Error {
-  constructor(message) {
+class MissingRequiredValues extends ProblemDetail {
+  constructor(detail) {
     super();
+    this.status = 400;
     this.type = "missing-required-values";
-    this.name = "MissingRequiredValues";
-    this.message = message;
-    this.status = 400;
+    this.title = "Missing Required Values";
+    this.message = detail;
   }
 }
-class IncorrectPin extends Error {
+class IncorrectPin extends ProblemDetail {
   constructor() {
     super();
+    this.status = 400;
     this.type = "incorrect-pin";
-    this.name = "MissingRequiredValues";
-    this.message =
-      "PIN should be 4 numeric characters only. Please revise your PIN.";
-    this.status = 400;
+    this.title = "Missing Required Values";
+    this.message = "PIN should be 4 numeric characters only. Please revise your PIN.";
+    // To support older versions of API where client expect these values:
+    this.name = this.title;
+    // A client error object displays `detail` rather than `message` to follow
+    // the problem detail structure, but some clients expect `message` in the
+    // error response, so include it here.
+    this.displayMessageToClient = true;
   }
 }
 
-class ExpiredAccount extends Error {
+class ExpiredAccount extends ProblemDetail {
   constructor() {
     super();
+    this.status = 400;
     this.type = "expired-account";
-    this.name = "ExpiredAccount";
+    this.title = "Expired Account";
     this.message = "Your card has expired. Please try applying again.";
-    this.status = 400;
+    // To support older versions of API where client expect these values:
+    this.name = "ExpiredAccount";
+    // A client error object displays `detail` rather than `message` to follow
+    // the problem detail structure, but some clients expect `message` in the
+    // error response, so include it here.
+    this.displayMessageToClient = true;
   }
 }
 
-class NotEligibleCard extends Error {
-  constructor(message) {
+class NotEligibleCard extends ProblemDetail {
+  constructor(detail) {
     super();
-    this.type = "not-eligible-card";
-    this.name = "NotEligibleCard";
-    this.message = message;
     this.status = 400;
+    this.type = "not-eligible-card";
+    this.title = "Not Eligible Card";
+    this.message = detail;
+    // To support older versions of API where client expect these values:
+    this.name = "NotEligibleCard";
+    // A client error object displays `detail` rather than `message` to follow
+    // the problem detail structure, but some clients expect `message` in the
+    // error response, so include it here.
+    this.displayMessageToClient = true;
   }
 }
 
-class BadUsername extends Error {
+class BadUsername extends ProblemDetail {
   constructor({ type, message, cardType }) {
     super();
+    this.status = 400;
     this.type = type;
-    this.name = "BadUsername";
+    this.title = "Bad Username";
+    this.message = message;
     this.cardType = cardType;
-    this.message = message;
-    this.status = 400;
+    // To support older versions of API where client expect these values:
+    this.name = this.title;
+    // A client error object displays `detail` rather than `message` to follow
+    // the problem detail structure, but some clients expect `message` in the
+    // error response, so include it here.
+    this.displayMessageToClient = true;
   }
 }
 
-class NotILSValid extends Error {
-  constructor(message) {
+class NotILSValid extends ProblemDetail {
+  constructor(detail) {
     super();
+    this.status = 400;
     this.type = "not-ils-valid-account";
+    this.title = "Not ILS Valid";
+    this.message = detail;
+    // To support older versions of API where client expect these values:
     this.name = "NotILSValid";
-    this.message = message;
-    this.status = 400;
+    // A client error object displays `detail` rather than `message` to follow
+    // the problem detail structure, but some clients expect `message` in the
+    // error response, so include it here.
+    this.displayMessageToClient = true;
   }
 }
 
-class SOAuthorizationError extends Error {
-  constructor(code, message = "") {
+class SOAuthorizationError extends ProblemDetail {
+  constructor(detail = "", code) {
     super();
+    this.status = 502;
     this.type = "service-objects-authorization-error";
-    this.name = "SOAuthorizationError";
+    this.title = "SO Authorization Error";
+    this.message = `SO Authorization Error: ${detail}`;
     this.code = code;
-    this.message = `SO Authorization Error: ${message}`;
-    this.status = 502;
   }
 }
 
-class SODomainSpecificError extends Error {
-  constructor(code, message = "") {
+class SODomainSpecificError extends ProblemDetail {
+  constructor(detail = "", code) {
     super();
+    this.status = 502;
     this.type = "service-objects-domain-specific-error";
-    this.name = "SODomainSpecificError";
+    this.title = "SO Domain Specific Error";
+    this.message = detail;
     this.code = code;
-    this.message = message;
-    this.status = 502;
   }
 }
 
-class SOIntegrationError extends Error {
-  constructor(message) {
+class SOIntegrationError extends ProblemDetail {
+  constructor(detail) {
     super();
+    this.status = 502;
     this.type = "service-objects-integration-error";
-    this.name = "SOIntegrationError";
-    this.message = message;
-    this.status = 502;
+    this.title = "SO Integration Error";
+    this.message = detail;
   }
 }
 
-class SONoLicenseKeyError extends Error {
-  constructor(message) {
+class SONoLicenseKeyError extends ProblemDetail {
+  constructor(detail) {
     super();
+    this.status = 502;
     this.type = "service-objects-no-license-key-error";
-    this.name = "SONoLicenseKeyError";
-    this.message = message;
-    this.status = 502;
+    this.title = "SO No License Key Error";
+    this.message = detail;
   }
 }
 
-class TermsNotAccepted extends Error {
+class TermsNotAccepted extends ProblemDetail {
   constructor() {
     super();
+    this.status = 400;
     this.type = "terms-not-accepted";
-    this.name = "TermsNotAccepted";
+    this.title = "Terms Not Accepted";
     this.message = "The terms and conditions were not accepted.";
-    this.status = 400;
   }
 }
 
-class AgeGateFailure extends Error {
+class AgeGateFailure extends ProblemDetail {
   constructor() {
     super();
-    this.type = "age-gate-failure";
-    this.name = "AgeGateFailure";
-    this.message = "You must be 13 years or older to continue.";
     this.status = 400;
+    this.type = "age-gate-failure";
+    this.title = "Age Gate Failure";
+    this.message = "You must be 13 years or older to continue.";
   }
 }
 
 module.exports = {
   InvalidEnvironmentConfiguration,
+  KMSDecryption,
   InvalidRequest,
   UnableToCreatePatronWithAxios,
   NoILSClient,

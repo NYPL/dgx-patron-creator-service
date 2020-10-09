@@ -1,11 +1,10 @@
-/* eslint-disable */
 const { NoILSClient, BadUsername } = require("../../helpers/errors");
 
 /**
  * A class that validates usernames against the ILS.
  */
 const UsernameValidationAPI = (args) => {
-  const ilsClient = args["ilsClient"];
+  const ilsClient = args.ilsClient;
   const USERNAME_PATTERN = /^[a-zA-Z0-9]{5,25}$/;
   const AVAILABLE_USERNAME_TYPE = "available-username";
   const UNAVAILABLE_USERNAME_TYPE = "unavailable-username";
@@ -31,29 +30,11 @@ const UsernameValidationAPI = (args) => {
   };
 
   /**
-   * validate(username)
-   * Checks if the username is valid and available and returns and object
-   * with the appropriate response.
-   *
-   * @param {string} username
-   */
-  const validate = async (username) => {
-    if (!username || !USERNAME_PATTERN.test(username)) {
-      const invalid = RESPONSES["invalid"];
-      throw new BadUsername(invalid);
-    } else {
-      const available = await usernameAvailable(username);
-      if (!available) {
-        const unavailable = RESPONSES["unavailable"];
-        throw new BadUsername(unavailable);
-      }
-      return RESPONSES["available"];
-    }
-  };
-
-  /**
    * usernameAvailable(username)
-   * Calls the ILS API to check username availability.
+   * Calls the ILS API to check username availability. Returns true or false if
+   * the call was successful. The `ilsClient.available` function takes care of
+   * error handling. If no ILS Client is passed, an error is thrown before
+   * making the call.
    *
    * @param {string} username
    */
@@ -68,6 +49,29 @@ const UsernameValidationAPI = (args) => {
     available = await ilsClient.available(username, isBarcode);
 
     return available;
+  };
+
+  /**
+   * validate(username)
+   * First checks to see if the passed username is not blank and passes the
+   * validation pattern and throws an invalid error if it doesn't. if it passes,
+   * a call is made to the ILS to check for its availability and returns an
+   * object for available usernames or an error for unavailable usernames.
+   *
+   * @param {string} username
+   */
+  const validate = async (username) => {
+    if (!username || !USERNAME_PATTERN.test(username)) {
+      const invalid = RESPONSES.invalid;
+      throw new BadUsername(invalid);
+    } else {
+      const available = await usernameAvailable(username);
+      if (!available) {
+        const unavailable = RESPONSES.unavailable;
+        throw new BadUsername(unavailable);
+      }
+      return RESPONSES.available;
+    }
   };
 
   return {

@@ -51,13 +51,14 @@ describe("Address", () => {
         line2: "continuing the very long address line for the error more text",
         city: "New York City",
         state: "New York",
+        zip: "10018",
       });
       const response = await address.validate();
       const addressLength =
         address.address.line1.length + address.address.line2.length;
       expect(response).toEqual({
         error: {
-          message:
+          line1:
             "Address lines must be less than 100 characters combined. The address is currently at 124 characters.",
         },
       });
@@ -207,6 +208,10 @@ describe("Address", () => {
         // mock that the address is valid and has been validated.
         const address = new Address(
           {
+            line1: "476 5th ave",
+            city: "New York",
+            state: "NY",
+            zip: "10018",
             hasBeenValidated: true,
           },
           "soLicenseKey"
@@ -228,6 +233,9 @@ describe("Address", () => {
         const address = new Address(
           {
             line1: "not valid address",
+            city: "New York",
+            state: "NY",
+            zip: "10018",
           },
           "soLicenseKey"
         );
