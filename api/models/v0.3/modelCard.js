@@ -119,11 +119,9 @@ const CardValidator = () => {
       card[addressType] = address;
     } else if (addressResponse.addresses) {
       card.errors[addressType] = {
-        message: Card.RESPONSES.cardDeniedMultipleAddresses.message,
+        detail: Card.RESPONSES.cardDeniedMultipleAddresses.message,
         addresses: addressResponse.addresses,
       };
-    } else {
-      card.errors[addressType] = addressResponse.error.message;
     }
 
     return card;
@@ -554,15 +552,7 @@ class Card {
     // `simplyeJuvenile` so let's create one. If no barcode is created,
     // an error will be thrown an the patron won't be created in the ILS.
     if (this.policy.isRequiredField("barcode")) {
-      try {
-        await this.setBarcode();
-      } catch (error) {
-        // Could not generate a new barcode so return that as the response.
-        return {
-          status: 400,
-          data: error.message,
-        };
-      }
+      await this.setBarcode();
     }
 
     // Now create the patron in the ILS.
@@ -593,7 +583,7 @@ class Card {
       username: this.username,
       pin: this.pin,
       temporary: this.isTemporary,
-      message: this.selectMessage(),
+      detail: this.selectMessage(),
     };
 
     if (this.patronId) {
@@ -608,7 +598,7 @@ class Card {
 
   /**
    * selectMessage()
-   * Returns the appropriate messaged based on the card's validity or errors.
+   * Returns the appropriate message based on the card's validity or errors.
    */
   selectMessage() {
     if (!this.isTemporary) {

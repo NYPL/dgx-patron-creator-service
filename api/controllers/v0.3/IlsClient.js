@@ -54,14 +54,14 @@ const IlsClient = (args) => {
       })
       .catch((error) => {
         const response = error.response;
+        const message =
+          response.data && (response.data.description || response.data.name);
 
         // If the request to the ILS is missing a value or a key is of
         // and incorrect type, i.e. the barcode is sent as an integer
         // instead of a string.
         if (response.status === 400) {
-          throw new InvalidRequest(
-            `Invalid request to ILS: ${response.data.description}`
-          );
+          throw new InvalidRequest(`Invalid request to ILS: ${message}`);
         }
 
         if (!(response.status >= 500)) {
@@ -158,8 +158,10 @@ const IlsClient = (args) => {
         return response;
       })
       .catch((error) => {
-        logger.error(`Error calling ILS - ${error.response}`);
+        const data = error.response && error.response.data;
+        const message = data.description || data.name || "Unknown Error";
         logger.error(`Error calling ILS URL - ${findUrl}${params}`);
+        logger.error(`Error calling ILS - ${message}`);
         return error.response;
       });
 

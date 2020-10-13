@@ -1,18 +1,15 @@
-const isEmpty = require('underscore').isEmpty;
-const { InvalidEnvironmentConfiguration, InvalidRequest } = require('./errors');
-const modelDebug = require('../models/v0.2/modelDebug');
-const modelResponse = require('../models/v0.3/modelResponse');
-const { errorResponseDataWithTag } = require('./responses');
+const isEmpty = require("underscore").isEmpty;
+const { InvalidEnvironmentConfiguration } = require("./errors");
+const { errorResponseDataWithTag } = require("./responses");
 
 /**
- * validateEnvVariable(envVariableName)
+ * validateEnvironmentVariable(envVariableName)
  * Validate that a specific environment variable is present and not empty.
  *
- * @param {HTTP response} res
  * @param {string} envVariableName
  * @throws {InvalidEnvironmentConfiguration}
  */
-function validateEnvVariable(res, envVariableName) {
+function validateEnvironmentVariable(envVariableName) {
   const envVariable = process.env[envVariableName];
 
   if (!envVariable || isEmpty(envVariable)) {
@@ -23,83 +20,51 @@ function validateEnvVariable(res, envVariableName) {
 }
 
 /**
- * validateEnvironmentAndRequest(req, res)
+ * validateEnvironmentAndRequest(envVariableNames)
  * Validate the request format and environment variables related to the
  * ILS and streaming service.
  *
- * @param {HTTP request} req
- * @param {HTTP response} res
  * @param {Array} envVariableNames
  */
-function validateEnvironmentAndRequest(req, res, envVariableNames) {
+function validateEnvironmentAndRequest(envVariableNames) {
   if (!envVariableNames || envVariableNames.length === 0) {
     throw new InvalidEnvironmentConfiguration(
-      'Environment variables were not passed to validateEnvironmentAndRequest.',
+      "Environment variables were not passed to validateEnvironmentAndRequest.",
     );
   }
 
   envVariableNames.forEach((envVariableName) => {
-    validateEnvVariable(res, envVariableName);
+    validateEnvironmentVariable(envVariableName);
   });
-
-  // Check if we get all the required information from the client
-  const requiredFields = [];
-  const missingFields = modelDebug.checkMissingRequiredField(requiredFields);
-
-  if (missingFields.length) {
-    const debugMessage = modelDebug.renderMissingFieldDebugMessage(
-      missingFields,
-    );
-    throw new InvalidRequest(debugMessage);
-  }
 }
 
 /**
- * checkEnvVariables(req, res)
+ * checkEnvironmentVariables(res, routeTag, envVariableNames)
  * Check and validate all the environment variables. Returns true if all the
  * variables are set and false otherwise. This is needed because even though
  * the response is set and will be sent, the function still needs to stop
  * from continuing to process.
  *
- * @param {HTTP request} req
  * @param {HTTP response} res
  * @param {string} routeTag
  * @param {Array} envVariableNames - All the environment variables to validate.
  */
-async function checkEnvVariables(req, res, routeTag, envVariableNames) {
+async function checkEnvironmentVariables(res, routeTag, envVariableNames) {
   try {
-    validateEnvironmentAndRequest(req, res, envVariableNames);
+    validateEnvironmentAndRequest(envVariableNames);
     return true;
   } catch (validationError) {
     const collectErrorResponseData = errorResponseDataWithTag(routeTag);
-    let errorStatusCode;
-    if (validationError.name === 'InvalidEnvironmentConfiguration') {
-      errorStatusCode = 500;
-    } else if (validationError.name === 'InvalidRequest') {
-      errorStatusCode = 400;
-    } else {
-      errorStatusCode = 500;
-    }
     res
-      .status(errorStatusCode)
-      .header('Content-Type', 'application/json')
-      .json(
-        modelResponse.errorResponseData(
-          collectErrorResponseData(
-            errorStatusCode,
-            'invalid-request',
-            validationError.message,
-            null,
-            null,
-          ) // eslint-disable-line comma-dangle
-        ),
-      );
+      .status(validationError.status)
+      .header("Content-Type", "application/json")
+      .json(collectErrorResponseData(validationError));
     return false;
   }
 }
 
 module.exports = {
-  checkEnvVariables,
-  validateEnvVariable,
+  checkEnvironmentVariables,
+  validateEnvironmentVariable,
   validateEnvironmentAndRequest,
 };

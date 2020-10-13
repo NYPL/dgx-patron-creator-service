@@ -12,7 +12,7 @@ const logger = require("../../helpers/Logger");
  * Helper class that calls Service Objects to validate addresses.
  */
 const ServiceObjectsClient = (args = {}) => {
-  const soLicenseKey = args["soLicenseKey"] || "";
+  const soLicenseKey = args.soLicenseKey || "";
   const baseUrl = "https://ws.serviceobjects.com/";
   const backupUrl = "https://wsbackup.serviceobjects.com/";
   const endpoint = "AV3/api.svc/GetBestMatchesJSON";
@@ -98,7 +98,7 @@ const ServiceObjectsClient = (args = {}) => {
         const errorMessage = `Error using the Service Objects API: ${error.message}`;
 
         logger.error(`Error using the Service Objects API: ${error.message}`);
-        logger.error(`Bad address - ${badAddress}`);
+        logger.error(`Invalid address - ${badAddress}`);
 
         if (
           error.type === new SOAuthorizationError().type ||
@@ -144,13 +144,13 @@ const ServiceObjectsClient = (args = {}) => {
     // If it was this type of error, throw the error and return it as a
     // response.
     if (error["TypeCode"] === "1") {
-      throw new SOAuthorizationError(error["DescCode"], error["Desc"]);
+      throw new SOAuthorizationError(error["Desc"], error["DescCode"]);
       // Otherwise, check for `TypeCode` of "4" for domain specific errors.
     } else if (
       error["TypeCode"] === "4" &&
       userErrorDescCodes.includes(error["DescCode"])
     ) {
-      throw new SODomainSpecificError(error["DescCode"], error["Desc"]);
+      throw new SODomainSpecificError(error["Desc"], error["DescCode"]);
     } else {
       // Otherwise, there was some integration error with Service Objects.
       throw new SOIntegrationError(error["Desc"]);

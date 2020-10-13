@@ -1,4 +1,4 @@
-const logger = require('./Logger');
+const logger = require("./Logger");
 
 /**
  * renderResponse(req, res, status, message)
@@ -10,7 +10,7 @@ const logger = require('./Logger');
  * @param {object} message
  */
 function renderResponse(req, res, status, message) {
-  res.status(status).header('Content-Type', 'application/json').json(message);
+  res.status(status).header("Content-Type", "application/json").json(message);
 }
 
 /**
@@ -23,7 +23,7 @@ function renderResponse(req, res, status, message) {
  */
 function errorResponseDataWithTag(routeTag) {
   /**
-   * collectErrorResponseData(status, type, message, title, debugMessage)
+   * collectErrorResponseData(status, type, message, title)
    * Generates the response model for a failed request. It will already have
    * the routeTag set for all calls to the logger.
    *
@@ -31,31 +31,38 @@ function errorResponseDataWithTag(routeTag) {
    * @param {string} type
    * @param {string} message
    * @param {string} title
-   * @param {string} debugMessage
    * @return {object}
    */
-  return function collectErrorResponseData(
+  return function collectErrorResponseData({
     status,
     type,
-    message,
     title,
-    debugMessage,
-  ) {
+    message,
+    // to support older clients expecting these values:
+    name,
+    displayMessageToClient,
+  }) {
     logger.error(
-      `status_code: ${status}, `
-        + `type: ${type}, `
-        + `message: ${message}, `
-        + `response: ${debugMessage}`,
-      { routeTag },
+      `status: ${status}, type: ${type}, title: ${title}, detail: ${message}, routeTag: ${routeTag}`,
     );
 
-    return {
+    const response = {
       status: status || null,
-      type: type || '',
-      message: message || '',
-      title: title || '',
-      debugMessage: debugMessage || '',
+      type: type || "",
+      title: title || "",
+      // The internal error `message` gets displayed as `detail`.
+      detail: message || "",
     };
+
+    if (name) {
+      response.name = name;
+    }
+    // But if some clients need the `message` attribute, then use that as well.
+    if (displayMessageToClient) {
+      response.message = message;
+    }
+
+    return response;
   };
 }
 

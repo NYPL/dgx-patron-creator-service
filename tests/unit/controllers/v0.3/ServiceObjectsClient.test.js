@@ -42,7 +42,7 @@ const serviceObjectsFatal = {
   DescCode: "1",
 };
 
-describe("IlsClient", () => {
+describe("ServiceObjectsClient", () => {
   beforeEach(() => {
     axios.mockClear();
   });
