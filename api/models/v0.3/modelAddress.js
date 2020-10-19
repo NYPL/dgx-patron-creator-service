@@ -122,6 +122,7 @@ class Address {
     }
 
     const validation = await this.validateInAPI();
+
     if (validation.type === "valid-address") {
       this.hasBeenValidated = true;
     }
