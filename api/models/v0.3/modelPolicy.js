@@ -51,12 +51,24 @@ const Policy = (args) => {
           id: IlsClient.WEB_APPLICANT_PTYPE,
           desc: IlsClient.PTYPE_TO_TEXT.WEB_APPLICANT_PTYPE,
         },
+        digTemp: {
+          id: IlsClient.WEB_DIGITAL_TEMPORARY,
+          desc: IlsClient.PTYPE_TO_TEXT.WEB_DIGITAL_TEMPORARY,
+        },
+        digNonMetro: {
+          id: IlsClient.WEB_DIGITAL_NON_METRO,
+          desc: IlsClient.PTYPE_TO_TEXT.WEB_DIGITAL_NON_METRO,
+        },
+        digMetro: {
+          id: IlsClient.WEB_DIGITAL_METRO,
+          desc: IlsClient.PTYPE_TO_TEXT.WEB_DIGITAL_METRO,
+        },
       },
       cardType: {
         standard: IlsClient.STANDARD_EXPIRATION_TIME,
         temporary: IlsClient.WEB_APPLICANT_EXPIRATION_TIME,
       },
-      requiredFields: ["email", "barcode", "birthdate"],
+      requiredFields: ["email", "barcode", "birthdate", "location"],
       minimumAge: 13,
       serviceArea: {
         city: ALLOWED_CITIES,
@@ -91,6 +103,7 @@ const Policy = (args) => {
   const validTypes = Object.keys(ilsPolicy);
   const isDefault = policyType === DEFAULT_POLICY_TYPE;
   const isWebApplicant = policyType === "webApplicant";
+  const isSimplyEApplicant = policyType === "simplye";
 
   /**
    * policyField(field)
@@ -117,10 +130,9 @@ const Policy = (args) => {
    */
   const determinePtype = (patron = undefined) => {
     const ptype = policyField("ptype");
-    const hasServiceArea = policyField("serviceArea")
-      && Object.keys(policyField("serviceArea")).length;
-    const hasMetroKey = Object.keys(ptype).includes("metro");
-    if (hasServiceArea && hasMetroKey) {
+    // TODO: This is okay for now but this actually isn't used. For phase 1,
+    // only the web applicant and simplye juvenile policy types will be used.
+    if (isSimplyEApplicant) {
       if (patron.livesOrWorksInCity()) {
         return ptype.metro.id;
       }
@@ -128,6 +140,38 @@ const Policy = (args) => {
         return ptype.default.id;
       }
     }
+
+    if (isWebApplicant) {
+      // Location is the value users select or is preselected by the client
+      // application (if the user's IP address was geolocated).
+
+      // The user is in NYS and has a home address in NYC.
+      if (patron.location === "nys" && patron.livesInCity()) {
+        return ptype.digMetro.id;
+      }
+      // The user is in NYS and has a home address in NYS but not in NYC. They
+      // also don't have a work address in NYC.
+      if (
+        patron.location === "nys"
+        && !patron.livesInCity()
+        && patron.livesInState()
+        && !patron.worksInCity()
+      ) {
+        return ptype.digNonMetro.id;
+      }
+      // The user is in the United States but not in NYS. They have an address
+      // in the US or they have a work address in the US.
+      if (
+        patron.location === "us"
+        && (!patron.livesInState() || patron.worksInCity())
+      ) {
+        return ptype.digTemp.id;
+      }
+
+      // TODO: This shouldn't happen so... how do we get the default?
+      return ptype.default.id;
+    }
+
     return ptype.default.id;
   };
 
