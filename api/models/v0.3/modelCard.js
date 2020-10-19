@@ -372,8 +372,11 @@ class Card {
    * Sets this card's barcode to the next available barcode in the ILS.
    */
   async setBarcode() {
+    // TODO: Get/set barcode values based on ptype when that's settled.
+    // For now this is mocked.
+    const barcodeStartSequence = "288888"; // "25555";
     const barcode = new Barcode({ ilsClient: this.ilsClient });
-    this.barcode = await barcode.getNextAvailableBarcode();
+    this.barcode = await barcode.getNextAvailableBarcode(barcodeStartSequence);
 
     // Throw an error so no attempt to create the patron in the ILS is made.
     if (!this.barcode) {
