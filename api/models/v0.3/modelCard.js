@@ -73,13 +73,11 @@ const CardValidator = () => {
 
     // Now the card object has updated home and work addresses that have been
     // validated by Service Objects. Now check to see what type of card the
-    // patron gets based on the policy and addresses.
-    // it will be denied for home addresses not in nys. if not in nys but there's
-    // a work address in nyc, then grant a temporary card.
+    // patron gets based on the policy and addresses. It will be denied for
+    // home addresses not in NYS. If the address is not in NYS but there's
+    // a work address in NYC, then grant a temporary card.
     card.cardType = card.getCardType();
-    // If the card is denied, return the error and don't go any further. This
-    // includes not having a work address to check if the patron at least
-    // works in NYC.
+    // If the card is denied, return the error and don't go any further.
     if (!card.cardType.cardType) {
       card.errors["address"] = card.cardType.message;
     }
@@ -106,6 +104,15 @@ const CardValidator = () => {
 
     // Otherwise, let's make a call to Service Objects.
     let addressResponse = await card[addressType].validate();
+
+    // If there's an `error` property in `addressResponse`, then this will be
+    // skipped. The address could not be validated but the naive "is the
+    // address in NYC or NYS" checks are still done in `getCardType`.
+    if (addressResponse.error) {
+      card.addressError =
+        "There was an error verifying the address through Service Objects.";
+    }
+
     if (addressResponse.address) {
       // The validated address from SO is not an Address object, so create it:
       const address = new Address(
@@ -196,6 +203,7 @@ class Card {
     this.homeLibraryCode = args["homeLibraryCode"] || "eb";
     this.acceptTerms = strToBool(args["acceptTerms"]);
     this.errors = {};
+    this.addressError = "";
 
     this.ilsClient = args["ilsClient"];
 
@@ -478,34 +486,48 @@ class Card {
    *           regardless if they have a work address or not.
    */
   getCardType() {
+    // This policy type always get a standard card.
     if (this.policy.policyType === "simplyeJuvenile") {
       return Card.RESPONSES["standardCard"];
     }
 
-    // The use is denied if the card's home address is not in NY state and
+    // The user is denied if the card's home address is not in NY state and
     // there is no work address, or there is a work address but it's not in NYC.
     if (!this.livesInState()) {
+      // If the work address is in NYC or the policy type is "webApplicant",
+      // the user gets a temporary card.
       if (this.worksInCity() || this.policy.policyType === "webApplicant") {
+        let reason =
+          "The home address is not in New York State but the work address is in New York City.";
         this.setTemporary();
+        if (this.addressError) {
+          reason = `${reason} ${this.addressError}`;
+        }
+
         return {
           ...Card.RESPONSES["temporaryCard"],
-          reason:
-            "The home address is not in New York State but the work address is in New York City.",
+          reason,
         };
       }
 
       return Card.RESPONSES["cardDenied"];
     }
 
-    // They're in NYS but make sure they are in NYC and is a residential
-    // address for a standard card.
+    // The user is in NYS. We must make sure they are in NYC and their address
+    // is residential for a standard card. Otherwise, the user gets a
+    // temporary card.
     if (
       !(this.address.inCity(this.policy) && this.address.address.isResidential)
     ) {
+      let reason = "The home address is in NYC but is not residential.";
       this.setTemporary();
+      if (this.addressError) {
+        reason = `${reason} ${this.addressError}`;
+      }
+
       return {
         ...Card.RESPONSES["temporaryCard"],
-        reason: "The home address is in NYC but is not residential.",
+        reason,
       };
     }
 

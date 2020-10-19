@@ -157,7 +157,7 @@ describe("CardValidator", () => {
       card.address.validate = oldValidate;
     });
 
-    it.skip("should update the errors object in the card if any errors are returned", async () => {
+    it("should not update the errors object in the card if any errors are returned", async () => {
       const card = new Card({
         ...basicCard,
         workAddress: new Address({}, "soLicenseKey"),
@@ -177,23 +177,18 @@ describe("CardValidator", () => {
 
       // Check the card's `address` first.
       await validateAddress(card, "address");
-      // TODO: address errors for card are actually okay. Those errors are
+      // Address errors for cards are actually okay. Those errors are
       // looked over and a basic check to see if the address is in NYS and NYC
-      // is performed. So that logic should be updated before reaching this
-      // point. For the card itself, not having errors "validates" it, so
-      // for now we skip it.
-      expect(card.errors).toEqual({
-        address: { message: "something bad happened" },
-      });
+      // is performed. This is because Service Objects can return errors for a
+      // bad address or can have an error in the API call. If any of that
+      // happens, we can keep going and give the user a temporary card.
+      expect(card.errors).toEqual({});
 
       // Messages get added to the `errors` object for each type of address
       // that was checked by the `validateAddress` method. Here we check
       // the card's `workAddress`.
       await validateAddress(card, "workAddress");
-      expect(card.errors).toEqual({
-        address: { message: "something bad happened" },
-        workAddress: { message: "something bad happened" },
-      });
+      expect(card.errors).toEqual({});
 
       card.address.validate = oldValidate;
       card.workAddress.validate = oldWorkValidate;
