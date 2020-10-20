@@ -1,225 +1,35 @@
-/* eslint-disable */
 const axios = require("axios");
-const { ILSIntegrationError, InvalidRequest } = require("../../helpers/errors");
+const {
+  ILSIntegrationError,
+  InvalidRequest,
+  NoILSCredentials,
+} = require("../../helpers/errors");
 const logger = require("../../helpers/Logger");
+const encode = require("../../helpers/encode");
 
 /**
- * Helper class to setup API calls to the ILS. Assumes that the patron card
- * object is already validated.
+ * Helper class to setup API calls to the ILS. This class assumes that all the
+ * patron data has already been validated. All this does is format the data
+ * for API requests to the ILS.
  */
 const IlsClient = (args) => {
-  const createUrl = args["createUrl"] || "";
-  const findUrl = args["findUrl"] || "";
-  const ilsToken = args["ilsToken"] || "";
+  const { createUrl, findUrl, tokenUrl, ilsClientKey, ilsClientSecret } = args;
+  let ilsToken;
+  let ilsTokenTimestamp;
+  const timeNow = new Date();
   // We need the `id`, `patronType`, `varFields`, `addresses`, `emails`, and
   // `expirationDate` fields from the patron object (`id` is returned by
   // default), so those fields are added at the end of the endpoint request.
   const ilsResponseFields =
     "&fields=patronType,varFields,names,addresses,emails,expirationDate";
-  // TBD if these should be moved into this file.
-  // const tokenUrl = args["tokenUrl"] || "";
-  // const ilsClientKey = args["ilsClientKey"] || "";
-  // const ilsClientPassword = args["ilsClientPassword"] || "";
-  // const ilsTokenTimestamp = args["ilsTokenTimestamps"] || "";
+
+  const hasIlsToken = () => !!ilsToken;
+  // 3540000 = 59 minutes; tokens are for 60 minutes
+  const isTokenExpired = () =>
+    !!(ilsTokenTimestamp && timeNow - ilsTokenTimestamp > 3540000);
 
   /**
-   * createPatron(patron)
-   * First checks if the patron has met all the requirements before calling the
-   * ILS API. If the patron is valid, format the data as the ILS expects it.
-   * Returns the response from the ILS or an error.
-   * Note: the newly created patron's id is in the response object in
-   *  `response.data.link`.
-   *
-   * @param {Card object} patron
-   */
-  const createPatron = async (patron) => {
-    let ilsPatron = formatPatronData(patron);
-
-    return await axios
-      .post(createUrl, ilsPatron, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${ilsToken}`,
-        },
-      })
-      .then((axiosResponse) => {
-        // Example correct response:
-        // {
-        //   status: 200,
-        //   data: {
-        //     link: "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{patron-id}"
-        //   }
-        // }
-        return axiosResponse;
-      })
-      .catch((error) => {
-        const response = error.response;
-        const message =
-          response.data && (response.data.description || response.data.name);
-
-        // If the request to the ILS is missing a value or a key is of
-        // and incorrect type, i.e. the barcode is sent as an integer
-        // instead of a string.
-        if (response.status === 400) {
-          throw new InvalidRequest(`Invalid request to ILS: ${message}`);
-        }
-
-        if (!(response.status >= 500)) {
-          return response;
-        } else {
-          throw new ILSIntegrationError(
-            "The ILS could not be requested when attempting to create a patron."
-          );
-        }
-      });
-  };
-
-  /**
-   * updatePatron(patron)
-   * First checks if the patron has met all the requirements before calling the
-   * ILS API. If the patron is valid, format the data as the ILS expects it.
-   * Returns the response from the ILS or an error.
-   * Note: the newly created patron's id is in the response object in
-   *  `response.data.link`.
-   *
-   * @param {Card object} patron
-   * @param {object} updatedFields
-   */
-  const updatePatron = async (patronId, updatedFields) => {
-    const putUrl = `${createUrl}${patronId}`;
-
-    return await axios
-      .put(putUrl, updatedFields, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${ilsToken}`,
-        },
-      })
-      .then((response) => {
-        // Expects a 204 no content response.
-        return response;
-      })
-      .catch((error) => {
-        const response = error.response;
-        // If the request to the ILS is missing a value or a key is of
-        // and incorrect type, i.e. the barcode is sent as an integer
-        // instead of a string.
-        if (response.status === 400) {
-          throw new InvalidRequest(
-            `Invalid request to ILS: ${response.data.description}`
-          );
-        }
-
-        if (response.status === 404) {
-          // Throws 'Patron record not found'.
-          throw new ILSIntegrationError(response.data.name);
-        }
-
-        if (!(response.status >= 500)) {
-          return response;
-        } else {
-          throw new ILSIntegrationError(
-            "The ILS could not be requested when attempting to update a patron."
-          );
-        }
-      });
-  };
-
-  /**
-   * getPatronFromBarcodeOrUsername(barcodeOrUsername, isBarcode)
-   * Hits the /find endpoint in the ILS and returns a patron data object
-   * or an error.
-   *
-   * The barcode field tag is denoted as 'b' and the username field tag is
-   * denoted as 'u'.
-   *
-   * @param {string} barcodeOrUsername
-   * @param {boolean} isBarcode
-   */
-  const getPatronFromBarcodeOrUsername = async (
-    barcodeOrUsername,
-    isBarcode = true
-  ) => {
-    const fieldTag = isBarcode
-      ? IlsClient.BARCODE_FIELD_TAG
-      : IlsClient.USERNAME_FIELD_TAG;
-    // These two query parameters are required to make a valid GET request.
-    const varFieldParams = `varFieldTag=${fieldTag}&varFieldContent=${barcodeOrUsername}`;
-    const params = `?${varFieldParams}${ilsResponseFields}`;
-
-    const response = await axios
-      .get(`${findUrl}${params}`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${ilsToken}`,
-        },
-      })
-      .then((response) => {
-        return response;
-      })
-      .catch((error) => {
-        const data = error.response && error.response.data;
-        const message = data.description || data.name || "Unknown Error";
-        logger.error(`Error calling ILS URL - ${findUrl}${params}`);
-        logger.error(`Error calling ILS - ${message}`);
-        return error.response;
-      });
-
-    return response;
-  };
-
-  /**
-   * available(barcodeOrUsername, isBarcode)
-   * Makes a call to the ILS to get a patron data object through the
-   * `getPatronFromBarcodeOrUsername` function. A 200 response means that the
-   * username or barcode was found and is therefore not available. A 404
-   * response means that the username or barcode was not found and is
-   * therefore available. A 409 response means that the ILS found a duplicate
-   * and so the username or barcode is unavailable. These are the responses
-   * from the ILS at the moment.
-   *
-   * @param {string} barcodeOrUsername
-   * @param {boolean}} isBarcode
-   */
-  const available = async (barcodeOrUsername, isBarcode = true) => {
-    const fieldType = isBarcode ? "barcode" : "username";
-    let available = false;
-    const response = await getPatronFromBarcodeOrUsername(
-      barcodeOrUsername,
-      isBarcode
-    );
-
-    // Is the response okay? If so, the username or barcode isn't available
-    // since a patron was found.
-    let status = response.status;
-    let data = response.data;
-    if (status === 200 && data.id) {
-      available = false;
-    }
-
-    // The ILS returns a 404 with the record not found... so it's available!
-    if (status === 404 && data.name === "Record not found") {
-      available = true;
-    } else if (
-      // But if it returns 409, then a duplicate entry was found
-      // and the field is not available.
-      response.status == 409 &&
-      response.data.name === "Internal server error" &&
-      response.data.description ===
-        "Duplicate patrons found for the specified varFieldTag[b]."
-    ) {
-      available = false;
-    } else if (response.status >= 500) {
-      throw new ILSIntegrationError(
-        `The ILS could not be requested when validating the ${fieldType}.`
-      );
-    }
-
-    return available;
-  };
-
-  /**
-   * formatAddress(address, isWorkAddress)
+   * formatAddress
    * Format a patron's address as ILS expects it.
    * Types: "a" is primary address, "h" is alternate (work) address
    * The address needs to be formatted in this shape:
@@ -245,7 +55,7 @@ const IlsClient = (args) => {
   };
 
   /**
-   * formatPatronName(name)
+   * formatPatronName
    * Format the patron's name so that it is last name and then first name
    * and in all caps. If it's a single name, just return it in all caps.
    *
@@ -266,9 +76,53 @@ const IlsClient = (args) => {
   };
 
   /**
-   * formatedPatronData(patron)
+   * agencyField
+   * Keep any existing fixedFields but add the new one for the agency which
+   * has a key of "158".
+   *
+   * @param {string} agency
+   * @param {object} fixedFields
+   */
+  const agencyField = (agency, fixedFields) => ({
+    158: {
+      label: "AGENCY",
+      value: agency,
+    },
+    ...fixedFields,
+  });
+
+  /**
+   * ecommunicationsPref
+   * Opt-in/opt-out of marketing email. The request value is a boolean which
+   * must be converted to a string. The values are 's' for subscribed (true
+   * in the request) and '-' for not subscribed (false in the request).
+   *
+   * "pcode1" is always the NYPL library-defined patron data field
+   * specifically for e-communications subscriptions. There is also a value
+   * for unsubscribing, but since we are creating patrons only, that value
+   * is not useful.
+   *
+   * This merges any existing values in the "patronCodes" object and
+   * returns it.
+   *
+   * @param {boolean} ecommunicationsPrefValue
+   * @param {object} patronCodes
+   */
+  const ecommunicationsPref = (
+    ecommunicationsPrefValue = false,
+    patronCodes
+  ) => {
+    const value = ecommunicationsPrefValue
+      ? IlsClient.SUBSCRIBED_ECOMMUNICATIONS_PREF
+      : IlsClient.NOT_SUBSCRIBED_ECOMMUNICATIONS_PREF;
+
+    return { ...patronCodes, pcode1: value };
+  };
+
+  /**
+   * formatPatronData
    * Format all the data into an object that the ILS understands.
-   * Example of an ILS-ready object:
+   * Example of an ILS-ready object (with some fields):
    * {
    *   names: [ 'FirstName LastName' ],
    *   addresses: [ { lines: ['476 5th Ave', 'New York, NY 10018'], type: 'a' } ],
@@ -284,9 +138,9 @@ const IlsClient = (args) => {
    */
   const formatPatronData = (patron) => {
     // Addresses should be in a list.
-    let addresses = [];
+    const addresses = [];
     // varFields is an array of objects.
-    let varFields = [];
+    const varFields = [];
     // fixedFields is an object containing other objects.
     let fixedFields = {};
     let patronCodes = {};
@@ -318,9 +172,9 @@ const IlsClient = (args) => {
 
     const patronName = formatPatronName(patron.name);
 
-    let fields = {
+    const fields = {
       names: [patronName],
-      addresses: addresses,
+      addresses,
       pin: patron.pin,
       patronType: patron.ptype,
       patronCodes,
@@ -331,60 +185,240 @@ const IlsClient = (args) => {
     };
 
     if (patron.barcode) {
-      fields["barcodes"] = [patron.barcode];
+      fields.barcodes = [patron.barcode];
     }
     if (patron.email && patron.email.length) {
-      fields["emails"] = [patron.email.toUpperCase()];
+      fields.emails = [patron.email.toUpperCase()];
     }
     if (patron.birthdate) {
-      fields["birthDate"] = patron.birthdate.toISOString().slice(0, 10);
+      fields.birthDate = patron.birthdate.toISOString().slice(0, 10);
     }
 
     return fields;
   };
 
   /**
-   * agencyField(agency, fixedFields)
-   * Keep any existing fixedFields but add the new one for the agency which
-   * has a key of "158".
+   * createPatron
+   * First checks if the patron has met all the requirements before calling the
+   * ILS API. If the patron is valid, format the data as the ILS expects it.
+   * Returns the response from the ILS or an error.
+   * Note: the newly created patron's id is in the response object in
+   *  `response.data.link`.
    *
-   * @param {string} agency
-   * @param {object} fixedFields
+   * @param {Card object} patron
    */
-  const agencyField = (agency, fixedFields) => ({
-    "158": {
-      label: "AGENCY",
-      value: agency,
-    },
-    ...fixedFields,
-  });
+  const createPatron = async (patron) => {
+    const ilsPatron = formatPatronData(patron);
+
+    return (
+      axios
+        .post(createUrl, ilsPatron, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${ilsToken}`,
+          },
+        })
+        // Example correct response:
+        // {
+        //   status: 200,
+        //   data: {
+        //     link: "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{patron-id}"
+        //   }
+        // }
+        .then((axiosResponse) => axiosResponse)
+        .catch((error) => {
+          const response = error.response;
+          const message =
+            response.data && (response.data.description || response.data.name);
+
+          // If the request to the ILS is missing a value or a key is of
+          // and incorrect type, i.e. the barcode is sent as an integer
+          // instead of a string.
+          if (response.status === 400) {
+            throw new InvalidRequest(`Invalid request to ILS: ${message}`);
+          }
+
+          if (!(response.status >= 500)) {
+            return response;
+          }
+          throw new ILSIntegrationError(
+            "The ILS could not be requested when attempting to create a patron."
+          );
+        })
+    );
+  };
 
   /**
-   * ecommunicationsPref(ecommunicationsPrefValue)
-   * Opt-in/opt-out of marketing email. The request value is a boolean which
-   * must be converted to a string. The values are 's' for subscribed (true
-   * in the request) and '-' for not subscribed (false in the request).
+   * updatePatron(patron)
+   * First checks if the patron has met all the requirements before calling the
+   * ILS API. If the patron is valid, format the data as the ILS expects it.
+   * Returns the response from the ILS or an error.
+   * Note: the newly created patron's id is in the response object in
+   *  `response.data.link`.
    *
-   * "pcode1" is always the NYPL library-defined patron data field
-   * specifically for e-communications subscriptions. There is also a value
-   * for unsubscribing, but since we are creating patrons only, that value
-   * is not useful.
-   *
-   * This merges any existing values in the "patronCodes" object and
-   * returns it.
-   *
-   * @param {boolean} ecommunicationsPrefValue
-   * @param {object} patronCodes
+   * @param {Card object} patron
+   * @param {object} updatedFields
    */
-  const ecommunicationsPref = (
-    ecommunicationsPrefValue = false,
-    patronCodes
-  ) => {
-    let value = ecommunicationsPrefValue
-      ? IlsClient.SUBSCRIBED_ECOMMUNICATIONS_PREF
-      : IlsClient.NOT_SUBSCRIBED_ECOMMUNICATIONS_PREF;
+  const updatePatron = async (patronId, updatedFields) => {
+    const putUrl = `${createUrl}${patronId}`;
 
-    return { ...patronCodes, pcode1: value };
+    return axios
+      .put(putUrl, updatedFields, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${ilsToken}`,
+        },
+      })
+      .then((response) => {
+        // Expects a 204 no content response.
+        return response;
+      })
+      .catch((error) => {
+        const response = error.response;
+        // If the request to the ILS is missing a value or a key is of
+        // and incorrect type, i.e. the barcode is sent as an integer
+        // instead of a string.
+        if (response.status === 400) {
+          throw new InvalidRequest(
+            `Invalid request to ILS: ${response.data.description}`
+          );
+        }
+
+        if (response.status === 404) {
+          // Throws 'Patron record not found'.
+          throw new ILSIntegrationError(response.data.name);
+        }
+
+        if (!(response.status >= 500)) {
+          return response;
+        }
+        throw new ILSIntegrationError(
+          "The ILS could not be requested when attempting to update a patron."
+        );
+      });
+  };
+
+  /**
+   * getPatronFromBarcodeOrUsername(barcodeOrUsername, isBarcode)
+   * Hits the /find endpoint in the ILS and returns a patron data object
+   * or an error.
+   *
+   * The barcode field tag is denoted as 'b' and the username field tag is
+   * denoted as 'u'.
+   *
+   * @param {string} barcodeOrUsername
+   * @param {boolean} isBarcode
+   */
+  const getPatronFromBarcodeOrUsername = async (
+    barcodeOrUsername,
+    isBarcode = true
+  ) => {
+    const fieldTag = isBarcode
+      ? IlsClient.BARCODE_FIELD_TAG
+      : IlsClient.USERNAME_FIELD_TAG;
+    // These two query parameters are required to make a valid GET request.
+    const varFieldParams = `varFieldTag=${fieldTag}&varFieldContent=${barcodeOrUsername}`;
+    const params = `?${varFieldParams}${ilsResponseFields}`;
+
+    return axios
+      .get(`${findUrl}${params}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${ilsToken}`,
+        },
+      })
+      .then((response) => response)
+      .catch((error) => {
+        const data = error.response && error.response.data;
+        const message = data.description || data.name || "Unknown Error";
+        logger.error(`Error calling ILS URL - ${findUrl}${params}`);
+        logger.error(`Error calling ILS - ${message}`);
+        return error.response;
+      });
+  };
+
+  /**
+   * available(barcodeOrUsername, isBarcode)
+   * Makes a call to the ILS to get a patron data object through the
+   * `getPatronFromBarcodeOrUsername` function. A 200 response means that the
+   * username or barcode was found and is therefore not available. A 404
+   * response means that the username or barcode was not found and is
+   * therefore available. A 409 response means that the ILS found a duplicate
+   * and so the username or barcode is unavailable. These are the responses
+   * from the ILS at the moment.
+   *
+   * @param {string} barcodeOrUsername
+   * @param {boolean}} isBarcode
+   */
+  const available = async (barcodeOrUsername, isBarcode = true) => {
+    const fieldType = isBarcode ? "barcode" : "username";
+    let isAvailable = false;
+    const response = await getPatronFromBarcodeOrUsername(
+      barcodeOrUsername,
+      isBarcode
+    );
+
+    // Is the response okay? If so, the username or barcode isn't available
+    // since a patron was found.
+    const status = response.status;
+    const data = response.data;
+    if (status === 200 && data.id) {
+      isAvailable = false;
+    }
+
+    // The ILS returns a 404 with the record not found... so it's available!
+    if (status === 404 && data.name === "Record not found") {
+      isAvailable = true;
+    } else if (
+      // But if it returns 409, then a duplicate entry was found
+      // and the field is not available.
+      response.status === 409 &&
+      response.data.name === "Internal server error" &&
+      response.data.description ===
+        "Duplicate patrons found for the specified varFieldTag[b]."
+    ) {
+      isAvailable = false;
+    } else if (response.status >= 500) {
+      throw new ILSIntegrationError(
+        `The ILS could not be requested when validating the ${fieldType}.`
+      );
+    }
+
+    return isAvailable;
+  };
+
+  /**
+   * generateIlsToken
+   * Get a token from the ILS using the ILS client key and secret.
+   */
+  const generateIlsToken = async () => {
+    if (!ilsClientKey || !ilsClientSecret) {
+      throw new NoILSCredentials();
+    }
+
+    const basicAuth = `Basic ${encode(`${ilsClientKey}:${ilsClientSecret}`)}`;
+
+    return axios
+      .post(
+        tokenUrl,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: basicAuth,
+          },
+        }
+      )
+      .then((response) => {
+        // Set the global variables.
+        ilsToken = response.data.access_token;
+        ilsTokenTimestamp = new Date();
+      })
+      .catch((error) => {
+        throw new ILSIntegrationError(
+          `Problem calling the ILS token url, ${error.response.data.name}`
+        );
+      });
   };
 
   return {
@@ -392,6 +426,9 @@ const IlsClient = (args) => {
     available,
     getPatronFromBarcodeOrUsername,
     updatePatron,
+    hasIlsToken,
+    isTokenExpired,
+    generateIlsToken,
     // For testing,
     agencyField,
     ecommunicationsPref,

@@ -13,27 +13,14 @@ describe("Policy", () => {
     ]);
   });
 
-  it("validates that the policy type is an approved type", () => {
-    const defaultPolicy = Policy();
-    const simplyePolicy = Policy({ policyType: "simplye" });
-    const webApplicantPolicy = Policy({ policyType: "webApplicant" });
-    const badPolicy = Policy({ policyType: "badPolicy" });
-
-    expect(defaultPolicy.usesAnApprovedPolicy()).toEqual(true);
-    expect(simplyePolicy.usesAnApprovedPolicy()).toEqual(true);
-    expect(webApplicantPolicy.usesAnApprovedPolicy()).toEqual(true);
-    expect(badPolicy.usesAnApprovedPolicy()).toEqual(false);
-  });
-
   describe("SimplyE", () => {
     const policy = Policy();
 
     it("returns the default simplye policy and related values", () => {
       expect(policy.policyType).toEqual("simplye");
-      expect(policy.isDefault).toEqual(true);
 
       // returns the full policy in `.policy`
-      expect(policy.policy).toEqual(policy.ilsPolicy.simplye);
+      expect(policy.policy).toEqual(policy.ilsPolicies.simplye);
 
       // Values found in IlsClient:
       expect(policy.policyField("agency")).toEqual("202");
@@ -41,8 +28,6 @@ describe("Policy", () => {
         "metro",
         "default",
       ]);
-      // The type is for 3 years in an array of [years, months, days]
-      expect(policy.policyField("cardType").standard).toEqual(1095);
       expect(policy.policyField("requiredFields")).toEqual([
         "email",
         "barcode",
@@ -54,10 +39,6 @@ describe("Policy", () => {
         "state",
       ]);
       expect(policy.policyField("minimumAge")).toEqual(13);
-    });
-
-    it("is not a web applicant", () => {
-      expect(policy.isWebApplicant).toEqual(false);
     });
 
     it("verifies that `email` and `barcode` are required fields", () => {
@@ -81,7 +62,7 @@ describe("Policy", () => {
         username: "username",
         address: metroAddress,
         pin: "1234",
-        // This cyclical dependancy seems unnecessary but will update later.
+        // TODO: This cyclical dependancy seems unnecessary but will update later.
         policy,
       });
       const metroAddress2 = new Address({
@@ -95,10 +76,9 @@ describe("Policy", () => {
         username: "username",
         address: metroAddress2,
         pin: "1234",
-        // This cyclical dependancy seems unnecessary but will update later.
         policy,
       });
-      const simplyePtype = policy.ilsPolicy.simplye.ptype;
+      const simplyePtype = policy.ilsPolicies.simplye.ptype;
       const metroPtype = simplyePtype.metro.id;
 
       let ptype = policy.determinePtype(metroCard);
@@ -125,12 +105,34 @@ describe("Policy", () => {
         policy,
       });
 
-      const simplyePtype = policy.ilsPolicy.simplye.ptype;
+      const simplyePtype = policy.ilsPolicies.simplye.ptype;
       const nysPtype = simplyePtype.default.id;
 
       const ptype = policy.determinePtype(stateCard);
       expect(ptype).toEqual(nysPtype);
       expect(ptype).toEqual(3);
+    });
+
+    it("sets up the correct expiration dates", () => {
+      const ptypes = policy.ilsPolicies.simplye.ptype;
+      const nonMetroPtype = ptypes.default.id;
+      const metroPtype = ptypes.metro.id;
+
+      // Check the Non-metro ptype first:
+      let exptime = policy.getExpirationPoliciesForPtype(nonMetroPtype);
+
+      // The standard time is 3 years or 1095 days.
+      expect(exptime.standard).toEqual(1095);
+      // The temporary time is 30 days.
+      expect(exptime.temporary).toEqual(30);
+
+      // Check the metro ptype next:
+      exptime = policy.getExpirationPoliciesForPtype(metroPtype);
+
+      // The standard time is 3 years or 1095 days.
+      expect(exptime.standard).toEqual(1095);
+      // The temporary time is 30 days.
+      expect(exptime.temporary).toEqual(30);
     });
   });
 
@@ -139,16 +141,18 @@ describe("Policy", () => {
 
     it("returns a web applicant policy and policyType", () => {
       expect(policy.policyType).toEqual("webApplicant");
-      expect(policy.isDefault).toEqual(false);
 
       // returns the full policy in `.policy`
-      expect(policy.policy).toEqual(policy.ilsPolicy.webApplicant);
+      expect(policy.policy).toEqual(policy.ilsPolicies.webApplicant);
 
       // Values found in IlsClient:
       expect(policy.policyField("agency")).toEqual("198");
-      expect(Object.keys(policy.policyField("ptype"))).toEqual(["default"]);
-      // The card type is for 1095 days (3 years).
-      expect(policy.policyField("cardType").standard).toEqual(1095);
+      expect(Object.keys(policy.policyField("ptype"))).toEqual([
+        "default",
+        "digTemp",
+        "digNonMetro",
+        "digMetro",
+      ]);
       expect(policy.policyField("requiredFields")).toEqual([
         "email",
         "barcode",
@@ -160,10 +164,6 @@ describe("Policy", () => {
         "state",
       ]);
       expect(policy.policyField("minimumAge")).toEqual(13);
-    });
-
-    it("is not a web applicant", () => {
-      expect(policy.isWebApplicant).toEqual(true);
     });
 
     it("verifies that `email`, `barcode`, and `birthdate` are required fields", () => {
@@ -187,20 +187,89 @@ describe("Policy", () => {
         address,
         pin: "1234",
       });
-      const webApplicantPtype = policy.ilsPolicy.webApplicant.ptype;
+      const webApplicantPtype = policy.ilsPolicies.webApplicant.ptype;
       const webPtypeID = webApplicantPtype.default.id;
 
       const ptype = policy.determinePtype(card);
       expect(ptype).toEqual(webPtypeID);
 
-      // For web applicants, address is not checked, so it's okay
-      // to not pass in the patron param;
-      const ptypeNoPatron = policy.determinePtype();
-      expect(ptypeNoPatron).toEqual(webPtypeID);
-
       // The ptype value is '1':
       expect(ptype).toEqual(1);
-      expect(ptypeNoPatron).toEqual(1);
+    });
+
+    it("sets up the correct expiration dates", () => {
+      const ptypes = policy.ilsPolicies.webApplicant.ptype;
+      const webApplicantPtype = ptypes.default.id;
+
+      const exptime = policy.getExpirationPoliciesForPtype(webApplicantPtype);
+
+      // The standard time is 3 years or 1095 days.
+      expect(exptime.standard).toEqual(1095);
+      // The temporary time is 90 days.
+      expect(exptime.temporary).toEqual(90);
+    });
+  });
+
+  describe("SimplyE Juvenile", () => {
+    const policy = Policy({ policyType: "simplyeJuvenile" });
+
+    it("returns a simplyeJuvenile policy and policyType", () => {
+      expect(policy.policyType).toEqual("simplyeJuvenile");
+
+      // returns the full policy in `.policy`
+      expect(policy.policy).toEqual(policy.ilsPolicies.simplyeJuvenile);
+
+      // Values found in IlsClient:
+      expect(policy.policyField("agency")).toEqual("202");
+      expect(Object.keys(policy.policyField("ptype"))).toEqual(["default"]);
+      expect(policy.policyField("requiredFields")).toEqual([
+        "email",
+        "barcode",
+      ]);
+      expect(Object.keys(policy.policyField("serviceArea"))).toEqual([
+        "city",
+        "county",
+        "state",
+      ]);
+    });
+
+    it("verifies that `email`, `barcode`, and `birthdate` are required fields", () => {
+      expect(policy.isRequiredField("email")).toEqual(true);
+      expect(policy.isRequiredField("barcode")).toEqual(true);
+    });
+
+    it("always returns the default ptype for simplye juvenile accounts", () => {
+      const address = new Address({
+        line1: "476th 5th Ave",
+        city: "New York City",
+        state: "New York",
+        zip: "10018",
+      });
+      const card = new Card({
+        name: "some name",
+        username: "username",
+        address,
+        pin: "1234",
+      });
+      const simplyeJuvenilePtype = policy.ilsPolicies.simplyeJuvenile.ptype;
+      const juvenilePType = simplyeJuvenilePtype.default.id;
+
+      const ptype = policy.determinePtype(card);
+      expect(ptype).toEqual(juvenilePType);
+
+      // The ptype value is '4':
+      expect(ptype).toEqual(4);
+    });
+
+    it("sets up the correct expiration dates", () => {
+      const ptypes = policy.ilsPolicies.simplyeJuvenile.ptype;
+      const juvenilePType = ptypes.default.id;
+
+      const exptime = policy.getExpirationPoliciesForPtype(juvenilePType);
+
+      // Both the standard and temporary time is 3 years or 1095 days.
+      expect(exptime.standard).toEqual(1095);
+      expect(exptime.temporary).toEqual(1095);
     });
   });
 });

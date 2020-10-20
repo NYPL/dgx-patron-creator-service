@@ -73,6 +73,17 @@ class NoILSClient extends ProblemDetail {
   }
 }
 
+class NoILSCredentials extends ProblemDetail {
+  constructor() {
+    super();
+    this.status = 400;
+    this.type = "no-ils-credentials";
+    this.title = "No ILS Credentials";
+    this.message =
+      "The ILS client was set up without a key or secret to generate a token.";
+  }
+}
+
 class ILSIntegrationError extends ProblemDetail {
   constructor(detail) {
     super();
@@ -95,7 +106,8 @@ class PatronNotFound extends ProblemDetail {
     this.status = 502;
     this.type = "patron-not-found";
     this.title = "Patron Not Found in ILS";
-    this.message = "The patron couldn't be found in the ILS with the barcode or username.";
+    this.message =
+      "The patron couldn't be found in the ILS with the barcode or username.";
     // To support older versions of API where client expect these values:
     this.name = this.title;
     // A client error object displays `detail` rather than `message` to follow
@@ -152,7 +164,8 @@ class IncorrectPin extends ProblemDetail {
     this.status = 400;
     this.type = "incorrect-pin";
     this.title = "Missing Required Values";
-    this.message = "PIN should be 4 numeric characters only. Please revise your PIN.";
+    this.message =
+      "PIN should be 4 numeric characters only. Please revise your PIN.";
     // To support older versions of API where client expect these values:
     this.name = this.title;
     // A client error object displays `detail` rather than `message` to follow
@@ -295,6 +308,7 @@ module.exports = {
   InvalidRequest,
   UnableToCreatePatronWithAxios,
   NoILSClient,
+  NoILSCredentials,
   ILSIntegrationError,
   PatronNotFound,
   NoBarcode,

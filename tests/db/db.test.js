@@ -40,10 +40,13 @@ describe("Barcodes Database", () => {
 
       await db.init();
 
-      // Init creates the table and inserts barcode '28888855432452'.
+      // Init creates the table and inserts seed barcodes
+      // '28888855432452' and '25555001345283';
       const result = await db.query("SELECT * FROM barcodes");
       expect(result.rows[0].barcode).toEqual("28888855432452");
       expect(result.rows[0].used).toEqual(true);
+      expect(result.rows[1].barcode).toEqual("25555001345283");
+      expect(result.rows[1].used).toEqual(true);
     });
   });
 
@@ -65,7 +68,7 @@ describe("Barcodes Database", () => {
     it("should retrieve the barcodes", async () => {
       let result = await db.query("SELECT * FROM barcodes;");
 
-      expect(result.rows.length).toEqual(2);
+      expect(result.rows.length).toEqual(3);
 
       result = await db.query(
         "SELECT barcode, used FROM barcodes WHERE used=false ORDER BY barcodes ASC limit 1;"

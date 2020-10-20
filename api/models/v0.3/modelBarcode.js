@@ -16,12 +16,20 @@ class Barcode {
   }
 
   /**
-   * getNextAvailableBarcode()
-   * Generates a barcode in the database from the last one in the database,
-   * and verifies it's available in the ILS. If it is, return it.
+   * getNextAvailableBarcode
+   * Generates a barcode in the database from the latest one in the
+   * database and verifies it's available in the ILS. If it is, return it. The
+   * barcode start sequence tells it what sequence to generate a new barcode
+   * from (for different p-types).
    */
-  async getNextAvailableBarcode() {
-    const { barcode, newBarcode } = await this.nextAvailableFromDB();
+  async getNextAvailableBarcode(barcodeStartSequence) {
+    if (!barcodeStartSequence) {
+      return;
+    }
+
+    const { barcode, newBarcode } = await this.nextAvailableFromDB(
+      barcodeStartSequence
+    );
 
     // If no barcode could be generated from the database, return.
     if (!barcode) {
@@ -70,30 +78,38 @@ class Barcode {
    * Query the database for a barcode to use. It will first attempt to retrieve
    * an existing barcode that is unused. If none are found, then it will get
    * the highest value barcode as a reference to generate a new barcode using
-   * the `nextLuhnValidCode` method.
+   * the `nextLuhnValidCode` method. The `barcodeStartSequence` tells the query
+   * what sequence the new barcode should begin with.
    */
-  async nextAvailableFromDB() {
+  async nextAvailableFromDB(barcodeStartSequence) {
     let barcode;
     let result;
     let query;
     let newBarcode;
 
+    if (!barcodeStartSequence) {
+      return { barcode: undefined, newBarcode: false };
+    }
+
     // First try getting a barcode that is unused. This is not a "new"
     // barcode so we don't need to manipulate it.
     try {
-      query =
-        "SELECT barcode FROM barcodes WHERE used=false ORDER BY barcodes ASC LIMIT 1;";
+      query = `SELECT barcode FROM barcodes WHERE used=false and barcode like '${barcodeStartSequence}%' ORDER BY barcodes ASC LIMIT 1;`;
       result = await this.db.query(query);
       barcode = result.rows[0].barcode;
       newBarcode = false;
     } catch (error) {
       // There are no unused barcodes so get the biggest barcode value to
       // generate a new barcode from.
-      query =
-        "SELECT barcode FROM barcodes WHERE used=true ORDER BY barcodes DESC LIMIT 1;";
+      query = `SELECT barcode FROM barcodes WHERE used=true and barcode like '${barcodeStartSequence}%' ORDER BY barcodes DESC LIMIT 1;`;
       result = await this.db.query(query);
-      barcode = this.nextLuhnValidCode(result.rows[0].barcode);
-      newBarcode = true;
+      if (result.rows[0]) {
+        barcode = this.nextLuhnValidCode(result.rows[0].barcode);
+        newBarcode = true;
+      } else {
+        barcode = undefined;
+        newBarcode = false;
+      }
     }
 
     return { barcode, newBarcode };
@@ -178,7 +194,7 @@ class Barcode {
       if (tries === 0) {
         try {
           barcodeToTry = this.nextLuhnValidCode(barcodeToTry, 50);
-          const resp = await this.addBarcode(barcodeToTry, true);
+          await this.addBarcode(barcodeToTry, true);
         } catch (error) {
           logger.error(
             "Error attemping to add a barcode after all failed attempts."

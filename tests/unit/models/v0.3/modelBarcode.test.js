@@ -41,6 +41,13 @@ describe("Barcode", () => {
   // Returning an available barcode depends on whether `availableInIls` finds
   // and returns a barcode that _is_ available.
   describe("getNextAvailableBarcode", () => {
+    it("returns undefined if no barcode start sequence was passed", async () => {
+      const barcode = new Barcode({});
+      await expect(barcode.getNextAvailableBarcode()).resolves.toEqual(
+        undefined
+      );
+    });
+
     it("returns undefined if it can't get a barcode", async () => {
       const barcode = new Barcode({});
 
@@ -52,7 +59,7 @@ describe("Barcode", () => {
         .mockReturnValue({ available: false, finalBarcode: "1234" });
 
       await expect(barcode.getNextAvailableBarcode()).resolves.toEqual(
-        undefined,
+        undefined
       );
     });
 
@@ -67,7 +74,9 @@ describe("Barcode", () => {
         .fn()
         .mockReturnValue({ available: true, finalBarcode: "1234" });
 
-      await expect(barcode.getNextAvailableBarcode()).resolves.toEqual("1234");
+      await expect(barcode.getNextAvailableBarcode("12")).resolves.toEqual(
+        "1234"
+      );
     });
   });
 
@@ -95,19 +104,28 @@ describe("Barcode", () => {
   });
 
   describe("nextAvailableFromDB", () => {
+    it("should return undefined if no barcode start sequence was passed", async () => {
+      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const nextBarcode = await barcode.nextAvailableFromDB();
+
+      expect(nextBarcode.barcode).toEqual(undefined);
+      expect(nextBarcode.newBarcode).toEqual(false);
+    });
+
     it("should get the first used barcode from the database", async () => {
       const barcode = new Barcode({ ilsClient: IlsClient() });
       const querySpy = jest.spyOn(barcode.db, "query");
       const luhnSpy = jest.spyOn(barcode, "nextLuhnValidCode");
-      const nextBarcode = await barcode.nextAvailableFromDB();
+      const barcodeStartSeq = "288";
+      const nextBarcode = await barcode.nextAvailableFromDB(barcodeStartSeq);
 
       // It first tries to get the lowest barcode that is unused.
       expect(querySpy).toHaveBeenCalledWith(
-        "SELECT barcode FROM barcodes WHERE used=false ORDER BY barcodes ASC LIMIT 1;",
+        `SELECT barcode FROM barcodes WHERE used=false and barcode like '${barcodeStartSeq}%' ORDER BY barcodes ASC LIMIT 1;`
       );
       // But there aren't any so get the largest used one and make a new barcode.
       expect(querySpy).toHaveBeenCalledWith(
-        "SELECT barcode FROM barcodes WHERE used=true ORDER BY barcodes DESC LIMIT 1;",
+        `SELECT barcode FROM barcodes WHERE used=true and barcode like '${barcodeStartSeq}%' ORDER BY barcodes DESC LIMIT 1;`
       );
       expect(querySpy).toHaveBeenCalled();
 
@@ -128,19 +146,44 @@ describe("Barcode", () => {
       await barcode.addBarcode("28888055432435", false);
 
       const querySpy = jest.spyOn(barcode.db, "query");
-      const nextBarcode = await barcode.nextAvailableFromDB();
+      const barcodeStartSeq = "28888";
+      const nextBarcode = await barcode.nextAvailableFromDB(barcodeStartSeq);
 
       // The two queries we expect to have been called to the database:
       expect(querySpy).toHaveBeenCalled();
       // Note: These are written in order they are called but jest doesn't
       // care about order.
       expect(querySpy).toHaveBeenCalledWith(
-        "SELECT barcode FROM barcodes WHERE used=false ORDER BY barcodes ASC LIMIT 1;",
+        `SELECT barcode FROM barcodes WHERE used=false and barcode like '${barcodeStartSeq}%' ORDER BY barcodes ASC LIMIT 1;`
       );
 
       // This barcode was already in the database so "newBarcode" is false.
       expect(nextBarcode.barcode).toEqual("28888055432435");
       expect(nextBarcode.newBarcode).toEqual(false);
+    });
+
+    it("should not get a barcode if there are none with the start sequence", async () => {
+      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const querySpy = jest.spyOn(barcode.db, "query");
+      const barcodeStartSeq = "23333";
+      const nextBarcode = await barcode.nextAvailableFromDB(barcodeStartSeq);
+
+      // The two queries we expect to have been called to the database:
+      expect(querySpy).toHaveBeenCalled();
+      // Note: These are written in order they are called but jest doesn't
+      // care about order.
+      expect(querySpy).toHaveBeenCalledWith(
+        `SELECT barcode FROM barcodes WHERE used=false and barcode like '${barcodeStartSeq}%' ORDER BY barcodes ASC LIMIT 1;`
+      );
+
+      // There are no barcodes that start with 23333.
+      expect(nextBarcode.barcode).toEqual(undefined);
+      expect(nextBarcode.newBarcode).toEqual(false);
+
+      // Just to be clear that there are barcodes in the database.
+      const isFound = await barcode.nextAvailableFromDB("28888");
+      expect(isFound.barcode).toEqual("28888055432435");
+      expect(isFound.newBarcode).toEqual(false);
     });
   });
 
@@ -197,7 +240,7 @@ describe("Barcode", () => {
       expect(addBarcodeSpy).toHaveBeenCalledWith(testBarcode, true);
       // More verification.
       const result = await db.query(
-        `SELECT * FROM barcodes WHERE barcode='${testBarcode}';`,
+        `SELECT * FROM barcodes WHERE barcode='${testBarcode}';`
       );
       expect(result.rows[0].used).toEqual(true);
       expect(result.rows[0].barcode).toEqual(testBarcode);
@@ -213,7 +256,7 @@ describe("Barcode", () => {
       barcode.addBarcode = jest
         .fn()
         .mockRejectedValueOnce(
-          new DatabaseError("Error from database attempting to insert."),
+          new DatabaseError("Error from database attempting to insert.")
         )
         .mockReturnValue(true);
       barcode.nextLuhnValidCode = jest.fn().mockReturnValue(nextBarcode);
@@ -248,7 +291,7 @@ describe("Barcode", () => {
       await barcode.addBarcode(testBarcode, false);
       // It is initially unused.
       let result = await db.query(
-        `SELECT * FROM barcodes WHERE barcode='${testBarcode}';`,
+        `SELECT * FROM barcodes WHERE barcode='${testBarcode}';`
       );
       expect(result.rows[0].used).toEqual(false);
       expect(result.rows[0].barcode).toEqual(testBarcode);
@@ -265,7 +308,7 @@ describe("Barcode", () => {
       expect(markUsedSpy).toHaveBeenCalledWith(testBarcode, true);
       // Now it should be marked as used.
       result = await db.query(
-        `SELECT * FROM barcodes WHERE barcode='${testBarcode}';`,
+        `SELECT * FROM barcodes WHERE barcode='${testBarcode}';`
       );
       expect(result.rows[0].used).toEqual(true);
       expect(result.rows[0].barcode).toEqual(testBarcode);
@@ -281,7 +324,7 @@ describe("Barcode", () => {
       barcode.markUsed = jest
         .fn()
         .mockRejectedValueOnce(
-          new DatabaseError("Error from database attempting to update."),
+          new DatabaseError("Error from database attempting to update.")
         )
         .mockReturnValue(true);
       barcode.nextLuhnValidCode = jest.fn().mockReturnValue(nextBarcode);
@@ -319,14 +362,14 @@ describe("Barcode", () => {
       await barcode.addBarcode(barcodeNum, false);
 
       let result = await db.query(
-        `SELECT used FROM barcodes WHERE barcode='${barcodeNum}';`,
+        `SELECT used FROM barcodes WHERE barcode='${barcodeNum}';`
       );
       expect(result.rows[0].used).toEqual(false);
 
       await barcode.markUsed(barcodeNum, true);
 
       result = await db.query(
-        `SELECT used FROM barcodes WHERE barcode='${barcodeNum}';`,
+        `SELECT used FROM barcodes WHERE barcode='${barcodeNum}';`
       );
       expect(result.rows[0].used).toEqual(true);
     });
@@ -339,14 +382,14 @@ describe("Barcode", () => {
       await barcode.addBarcode(barcodeNum, true);
 
       let result = await db.query(
-        `SELECT used FROM barcodes WHERE barcode='${barcodeNum}';`,
+        `SELECT used FROM barcodes WHERE barcode='${barcodeNum}';`
       );
       expect(result.rows[0].used).toEqual(true);
 
       await barcode.markUsed(barcodeNum, false);
 
       result = await db.query(
-        `SELECT used FROM barcodes WHERE barcode='${barcodeNum}';`,
+        `SELECT used FROM barcodes WHERE barcode='${barcodeNum}';`
       );
       expect(result.rows[0].used).toEqual(false);
     });
@@ -359,13 +402,13 @@ describe("Barcode", () => {
       await barcode.addBarcode(barcodeNum, false);
 
       const result = await db.query(
-        `SELECT used FROM barcodes WHERE barcode='${barcodeNum}';`,
+        `SELECT used FROM barcodes WHERE barcode='${barcodeNum}';`
       );
       expect(result.rows[0].used).toEqual(false);
 
       // This barcode has used already set to false!
       await expect(barcode.markUsed(barcodeNum, false)).rejects.toThrow(
-        "The barcode to be marked as unused was already set as unused.",
+        "The barcode to be marked as unused was already set as unused."
       );
     });
 
@@ -377,13 +420,13 @@ describe("Barcode", () => {
       await barcode.addBarcode(barcodeNum, true);
 
       const result = await db.query(
-        `SELECT used FROM barcodes WHERE barcode='${barcodeNum}';`,
+        `SELECT used FROM barcodes WHERE barcode='${barcodeNum}';`
       );
       expect(result.rows[0].used).toEqual(true);
 
       // This barcode has used already set to true!
       await expect(barcode.markUsed(barcodeNum, true)).rejects.toThrow(
-        "The barcode to be marked as used was already set as used.",
+        "The barcode to be marked as used was already set as used."
       );
     });
   });
@@ -418,7 +461,7 @@ describe("Barcode", () => {
       expect(addedBarcode).toEqual(1);
       expect(querySpy).toHaveBeenCalled();
       expect(querySpy).toHaveBeenCalledWith(
-        "INSERT INTO barcodes (barcode, used) VALUES ('123456', false);",
+        "INSERT INTO barcodes (barcode, used) VALUES ('123456', false);"
       );
     });
 
@@ -432,13 +475,13 @@ describe("Barcode", () => {
 
       // But not this one!
       await expect(barcode.addBarcode("1234567")).rejects.toThrow(
-        "Barcode already in database!",
+        "Barcode already in database!"
       );
 
       // The call from the previous test gets added.
       expect(querySpy).toHaveBeenCalled();
       expect(querySpy).toHaveBeenCalledWith(
-        "INSERT INTO barcodes (barcode, used) VALUES ('1234567', false);",
+        "INSERT INTO barcodes (barcode, used) VALUES ('1234567', false);"
       );
     });
 
@@ -448,17 +491,17 @@ describe("Barcode", () => {
       const querySpy = jest
         .spyOn(barcode.db, "query")
         .mockImplementation(
-          jest.fn().mockRejectedValueOnce(new DatabaseError("uh oh!")),
+          jest.fn().mockRejectedValueOnce(new DatabaseError("uh oh!"))
         );
 
       // Something unexpected happened in the database.
       await expect(barcode.addBarcode("1234567")).rejects.toThrow(
-        "Error inserting barcode into the database",
+        "Error inserting barcode into the database"
       );
       // The calls from the previous tests gets added.
       expect(querySpy).toHaveBeenCalled();
       expect(querySpy).toHaveBeenCalledWith(
-        "INSERT INTO barcodes (barcode, used) VALUES ('1234567', false);",
+        "INSERT INTO barcodes (barcode, used) VALUES ('1234567', false);"
       );
     });
   });
