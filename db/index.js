@@ -55,18 +55,20 @@ class BarcodesDb {
     const text = "INSERT INTO barcodes (barcode, used) VALUES ($1, $2);";
     const barcodes = ["28888855432452", "25555001345283"];
 
-    barcodes.forEach(async (barcode) => {
-      const values = [barcode, "true"];
+    await Promise.all(
+      barcodes.map(async (barcode) => {
+        const values = [barcode, "true"];
 
-      try {
-        await this.pool.query(text, values);
-        logger.debug(`Successfully inserted seed barcode ${barcode}.`);
-      } catch (error) {
-        logger.error(
-          `"barcodes" table already has the initial value of ${barcode}`
-        );
-      }
-    });
+        try {
+          await this.pool.query(text, values);
+          logger.debug(`Successfully inserted seed barcode ${barcode}.`);
+        } catch (error) {
+          logger.error(
+            `"barcodes" table already has the initial value of ${barcode}`
+          );
+        }
+      })
+    );
 
     return;
   }
