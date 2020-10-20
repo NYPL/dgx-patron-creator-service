@@ -25,8 +25,11 @@ describe("Policy", () => {
       // Values found in IlsClient:
       expect(policy.policyField("agency")).toEqual("202");
       expect(Object.keys(policy.policyField("ptype"))).toEqual([
-        "metro",
         "default",
+        "metro",
+        "digitalTemporary",
+        "digitalNonMetro",
+        "digitalMetro",
       ]);
       expect(policy.policyField("requiredFields")).toEqual([
         "email",
@@ -117,6 +120,9 @@ describe("Policy", () => {
       const ptypes = policy.ilsPolicies.simplye.ptype;
       const nonMetroPtype = ptypes.default.id;
       const metroPtype = ptypes.metro.id;
+      const digitalTemporary = ptypes.digitalTemporary.id;
+      const digitalNonMetro = ptypes.digitalNonMetro.id;
+      const digitalMetro = ptypes.digitalMetro.id;
 
       // Check the Non-metro ptype first:
       let exptime = policy.getExpirationPoliciesForPtype(nonMetroPtype);
@@ -133,6 +139,27 @@ describe("Policy", () => {
       expect(exptime.standard).toEqual(1095);
       // The temporary time is 30 days.
       expect(exptime.temporary).toEqual(30);
+
+      // Check the digital temporary ptype next:
+      exptime = policy.getExpirationPoliciesForPtype(digitalTemporary);
+
+      // The standard and temporary time is 90 days.
+      expect(exptime.standard).toEqual(90);
+      expect(exptime.temporary).toEqual(90);
+
+      // Check the metro ptype next:
+      exptime = policy.getExpirationPoliciesForPtype(digitalNonMetro);
+
+      // The standard and temporary time is 1 year or 365 days.
+      expect(exptime.standard).toEqual(365);
+      expect(exptime.temporary).toEqual(365);
+
+      // Check the metro ptype next:
+      exptime = policy.getExpirationPoliciesForPtype(digitalMetro);
+
+      // The standard and temporary time is 3 years or 1095 days.
+      expect(exptime.standard).toEqual(1095);
+      expect(exptime.temporary).toEqual(1095);
     });
   });
 
@@ -147,12 +174,7 @@ describe("Policy", () => {
 
       // Values found in IlsClient:
       expect(policy.policyField("agency")).toEqual("198");
-      expect(Object.keys(policy.policyField("ptype"))).toEqual([
-        "default",
-        "digTemp",
-        "digNonMetro",
-        "digMetro",
-      ]);
+      expect(Object.keys(policy.policyField("ptype"))).toEqual(["default"]);
       expect(policy.policyField("requiredFields")).toEqual([
         "email",
         "barcode",

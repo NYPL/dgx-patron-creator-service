@@ -25,6 +25,24 @@ const Policy = (args) => {
   const getExpirationPoliciesForPtype = (ptype) => {
     let expTime;
     switch (ptype) {
+      case IlsClient.WEB_DIGITAL_TEMPORARY:
+        expTime = {
+          standard: IlsClient.WEB_APPLICANT_EXPIRATION_TIME,
+          temporary: IlsClient.WEB_APPLICANT_EXPIRATION_TIME,
+        };
+        break;
+      case IlsClient.WEB_DIGITAL_NON_METRO:
+        expTime = {
+          standard: IlsClient.ONE_YEAR_STANDARD_EXPIRATION_TIME,
+          temporary: IlsClient.ONE_YEAR_STANDARD_EXPIRATION_TIME,
+        };
+        break;
+      case IlsClient.WEB_DIGITAL_METRO:
+        expTime = {
+          standard: IlsClient.STANDARD_EXPIRATION_TIME,
+          temporary: IlsClient.STANDARD_EXPIRATION_TIME,
+        };
+        break;
       case IlsClient.WEB_APPLICANT_PTYPE:
         expTime = {
           standard: IlsClient.STANDARD_EXPIRATION_TIME,
@@ -52,13 +70,25 @@ const Policy = (args) => {
     simplye: {
       agency: IlsClient.DEFAULT_PATRON_AGENCY,
       ptype: {
+        default: {
+          id: IlsClient.SIMPLYE_NON_METRO_PTYPE,
+          desc: IlsClient.PTYPE_TO_TEXT.SIMPLYE_NON_METRO_PTYPE,
+        },
         metro: {
           id: IlsClient.SIMPLYE_METRO_PTYPE,
           desc: IlsClient.PTYPE_TO_TEXT.SIMPLYE_METRO_PTYPE,
         },
-        default: {
-          id: IlsClient.SIMPLYE_NON_METRO_PTYPE,
-          desc: IlsClient.PTYPE_TO_TEXT.SIMPLYE_NON_METRO_PTYPE,
+        digitalTemporary: {
+          id: IlsClient.WEB_DIGITAL_TEMPORARY,
+          desc: IlsClient.PTYPE_TO_TEXT.WEB_DIGITAL_TEMPORARY,
+        },
+        digitalNonMetro: {
+          id: IlsClient.WEB_DIGITAL_NON_METRO,
+          desc: IlsClient.PTYPE_TO_TEXT.WEB_DIGITAL_NON_METRO,
+        },
+        digitalMetro: {
+          id: IlsClient.WEB_DIGITAL_METRO,
+          desc: IlsClient.PTYPE_TO_TEXT.WEB_DIGITAL_METRO,
         },
       },
       requiredFields: ["email", "barcode", "ageGate"],
@@ -75,18 +105,6 @@ const Policy = (args) => {
         default: {
           id: IlsClient.WEB_APPLICANT_PTYPE,
           desc: IlsClient.PTYPE_TO_TEXT.WEB_APPLICANT_PTYPE,
-        },
-        digTemp: {
-          id: IlsClient.WEB_DIGITAL_TEMPORARY,
-          desc: IlsClient.PTYPE_TO_TEXT.WEB_DIGITAL_TEMPORARY,
-        },
-        digNonMetro: {
-          id: IlsClient.WEB_DIGITAL_NON_METRO,
-          desc: IlsClient.PTYPE_TO_TEXT.WEB_DIGITAL_NON_METRO,
-        },
-        digMetro: {
-          id: IlsClient.WEB_DIGITAL_METRO,
-          desc: IlsClient.PTYPE_TO_TEXT.WEB_DIGITAL_METRO,
         },
       },
       requiredFields: ["email", "barcode", "birthdate"],
@@ -162,7 +180,7 @@ const Policy = (args) => {
 
       // The user is in NYS and has a home address in NYC.
       if (patron.location === "nys" && patron.livesInCity()) {
-        return ptype.digMetro.id;
+        return ptype.digitalMetro.id;
       }
       // The user is in NYS and has a home address in NYS but not in NYC. They
       // also don't have a work address in NYC.
@@ -172,7 +190,7 @@ const Policy = (args) => {
         patron.livesInState() &&
         !patron.worksInCity()
       ) {
-        return ptype.digNonMetro.id;
+        return ptype.digitalNonMetro.id;
       }
       // The user is in the United States but not in NYS. They have an address
       // in the US or they have a work address in the US.
