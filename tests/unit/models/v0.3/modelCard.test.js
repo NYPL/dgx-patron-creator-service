@@ -1727,30 +1727,8 @@ describe("Card", () => {
         policy: Policy({ policyType: "webApplicant" }),
       });
 
-      expect(card.getCardType()).toEqual({
-        ...Card.RESPONSES.temporaryCard,
-        reason: "The home address is in NYC but is not residential.",
-      });
-      expect(cardNotNY.getCardType()).toEqual({
-        ...Card.RESPONSES.temporaryCard,
-        reason:
-          "The home address is not in New York State but the work address is in New York City.",
-      });
-    });
-
-    it("returns a standard card for web applicants in NYS and residential", () => {
-      const cardResidential = new Card({
-        ...basicCard,
-        address: new Address({
-          city: "New York",
-          state: "New York",
-          isResidential: "true",
-        }),
-        policy: Policy({ policyType: "webApplicant" }),
-      });
-      expect(cardResidential.getCardType()).toEqual({
-        ...Card.RESPONSES.standardCard,
-      });
+      expect(card.getCardType()).toEqual(Card.RESPONSES.temporaryCard);
+      expect(cardNotNY.getCardType()).toEqual(Card.RESPONSES.temporaryCard);
     });
 
     it("returns a card denied response if the address is not in NYS and there is no work address", () => {
@@ -2127,7 +2105,7 @@ describe("Card", () => {
       card.setPtype();
       card.cardType = card.getCardType();
       expect(card.selectMessage()).toEqual(
-        "The library card will be a temporary library card. The home address is not in New York State but the work address is in New York City. Visit your local NYPL branch within 90 days to upgrade to a standard card."
+        "The library card will be a temporary library card.  Visit your local NYPL branch within 90 days to upgrade to a standard card."
       );
     });
 
