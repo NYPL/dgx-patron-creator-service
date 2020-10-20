@@ -1,12 +1,9 @@
-/* eslint-disable */
 const modelResponse = require("../../models/v0.3/modelResponse");
-const axios = require("axios");
 const awsDecrypt = require("./../../../config/awsDecrypt.js");
 const IlsClient = require("./IlsClient");
 const modelStreamPatron = require("./../../models/v0.3/modelStreamPatron.js");
 const streamPublish = require("./../../helpers/streamPublish");
 const logger = require("../../helpers/Logger");
-const encode = require("../../helpers/encode");
 const { Card } = require("../../models/v0.3/modelCard");
 const Address = require("../../models/v0.3/modelAddress");
 const Policy = require("../../models/v0.3/modelPolicy");
@@ -20,26 +17,19 @@ const {
 } = require("../../helpers/responses");
 const DependentAccountAPI = require("./DependentAccountAPI");
 const { normalizeName, updateJuvenileName } = require("../../helpers/utils");
-const {
-  ILSIntegrationError,
-  KMSDecryption,
-  InvalidRequest,
-} = require("../../helpers/errors");
+const { KMSDecryption, InvalidRequest } = require("../../helpers/errors");
 
 const ROUTE_TAG = "CREATE_PATRON_0.3";
 // This returns a function that generates the error response object.
 const collectErrorResponseData = errorResponseDataWithTag(ROUTE_TAG);
 // The following are global variables that work as caching for the values.
 // Once the ILS key and secret are decrypted, they are stored so that the
-// next request doesn't have to deal with decrypting those values. The ILS
-// token is declared when the API returns that value, and the timestamp is
-// then generated. Once all those values are obtained, the ilsClient is created
-// only once and stored. This way, there is one instance of the client to make
-// calls to the ILS for either the validation or create endpoints.
+// next request doesn't have to deal with decrypting those values. The ilsClient
+// is created only once and stored. There will only be one instance of the
+// client to make calls to the ILS for either the validation or
+// create endpoints.
 let ilsClientKey;
 let ilsClientSecret;
-let ilsToken;
-let ilsTokenTimestamp;
 let ilsClient;
 let soLicenseKey;
 const envVariableNames = [
@@ -53,42 +43,6 @@ const envVariableNames = [
   "PATRON_SCHEMA_NAME_V03",
   "SO_LICENSE_KEY",
 ];
-
-/**
- * getIlsToken(req, res, key, secret) {
- * Get a token from the ILS using the ILS client key and secret.
- *
- * @param {HTTP request} req
- * @param {HTTP response} res
- * @param {string} key
- * @param {string} secret
- */
-function getIlsToken(req, res, key, secret) {
-  const basicAuth = `Basic ${encode(`${key}:${secret}`)}`;
-
-  return axios
-    .post(
-      process.env.ILS_CREATE_TOKEN_URL,
-      {},
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: basicAuth,
-        },
-      }
-    )
-    .then((response) => {
-      ilsToken = response.data.access_token;
-      ilsTokenTimestamp = new Date();
-    })
-    .catch((error) => {
-      const ilsError = new ILSIntegrationError(
-        `Problem calling the ILS token url, ${error.response.data.name}`
-      );
-      const errorResponseData = collectErrorResponseData(ilsError);
-      renderResponse(req, res, errorResponseData.status, errorResponseData);
-    });
-}
 
 /**
  * setupEndpoint(endpointFn, req, res)
@@ -135,19 +89,6 @@ async function setupEndpoint(endpointFn, req, res) {
     renderResponse(req, res, errorResponseData.status, errorResponseData);
   }
 
-  // Now, let's generate a token that will be used to make authenticated
-  // calls to the ILS API.
-  const timeNow = new Date();
-  // 3540000 = 59 minutes; tokens are for 60 minutes
-  const ilsTokenExpired =
-    ilsTokenTimestamp && timeNow - ilsTokenTimestamp > 3540000;
-  if (!ilsToken || ilsTokenExpired) {
-    getIlsToken(req, res, ilsClientKey, ilsClientSecret).then(() => {
-      setupEndpoint(endpointFn, req, res);
-    });
-    return;
-  }
-
   // Only one instance of the IlsClient class is needed, so create it if
   // it doesn't already exist.
   ilsClient =
@@ -156,8 +97,20 @@ async function setupEndpoint(endpointFn, req, res) {
       createUrl: process.env.ILS_CREATE_PATRON_URL,
       findUrl: process.env.ILS_FIND_VALUE_URL,
       tokenUrl: process.env.ILS_CREATE_TOKEN_URL,
-      ilsToken,
+      ilsClientKey,
+      ilsClientSecret,
     });
+
+  // If the ilsClient has no token or the token is expired, then
+  // generate a new token.
+  if (!ilsClient.hasIlsToken() || ilsClient.ilsTokenExpired()) {
+    try {
+      ilsClient.generateIlsToken();
+    } catch (ilsError) {
+      const errorResponseData = collectErrorResponseData(ilsError);
+      renderResponse(req, res, errorResponseData.status, errorResponseData);
+    }
+  }
 
   // Finally, call the specific function needed for the route that was called.
   // Check the bottom of the file for the specific route to function mapping.
@@ -466,6 +419,7 @@ async function createPatron(req, res) {
 async function checkDependentEligibility(req, res) {
   const { isPatronEligible } = DependentAccountAPI({ ilsClient });
   let response;
+  let status;
   const options = {
     barcode: req.query.barcode,
     username: req.query.username,
@@ -511,7 +465,7 @@ async function createDependent(req, res) {
         "No name, firstName, or lastName was passed for the child."
       )
     );
-    return renderResponse(req, res, noNameError.status, noNameError);
+    renderResponse(req, res, noNameError.status, noNameError);
   }
 
   // Check that the patron is eligible to create dependent accounts.
@@ -523,7 +477,7 @@ async function createDependent(req, res) {
       error: error.message,
     };
     // There was an error so just return the error and don't continue.
-    return renderResponse(req, res, response.status, response);
+    renderResponse(req, res, response.status, response);
   }
 
   if (isEligible.eligible) {
@@ -625,10 +579,7 @@ async function createDependent(req, res) {
         // dependent account. This value is actually not used. If an error is
         // thrown, it will be caught, but if there are no errors, then the
         // request went through since the ILS only returns a 204.
-        const updateResponse = await updateParentWithDependent(
-          parentPatron,
-          card.barcode
-        );
+        await updateParentWithDependent(parentPatron, card.barcode);
         const { link } = newResponse.data;
 
         response = {
