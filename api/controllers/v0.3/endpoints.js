@@ -103,7 +103,7 @@ async function setupEndpoint(endpointFn, req, res) {
 
   // If the ilsClient has no token or the token is expired, then
   // generate a new token.
-  if (!ilsClient.hasIlsToken() || ilsClient.ilsTokenExpired()) {
+  if (!ilsClient.hasIlsToken() || ilsClient.isTokenExpired()) {
     try {
       ilsClient.generateIlsToken();
     } catch (ilsError) {
