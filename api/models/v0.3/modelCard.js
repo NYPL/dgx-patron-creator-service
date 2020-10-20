@@ -504,12 +504,16 @@ class Card {
       return Card.RESPONSES["standardCard"];
     }
 
+    if (this.policy.policyType === "webApplicant") {
+      return Card.RESPONSES["temporaryCard"];
+    }
+
     // The user is denied if the card's home address is not in NY state and
     // there is no work address, or there is a work address but it's not in NYC.
     if (!this.livesInState()) {
       // If the work address is in NYC or the policy type is "webApplicant",
       // the user gets a temporary card.
-      if (this.worksInCity() || this.policy.policyType === "webApplicant") {
+      if (this.worksInCity()) {
         let reason =
           "The home address is not in New York State but the work address is in New York City.";
         if (this.addressError) {
