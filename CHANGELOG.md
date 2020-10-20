@@ -10,6 +10,7 @@
 #### Added
 
 - Added new barcode sequence in the database for upcoming p-types.
+- Added new digital p-types.
 
 ### v0.7.4
 
