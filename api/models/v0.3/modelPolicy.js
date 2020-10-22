@@ -1,7 +1,5 @@
 const IlsClient = require("../../controllers/v0.3/IlsClient");
 
-const lowerCase = (arr) => arr.map((item) => item.toLowerCase());
-
 /**
  * Creates a policy object to find out what type of card is allowed for a
  * given patron and their location.
@@ -10,18 +8,9 @@ const lowerCase = (arr) => arr.map((item) => item.toLowerCase());
  *  is expected to be either "simplye", "webApplicant", "simplyeJuvenile".
  */
 const Policy = (args) => {
-  const DEFAULT_POLICY_TYPE = "simplye";
+  const DEFAULT_POLICY_TYPE = "webApplicant";
   const policyType =
     args && args.policyType ? args.policyType : DEFAULT_POLICY_TYPE;
-  const ALLOWED_STATES = lowerCase(["NY", "New York"]);
-  const ALLOWED_COUNTIES = lowerCase([
-    "Richmond",
-    "Queens",
-    "New York",
-    "Kings",
-    "Bronx",
-  ]);
-  const ALLOWED_CITIES = lowerCase(["New York", "New York City", "NYC"]);
   const getExpirationPoliciesForPtype = (ptype) => {
     let expTime;
     switch (ptype) {
@@ -78,6 +67,17 @@ const Policy = (args) => {
           id: IlsClient.SIMPLYE_METRO_PTYPE,
           desc: IlsClient.PTYPE_TO_TEXT.SIMPLYE_METRO_PTYPE,
         },
+      },
+      requiredFields: ["email", "barcode", "ageGate"],
+      minimumAge: 13,
+    },
+    webApplicant: {
+      agency: IlsClient.WEB_APPLICANT_AGENCY,
+      ptype: {
+        default: {
+          id: IlsClient.WEB_APPLICANT_PTYPE,
+          desc: IlsClient.PTYPE_TO_TEXT.WEB_APPLICANT_PTYPE,
+        },
         digitalTemporary: {
           id: IlsClient.WEB_DIGITAL_TEMPORARY,
           desc: IlsClient.PTYPE_TO_TEXT.WEB_DIGITAL_TEMPORARY,
@@ -91,29 +91,8 @@ const Policy = (args) => {
           desc: IlsClient.PTYPE_TO_TEXT.WEB_DIGITAL_METRO,
         },
       },
-      requiredFields: ["email", "barcode", "ageGate"],
-      minimumAge: 13,
-      serviceArea: {
-        city: ALLOWED_CITIES,
-        county: ALLOWED_COUNTIES,
-        state: ALLOWED_STATES,
-      },
-    },
-    webApplicant: {
-      agency: IlsClient.WEB_APPLICANT_AGENCY,
-      ptype: {
-        default: {
-          id: IlsClient.WEB_APPLICANT_PTYPE,
-          desc: IlsClient.PTYPE_TO_TEXT.WEB_APPLICANT_PTYPE,
-        },
-      },
       requiredFields: ["email", "barcode", "birthdate"],
       minimumAge: 13,
-      serviceArea: {
-        city: ALLOWED_CITIES,
-        county: ALLOWED_COUNTIES,
-        state: ALLOWED_STATES,
-      },
     },
     simplyeJuvenile: {
       agency: IlsClient.DEFAULT_PATRON_AGENCY,
@@ -124,18 +103,12 @@ const Policy = (args) => {
         },
       },
       requiredFields: ["email", "barcode"],
-      serviceArea: {
-        city: ALLOWED_CITIES,
-        county: ALLOWED_COUNTIES,
-        state: ALLOWED_STATES,
-      },
     },
   };
   const policy = ilsPolicies[policyType] || ilsPolicies[DEFAULT_POLICY_TYPE];
-  // Return an array of named, approved patron policy types.
-  const validTypes = Object.keys(ilsPolicies);
   const isWebApplicant = policyType === "webApplicant";
   const isSimplyEApplicant = policyType === "simplye";
+  const isJuvenileApplicant = policyType === "simplyeJuvenile";
 
   /**
    * policyField(field)
@@ -163,49 +136,60 @@ const Policy = (args) => {
    */
   const determinePtype = (patron = undefined) => {
     const ptype = policyField("ptype");
-    // TODO: This is okay for now but this actually isn't used. For phase 1,
-    // only the web applicant and simplye juvenile policy types will be used.
-    if (isSimplyEApplicant) {
-      if (patron.livesOrWorksInCity()) {
-        return ptype.metro.id;
-      }
-      if (patron.livesInState()) {
-        return ptype.default.id;
-      }
-    }
 
-    if (isWebApplicant) {
-      // Location is the value users select or is preselected by the client
-      // application (if the user's IP address was geolocated).
-
-      // The user is in NYS and has a home address in NYC.
-      if (patron.location === "nys" && patron.livesInCity()) {
-        return ptype.digitalMetro.id;
-      }
-      // The user is in NYS and has a home address in NYS but not in NYC. They
-      // also don't have a work address in NYC.
-      if (
-        patron.location === "nys" &&
-        !patron.livesInCity() &&
-        patron.livesInState() &&
-        !patron.worksInCity()
-      ) {
-        return ptype.digitalNonMetro.id;
-      }
-      // The user is in the United States but not in NYS. They have an address
-      // in the US or they have a work address in the US.
-      if (
-        patron.location === "us" &&
-        (!patron.livesInState() || patron.worksInCity())
-      ) {
-        return ptype.digTemp.id;
-      }
-
-      // TODO: This shouldn't happen so... how do we get the default?
+    // The "simplyeJuvenile" policy only has one ptype. Easy enough, just
+    // return that.
+    if (isJuvenileApplicant) {
       return ptype.default.id;
     }
 
-    return ptype.default.id;
+    // The "simplye" policy type will be updated at a later time. Right now,
+    // we will not assign ptypes of 2 or 3 which are related to the
+    // "simplye" policy. Also, if it's not a "webApplicant", just return.
+    if (isSimplyEApplicant || !isWebApplicant || !patron) {
+      return;
+    }
+
+    // We now assume the policy is "webApplicant".
+
+    // Location is the value from a user's IP address after passing through a
+    // geolocation API. If the IP address check failed, the default will be the
+    // value of "us" and that defaults to a temporary card.
+
+    // The user's location is in NYS (including NYC) and has a
+    // home address in NYC.
+    if (
+      (patron.location === "nyc" || patron.location === "nys") &&
+      patron.livesInNYCity() &&
+      patron.addressIsResidential()
+    ) {
+      return ptype.digitalMetro.id;
+    }
+
+    // The user is in NYS and has a home address in NYS but not in NYC. They
+    // also don't have a work address in NYC.
+    if (
+      patron.location === "nys" &&
+      !patron.livesInNYCity() &&
+      patron.livesInNYState() &&
+      !patron.worksInNYCity() &&
+      patron.addressIsResidential()
+    ) {
+      return ptype.digitalNonMetro.id;
+    }
+
+    // The user is in the United States but not in NYS. They have an address
+    // in the US or they have a work address in the US. Or, if the address was
+    // not validated.
+    if (
+      (patron.location === "us" && (patron.livesInUS || patron.worksInUS())) ||
+      !patron.addressHasBeenValidated()
+    ) {
+      return ptype.digitalTemporary.id;
+    }
+
+    // If nothing matches, don't assign a ptype.
+    return;
   };
 
   return {
@@ -214,7 +198,6 @@ const Policy = (args) => {
     // variables
     policyType,
     policy,
-    validTypes,
     // functions
     getExpirationPoliciesForPtype,
     policyField,

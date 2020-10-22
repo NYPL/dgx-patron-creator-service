@@ -61,11 +61,10 @@ describe("AddressValidationAPI", () => {
     ServiceObjectsClient.mockClear();
   });
 
-  // Get address, policyType - returns response object
   // `validate` will only throw an error if no license key was passed.
-  // Otherwise, it will always return a response even if SO threw an error.
-  // This is because we want to still check the address and return a temporary
-  // card in the situation where SO is down.
+  // Otherwise, it will always return a response even if Service Objects threw
+  // an error. This is because we want to still check the address and return
+  // a temporary card in the situation where SO is down.
   describe("validate", () => {
     const soLicenseKey = "licenseKey";
 
@@ -225,15 +224,13 @@ describe("AddressValidationAPI", () => {
     });
 
     // Only one test here because `validate` returns what `parseResponse`
-    // returns and that is tested below with more cases and policy types.
-    it("returns a response with valid address, simplye policy", async () => {
+    // returns and that is tested below with more cases.
+    it("returns a response with valid address", async () => {
       ServiceObjectsClient.mockImplementation(() => ({
         validateAddress: () => Promise.resolve([responseAddress1]),
       }));
-      const policyType = "simplye";
-      const isWorkAddress = false;
       const { validate } = AddressValidationAPI({ soLicenseKey });
-      const response = await validate(rawAddress1, isWorkAddress, policyType);
+      const response = await validate(rawAddress1);
 
       expect(response).toEqual({
         type: "valid-address",
@@ -341,15 +338,11 @@ describe("AddressValidationAPI", () => {
     });
 
     it("returns a 'valid-address' response but card denied if address is outside NY", () => {
-      const isWorkAddress = undefined;
-      const policyType = "simplye";
       const errors = {};
       const response = parseResponse(
         [outsideNYresponseAddress],
         errors,
-        outsideNYAddress,
-        isWorkAddress,
-        policyType
+        outsideNYAddress
       );
       const address = new Address({ ...outsideNYAddress, isResidential: true });
 
@@ -365,17 +358,9 @@ describe("AddressValidationAPI", () => {
       });
     });
 
-    it("returns a 'valid-address' response for simplye policy", () => {
-      const isWorkAddress = false;
-      const policyType = "simplye";
+    it("returns a 'valid-address' response", () => {
       const errors = {};
-      const response = parseResponse(
-        [responseAddress1],
-        errors,
-        rawAddress1,
-        isWorkAddress,
-        policyType
-      );
+      const response = parseResponse([responseAddress1], errors, rawAddress1);
 
       expect(response).toEqual({
         type: "valid-address",
@@ -385,31 +370,6 @@ describe("AddressValidationAPI", () => {
           county: undefined,
           line2: "",
           isResidential: true,
-          hasBeenValidated: true,
-        },
-        originalAddress: rawAddress1,
-      });
-    });
-
-    it("returns a 'valid-address' response for webApplicant policy", () => {
-      const isWorkAddress = false;
-      const policyType = "webApplicant";
-      const errors = {};
-      const response = parseResponse(
-        [responseAddress1],
-        errors,
-        rawAddress1,
-        isWorkAddress,
-        policyType
-      );
-      const address = new Address({ ...rawAddress1, isResidential: true });
-
-      expect(response).toEqual({
-        type: "valid-address",
-        title: "Valid address.",
-        address: {
-          ...address.address,
-          county: undefined,
           hasBeenValidated: true,
         },
         originalAddress: rawAddress1,

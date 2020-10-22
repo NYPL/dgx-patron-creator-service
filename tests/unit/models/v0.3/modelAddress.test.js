@@ -1,7 +1,5 @@
-/* eslint-disable */
 const AddressValidationAPI = require("../../../../api/controllers/v0.3/AddressValidationAPI");
 const Address = require("../../../../api/models/v0.3/modelAddress");
-const Policy = require("../../../../api/models/v0.3/modelPolicy");
 jest.mock("../../../../api/controllers/v0.3/AddressValidationAPI");
 
 const emptyAddress = {
@@ -69,9 +67,8 @@ describe("Address", () => {
   });
 
   describe("class methods", () => {
-    describe("inState", () => {
-      it("should return false for web applicants out of NYS and true for in NYS", () => {
-        const webApplicant = Policy({ policyType: "webApplicant" });
+    describe("inNYState", () => {
+      it("should return false for addresses outside NYS and true for in NYS", () => {
         const addressNotNY = new Address({
           line1: "street address",
           state: "New Jersey",
@@ -81,34 +78,13 @@ describe("Address", () => {
           state: "New York",
         });
 
-        expect(addressNotNY.inState(webApplicant)).toEqual(false);
-        expect(addressNY.inState(webApplicant)).toEqual(true);
-      });
-
-      it("should return false if they are not in NY state", () => {
-        const simplyePolicy = Policy();
-        const addressNotNY = new Address({
-          line1: "street address",
-          state: "New Jersey",
-        });
-
-        expect(addressNotNY.inState(simplyePolicy)).toEqual(false);
-      });
-
-      it("should return true if they are in NY state", () => {
-        const simplyePolicy = Policy();
-        const addressNY = new Address({
-          line1: "street address",
-          state: "New York",
-        });
-
-        expect(addressNY.inState(simplyePolicy)).toEqual(true);
+        expect(addressNotNY.inNYState()).toEqual(false);
+        expect(addressNY.inNYState()).toEqual(true);
       });
     });
 
-    describe("inCity", () => {
-      it("should return false for web applicants out of NYC and true for in NYC", () => {
-        const webApplicant = Policy({ policyType: "webApplicant" });
+    describe("inNYCity", () => {
+      it("should return false for addresses outside NYC and true for in NYC", () => {
         const addressNotNYC = new Address({
           line1: "street address",
           city: "Albany",
@@ -118,38 +94,22 @@ describe("Address", () => {
           city: "New York",
         });
 
-        expect(addressNotNYC.inCity(webApplicant)).toEqual(false);
-        expect(addressNYC.inCity(webApplicant)).toEqual(true);
+        expect(addressNotNYC.inNYCity()).toEqual(false);
+        expect(addressNYC.inNYCity()).toEqual(true);
       });
 
-      it("should return false for simplye applicants if they are not in NYC", () => {
-        const simplyePolicy = Policy();
-        const addressNotNYC = new Address({
-          line1: "street address",
-          city: "Albany",
-        });
-
-        expect(addressNotNYC.inCity(simplyePolicy)).toEqual(false);
-      });
-
-      it("should return true for simplye applicants if they are in NYC", () => {
-        const simplyePolicy = Policy();
-        const addressNYC = new Address({
-          line1: "street address",
-          city: "New York",
-        });
-
-        expect(addressNYC.inCity(simplyePolicy)).toEqual(true);
-      });
-
-      it("should return true if they are in an NYC county", () => {
-        const simplyePolicy = Policy();
+      it("should return true if they are in an NYC county and false otherwise", () => {
         const addressNYC = new Address({
           line1: "street address",
           county: "Queens",
         });
+        const addressNotInCounty = new Address({
+          line1: "street address",
+          county: "Yonkers",
+        });
 
-        expect(addressNYC.inCity(simplyePolicy)).toEqual(true);
+        expect(addressNYC.inNYCity()).toEqual(true);
+        expect(addressNotInCounty.inNYCity()).toEqual(false);
       });
     });
 
@@ -203,7 +163,7 @@ describe("Address", () => {
     describe("validate", () => {
       it("should return the current address if it already has been validated", async () => {
         AddressValidationAPI.mockImplementation(() => {
-          validate: () => Promise.resolve({ type: "valid-address" });
+          () => Promise.resolve({ type: "valid-address" });
         });
         // mock that the address is valid and has been validated.
         const address = new Address(

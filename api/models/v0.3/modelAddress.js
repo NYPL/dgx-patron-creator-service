@@ -1,8 +1,11 @@
-/* eslint-disable */
 const AddressValidationAPI = require("../../controllers/v0.3/AddressValidationAPI");
 const isEmpty = require("underscore").isEmpty;
 const { SONoLicenseKeyError } = require("../../helpers/errors");
-const { strToBool } = require("../../helpers/utils");
+const {
+  strToBool,
+  lowerCaseArray,
+  listOfStates,
+} = require("../../helpers/utils");
 
 /**
  * Creates objects with proper address structure and validates
@@ -23,40 +26,43 @@ class Address {
     this.soLicenseKey = soLicenseKey;
     // Set in the API call or through the request body.
     this.hasBeenValidated = strToBool(args.hasBeenValidated);
+
+    this.ALLOWED_STATES = lowerCaseArray(["NY", "New York"]);
+    this.ALLOWED_COUNTIES = lowerCaseArray([
+      "Richmond",
+      "Queens",
+      "New York",
+      "Kings",
+      "Bronx",
+    ]);
+    this.ALLOWED_CITIES = lowerCaseArray(["New York", "New York City", "NYC"]);
+    this.ALL_STATES = lowerCaseArray(listOfStates);
   }
 
   /**
-   * inState(policyParam)
+   * inUS
+   * Checks if the address is in the United States.
+   */
+  inUS() {
+    return this.ALL_STATES.includes(this.address.state.toLowerCase());
+  }
+
+  /**
+   * inNYState
    * Checks to see if the address is in the New York state.
-   *
-   * @param {Policy object} policyParam
    */
-  inState(policyParam) {
-    const policy = policyParam.policy;
-    return !!(
-      policy.serviceArea &&
-      policy.serviceArea["state"].includes(this.address.state.toLowerCase())
-    );
+  inNYState() {
+    return this.ALLOWED_STATES.includes(this.address.state.toLowerCase());
   }
 
   /**
-   * inCity(policyParam)
+   * inNYCity
    * Checks to see if the address is in New York City.
-   *
-   * @param {Policy object} policyParam
    */
-  inCity(policyParam) {
-    const policy = policyParam.policy;
-    if (!policy.serviceArea) {
-      return false;
-    }
+  inNYCity() {
     return (
-      (policy.serviceArea["city"] &&
-        policy.serviceArea["city"].includes(this.address.city.toLowerCase())) ||
-      (policy.serviceArea["county"] &&
-        policy.serviceArea["county"].includes(
-          this.address.county.toLowerCase()
-        ))
+      this.ALLOWED_CITIES.includes(this.address.city.toLowerCase()) ||
+      this.ALLOWED_COUNTIES.includes(this.address.county.toLowerCase())
     );
   }
 

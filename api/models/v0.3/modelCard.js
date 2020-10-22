@@ -2,7 +2,6 @@ const UsernameValidationApi = require("../../controllers/v0.3/UsernameValidation
 const Address = require("./modelAddress");
 const Barcode = require("./modelBarcode");
 const { strToBool } = require("../../helpers/utils");
-
 const {
   DatabaseError,
   MissingRequiredValues,
@@ -189,7 +188,8 @@ class Card {
     this.name = args["name"];
     this.address = this.getOrCreateAddress(args["address"]);
     this.workAddress = this.getOrCreateAddress(args["workAddress"]);
-    this.location = args["location"] || "";
+    // will be nyc, nys, or us
+    this.location = args["location"] || "us";
     this.username = args["username"];
     this.usernameHasBeenValidated = !!args["usernameHasBeenValidated"];
     this.pin = args["pin"];
@@ -345,31 +345,63 @@ class Card {
   }
 
   /**
-   * worksInCity()
+   * worksInNYCity()
    * Checks if the card has a work address in NYC.
    */
-  worksInCity() {
-    return !!(this.workAddress && this.workAddress.inCity(this.policy));
+  worksInNYCity() {
+    return !!(this.workAddress && this.workAddress.inNYCity());
   }
 
-  livesInCity() {
-    return !!this.address.inCity(this.policy);
+  livesInNYCity() {
+    return !!this.address.inNYCity();
   }
 
   /**
-   * livesOrWorksInCity()
+   * livesOrWorksInNYCity()
    * Checks if the card has an address in NYC or a work address in NYC.
    */
-  livesOrWorksInCity() {
-    return !!(this.livesInCity() || this.worksInCity());
+  livesOrWorksInNYCity() {
+    return !!(this.livesInNYCity() || this.worksInNYCity());
   }
 
   /**
-   * livesInState()
+   * livesInUS
+   * Checks if the card has an address in the US.
+   */
+  livesInUS() {
+    return this.address.inUS();
+  }
+
+  /**
+   * livesInUS
+   * Checks if the card has an address in the US.
+   */
+  worksInUS() {
+    return this.workAddress.inUS();
+  }
+
+  /**
+   * livesInNYState()
    * Checks if the card has an address in NY state.
    */
-  livesInState() {
-    return this.address.inState(this.policy);
+  livesInNYState() {
+    return this.address.inNYState();
+  }
+
+  /**
+   * addressHasBeenValidated()
+   * Checks if the card's home address has been validated by Service Objects.
+   */
+  addressHasBeenValidated() {
+    return this.address.hasBeenValidated;
+  }
+
+  /**
+   * addressIsResidential()
+   * Checks if the card's home address is residential.
+   */
+  addressIsResidential() {
+    return this.address.address.isResidential;
   }
 
   /**
@@ -478,7 +510,7 @@ class Card {
    * it is a temporary card, otherwise it's denied.
    */
   checkWorkType() {
-    return this.address.inCity(this.policy)
+    return this.address.inNYCity()
       ? Card.RESPONSES["temporaryCard"]
       : Card.RESPONSES["cardDenied"];
   }
@@ -515,10 +547,10 @@ class Card {
 
     // The user is denied if the card's home address is not in NY state and
     // there is no work address, or there is a work address but it's not in NYC.
-    if (!this.livesInState()) {
+    if (!this.livesInNYState()) {
       // If the work address is in NYC or the policy type is "webApplicant",
       // the user gets a temporary card.
-      if (this.worksInCity()) {
+      if (this.worksInNYCity()) {
         let reason =
           "The home address is not in New York State but the work address is in New York City.";
         if (this.addressError) {
@@ -537,9 +569,7 @@ class Card {
     // The user is in NYS. We must make sure they are in NYC and their address
     // is residential for a standard card. Otherwise, the user gets a
     // temporary card.
-    if (
-      !(this.address.inCity(this.policy) && this.address.address.isResidential)
-    ) {
+    if (!(this.address.inNYCity() && this.address.address.isResidential)) {
       let reason = "The home address is in NYC but is not residential.";
       if (this.addressError) {
         reason = `${reason} ${this.addressError}`;
