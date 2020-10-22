@@ -41,6 +41,13 @@ describe("Barcode", () => {
   // Returning an available barcode depends on whether `availableInIls` finds
   // and returns a barcode that _is_ available.
   describe("getNextAvailableBarcode", () => {
+    it("returns undefined if no barcode start sequence was passed", async () => {
+      const barcode = new Barcode({});
+      await expect(barcode.getNextAvailableBarcode()).resolves.toEqual(
+        undefined,
+      );
+    });
+
     it("returns undefined if it can't get a barcode", async () => {
       const barcode = new Barcode({});
 
@@ -67,7 +74,9 @@ describe("Barcode", () => {
         .fn()
         .mockReturnValue({ available: true, finalBarcode: "1234" });
 
-      await expect(barcode.getNextAvailableBarcode()).resolves.toEqual("1234");
+      await expect(barcode.getNextAvailableBarcode("12")).resolves.toEqual(
+        "1234",
+      );
     });
   });
 
@@ -95,19 +104,28 @@ describe("Barcode", () => {
   });
 
   describe("nextAvailableFromDB", () => {
+    it("should return undefined if no barcode start sequence was passed", async () => {
+      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const nextBarcode = await barcode.nextAvailableFromDB();
+
+      expect(nextBarcode.barcode).toEqual(undefined);
+      expect(nextBarcode.newBarcode).toEqual(false);
+    });
+
     it("should get the first used barcode from the database", async () => {
       const barcode = new Barcode({ ilsClient: IlsClient() });
       const querySpy = jest.spyOn(barcode.db, "query");
       const luhnSpy = jest.spyOn(barcode, "nextLuhnValidCode");
-      const nextBarcode = await barcode.nextAvailableFromDB();
+      const barcodeStartSeq = "288";
+      const nextBarcode = await barcode.nextAvailableFromDB(barcodeStartSeq);
 
       // It first tries to get the lowest barcode that is unused.
       expect(querySpy).toHaveBeenCalledWith(
-        "SELECT barcode FROM barcodes WHERE used=false ORDER BY barcodes ASC LIMIT 1;",
+        `SELECT barcode FROM barcodes WHERE used=false and barcode like '${barcodeStartSeq}%' ORDER BY barcodes ASC LIMIT 1;`,
       );
       // But there aren't any so get the largest used one and make a new barcode.
       expect(querySpy).toHaveBeenCalledWith(
-        "SELECT barcode FROM barcodes WHERE used=true ORDER BY barcodes DESC LIMIT 1;",
+        `SELECT barcode FROM barcodes WHERE used=true and barcode like '${barcodeStartSeq}%' ORDER BY barcodes DESC LIMIT 1;`,
       );
       expect(querySpy).toHaveBeenCalled();
 
@@ -128,19 +146,44 @@ describe("Barcode", () => {
       await barcode.addBarcode("28888055432435", false);
 
       const querySpy = jest.spyOn(barcode.db, "query");
-      const nextBarcode = await barcode.nextAvailableFromDB();
+      const barcodeStartSeq = "28888";
+      const nextBarcode = await barcode.nextAvailableFromDB(barcodeStartSeq);
 
       // The two queries we expect to have been called to the database:
       expect(querySpy).toHaveBeenCalled();
       // Note: These are written in order they are called but jest doesn't
       // care about order.
       expect(querySpy).toHaveBeenCalledWith(
-        "SELECT barcode FROM barcodes WHERE used=false ORDER BY barcodes ASC LIMIT 1;",
+        `SELECT barcode FROM barcodes WHERE used=false and barcode like '${barcodeStartSeq}%' ORDER BY barcodes ASC LIMIT 1;`,
       );
 
       // This barcode was already in the database so "newBarcode" is false.
       expect(nextBarcode.barcode).toEqual("28888055432435");
       expect(nextBarcode.newBarcode).toEqual(false);
+    });
+
+    it("should not get a barcode if there are none with the start sequence", async () => {
+      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const querySpy = jest.spyOn(barcode.db, "query");
+      const barcodeStartSeq = "23333";
+      const nextBarcode = await barcode.nextAvailableFromDB(barcodeStartSeq);
+
+      // The two queries we expect to have been called to the database:
+      expect(querySpy).toHaveBeenCalled();
+      // Note: These are written in order they are called but jest doesn't
+      // care about order.
+      expect(querySpy).toHaveBeenCalledWith(
+        `SELECT barcode FROM barcodes WHERE used=false and barcode like '${barcodeStartSeq}%' ORDER BY barcodes ASC LIMIT 1;`,
+      );
+
+      // There are no barcodes that start with 23333.
+      expect(nextBarcode.barcode).toEqual(undefined);
+      expect(nextBarcode.newBarcode).toEqual(false);
+
+      // Just to be clear that there are barcodes in the database.
+      const isFound = await barcode.nextAvailableFromDB("28888");
+      expect(isFound.barcode).toEqual("28888055432435");
+      expect(isFound.newBarcode).toEqual(false);
     });
   });
 

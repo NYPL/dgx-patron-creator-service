@@ -48,19 +48,28 @@ class BarcodesDb {
 
   /**
    * initInsert()
-   * Insert the first value into the database if it's not already there. This is
-   * to set from where new barcodes will be created.
+   * Insert the first values into the database if they are not already there.
+   * This is to set from where new barcodes will be created based on p-types.
    */
   async initInsert() {
     const text = "INSERT INTO barcodes (barcode, used) VALUES ($1, $2);";
-    const values = ["28888855432452", "true"];
+    const barcodes = ["28888855432452", "25555001345283"];
 
-    try {
-      await this.pool.query(text, values);
-      logger.debug("successfully inserted seed barcode");
-    } catch (error) {
-      logger.error("barcodes table already has the initial value");
-    }
+    await Promise.all(
+      barcodes.map(async (barcode) => {
+        const values = [barcode, "true"];
+
+        try {
+          await this.pool.query(text, values);
+          logger.debug(`Successfully inserted seed barcode ${barcode}.`);
+        } catch (error) {
+          logger.error(
+            `"barcodes" table already has the initial value of ${barcode}`
+          );
+        }
+      })
+    );
+
     return;
   }
 
