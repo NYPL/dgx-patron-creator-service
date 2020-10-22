@@ -25,7 +25,7 @@ const basicCard = {
   name: "First Last",
   address: new Address(
     { line1: "476th 5th Ave.", city: "New York" },
-    "soLicenseKey",
+    "soLicenseKey"
   ),
   username: "username",
   pin: "1234",
@@ -108,7 +108,7 @@ describe("CardValidator", () => {
         name: "First Last",
         address: new Address(
           { line1: "476th 5th Ave.", city: "New York", hasBeenValidated: true },
-          "soLicenseKey",
+          "soLicenseKey"
         ),
         username: "username",
         pin: "1234",
@@ -147,7 +147,7 @@ describe("CardValidator", () => {
       card.address.validate = mockValidate;
 
       await expect(validateAddress(card, "address")).rejects.toThrow(
-        "Something happened in SO.",
+        "Something happened in SO."
       );
       // For the rest of the tests, since the `hasBeenValidated` flag is false,
       // we expect the `address.validate` function to be called.
@@ -200,7 +200,7 @@ describe("CardValidator", () => {
         address: new Address({ city: "Woodside", state: "NY" }, "soLicenseKey"),
         workAddress: new Address(
           { city: "New York", state: "NY" },
-          "soLicenseKey",
+          "soLicenseKey"
         ),
         policy: Policy(),
       });
@@ -291,7 +291,7 @@ describe("CardValidator", () => {
             city: "New York",
             state: "NY",
           },
-          "soLicenseKey",
+          "soLicenseKey"
         ),
         policy: Policy(),
       });
@@ -637,7 +637,7 @@ describe("Card", () => {
         name: "First Last",
         address: new Address(
           { line1: "476th 5th Ave.", city: "New York" },
-          "soLicenseKy",
+          "soLicenseKy"
         ),
         username: "username",
         pin: "1234",
@@ -655,7 +655,7 @@ describe("Card", () => {
     it("should fail if the terms of condition flag is not set to true", async () => {
       const cardNoAcceptTerms = new Card({});
       await expect(cardNoAcceptTerms.validate()).rejects.toThrow(
-        "The terms and conditions were not accepted.",
+        "The terms and conditions were not accepted."
       );
     });
 
@@ -670,12 +670,12 @@ describe("Card", () => {
       });
 
       await expect(cardNoAgeGate.validate()).rejects.toThrow(
-        "You must be 13 years or older to continue.",
+        "You must be 13 years or older to continue."
       );
       // We expect the age gate check to pass but not the rest of the checks
       // which happen after.
       await expect(cardNoAgeGateIsOkay.validate()).rejects.toThrow(
-        "'name', 'address', 'username', and 'pin' are all required.",
+        "'name', 'address', 'username', and 'pin' are all required."
       );
     });
 
@@ -804,16 +804,16 @@ describe("Card", () => {
       });
 
       await expect(cardNoName.validate()).rejects.toThrow(
-        "'name', 'address', 'username', and 'pin' are all required.",
+        "'name', 'address', 'username', and 'pin' are all required."
       );
       await expect(cardNoUsername.validate()).rejects.toThrow(
-        "'name', 'address', 'username', and 'pin' are all required.",
+        "'name', 'address', 'username', and 'pin' are all required."
       );
       await expect(cardNoPin.validate()).rejects.toThrow(
-        "'name', 'address', 'username', and 'pin' are all required.",
+        "'name', 'address', 'username', and 'pin' are all required."
       );
       await expect(cardNoAddress.validate()).rejects.toThrow(
-        "'name', 'address', 'username', and 'pin' are all required.",
+        "'name', 'address', 'username', and 'pin' are all required."
       );
     });
 
@@ -834,10 +834,10 @@ describe("Card", () => {
       });
 
       await expect(cardBadPin1.validate()).rejects.toThrow(
-        "PIN should be 4 numeric characters only. Please revise your PIN.",
+        "PIN should be 4 numeric characters only. Please revise your PIN."
       );
       await expect(cardBadPin2.validate()).rejects.toThrow(
-        "PIN should be 4 numeric characters only. Please revise your PIN.",
+        "PIN should be 4 numeric characters only. Please revise your PIN."
       );
     });
 
@@ -849,7 +849,7 @@ describe("Card", () => {
       });
 
       await expect(cardNoEmail.validate()).rejects.toThrow(
-        "email cannot be empty for this policy type.",
+        "email cannot be empty for this policy type."
       );
     });
     it("should fail for webApplicant policies without a birthdate or email", async () => {
@@ -865,10 +865,10 @@ describe("Card", () => {
       });
 
       await expect(cardNoEmail.validate()).rejects.toThrow(
-        "email cannot be empty for this policy type.",
+        "email cannot be empty for this policy type."
       );
       await expect(cardNoBirthdate.validate()).rejects.toThrow(
-        "birthdate cannot be empty for this policy type.",
+        "birthdate cannot be empty for this policy type."
       );
     });
 
@@ -946,7 +946,7 @@ describe("Card", () => {
       // The current Card object doesn't have an IlsClient. We are mocking
       // the `checkUsernameAvailability` and throwing an error from there.
       const noIlsClient = new NoILSClient(
-        "ILS Client not set in Username Validation API.",
+        "ILS Client not set in Username Validation API."
       );
       // This is just to mock the class.
       UsernameValidationAPI.mockImplementation(() => ({
@@ -963,7 +963,7 @@ describe("Card", () => {
 
     it("throws an error if the ILS could not be reached", async () => {
       const iLSIntegrationError = new ILSIntegrationError(
-        "The ILS could not be requested when validating the username.",
+        "The ILS could not be requested when validating the username."
       );
       // This is just to mock the class.
       UsernameValidationAPI.mockImplementation(() => ({
@@ -978,7 +978,7 @@ describe("Card", () => {
       card.hasValidUsername = undefined;
 
       await expect(card.checkValidUsername()).rejects.toEqual(
-        iLSIntegrationError,
+        iLSIntegrationError
       );
     });
   });
@@ -1053,7 +1053,7 @@ describe("Card", () => {
       // The current Card object doesn't have an IlsClient. We are mocking here
       // that the `validate` function, which calls the ILS, throws an error.
       const noIlsClient = new NoILSClient(
-        "ILS Client not set in Username Validation API.",
+        "ILS Client not set in Username Validation API."
       );
       UsernameValidationAPI.mockImplementation(() => ({
         validate: () => {
@@ -1063,13 +1063,13 @@ describe("Card", () => {
       }));
 
       await expect(card.checkUsernameAvailability()).rejects.toEqual(
-        noIlsClient,
+        noIlsClient
       );
     });
 
     it("throws an error if the ILS could not be reached", async () => {
       const iLSIntegrationError = new ILSIntegrationError(
-        "The ILS could not be requested when validating the username.",
+        "The ILS could not be requested when validating the username."
       );
       UsernameValidationAPI.mockImplementation(() => ({
         validate: () => {
@@ -1079,7 +1079,7 @@ describe("Card", () => {
       }));
 
       await expect(card.checkUsernameAvailability()).rejects.toEqual(
-        iLSIntegrationError,
+        iLSIntegrationError
       );
     });
   });
@@ -1137,7 +1137,7 @@ describe("Card", () => {
         city: "Albany",
         state: "New York",
       },
-      "soLicenseKey",
+      "soLicenseKey"
     );
 
     const workAddressInCity = new Address(
@@ -1146,7 +1146,7 @@ describe("Card", () => {
         city: "New York",
         state: "New York",
       },
-      "soLicenseKey",
+      "soLicenseKey"
     );
 
     it("returns false for web applications without a work address", () => {
@@ -1210,7 +1210,7 @@ describe("Card", () => {
         city: "New York",
         state: "New York",
       },
-      "soLicenseKey",
+      "soLicenseKey"
     );
 
     it("returns false because they do not live in NYC", () => {
@@ -1327,16 +1327,18 @@ describe("Card", () => {
       expect(card.ptype).toEqual(undefined);
       expect(card.validForIls()).toEqual(false);
     });
-    it("should return false if the card is valid but there is no ptype", async () => {
+    // A ptype is always added for valid cards.
+    it("should return the ptype if the card is valid", async () => {
       AddressValidationAPI.mockImplementation(() => ({
-        validate: () => Promise.resolve({
-          type: "valid-address",
-          address: {
-            line1: "476th 5th Ave.",
-            city: "New York",
-            hasBeenValidated: true,
-          },
-        }),
+        validate: () =>
+          Promise.resolve({
+            type: "valid-address",
+            address: {
+              line1: "476th 5th Ave.",
+              city: "New York",
+              hasBeenValidated: true,
+            },
+          }),
       }));
       const card = new Card({
         ...basicCard,
@@ -1353,8 +1355,8 @@ describe("Card", () => {
       await card.validate();
 
       expect(card.valid).toEqual(true);
-      expect(card.ptype).toEqual(undefined);
-      expect(card.validForIls()).toEqual(false);
+      expect(card.ptype).toEqual(1);
+      expect(card.validForIls()).toEqual(true);
     });
     it("should return true if the card is valid and there is a ptype", async () => {
       // Let's create basic inputs.
@@ -1405,7 +1407,7 @@ describe("Card", () => {
       const card = new Card(basicCard);
 
       await expect(card.setBarcode()).rejects.toThrow(
-        "Could not generate a new barcode. Please try again.",
+        "Could not generate a new barcode. Please try again."
       );
     });
   });
@@ -1535,7 +1537,7 @@ describe("Card", () => {
   });
 
   describe("getExpirationDays", () => {
-    it("it returns a standard or temporary expiration for simplye policy", () => {
+    it("returns a standard or temporary expiration for simplye policy", () => {
       const card = new Card({
         ...basicCard,
         policy: Policy({ policyType: "simplye" }),
@@ -1550,11 +1552,14 @@ describe("Card", () => {
       expect(card.getExpirationDays()).toEqual(30);
     });
 
-    it("it returns a standard or temporary expiration for webApplicant policy", () => {
+    it("returns a standard or temporary expiration for webApplicant policy", () => {
       const card = new Card({
         ...basicCard,
         policy: Policy({ policyType: "webApplicant" }),
       });
+
+      // We need to set the ptype first before finding the expiration dates.
+      card.setPtype();
 
       // A standard card has an expiration of 1095 days (3 years).
       expect(card.isTemporary).toEqual(false);
@@ -1722,30 +1727,8 @@ describe("Card", () => {
         policy: Policy({ policyType: "webApplicant" }),
       });
 
-      expect(card.getCardType()).toEqual({
-        ...Card.RESPONSES.temporaryCard,
-        reason: "The home address is in NYC but is not residential.",
-      });
-      expect(cardNotNY.getCardType()).toEqual({
-        ...Card.RESPONSES.temporaryCard,
-        reason:
-          "The home address is not in New York State but the work address is in New York City.",
-      });
-    });
-
-    it("returns a standard card for web applicants in NYS and residential", () => {
-      const cardResidential = new Card({
-        ...basicCard,
-        address: new Address({
-          city: "New York",
-          state: "New York",
-          isResidential: "true",
-        }),
-        policy: Policy({ policyType: "webApplicant" }),
-      });
-      expect(cardResidential.getCardType()).toEqual({
-        ...Card.RESPONSES.standardCard,
-      });
+      expect(card.getCardType()).toEqual(Card.RESPONSES.temporaryCard);
+      expect(cardNotNY.getCardType()).toEqual(Card.RESPONSES.temporaryCard);
     });
 
     it("returns a card denied response if the address is not in NYS and there is no work address", () => {
@@ -1831,7 +1814,7 @@ describe("Card", () => {
       // It doens't matter if they have a work address outside NYC. The
       // patron lives in NYC so they get a standard card.
       expect(cardWithAddress.getCardType()).toEqual(
-        Card.RESPONSES.standardCard,
+        Card.RESPONSES.standardCard
       );
     });
   });
@@ -1885,7 +1868,7 @@ describe("Card", () => {
       });
 
       await expect(card.createIlsPatron()).rejects.toThrow(
-        "The card has not been validated or has no ptype.",
+        "The card has not been validated or has no ptype."
       );
     });
 
@@ -1899,8 +1882,10 @@ describe("Card", () => {
         ilsClient: IlsClient({}),
       });
 
-      // Mocking this for now. Normally, we'd call .validate()
+      // Mocking this. Normally, we'd call .validate()
       card.valid = true;
+      card.setPtype();
+
       // Set up a spy for card.setBarcode() which shouldn't be called.
       const spy = jest.spyOn(card, "setBarcode");
 
@@ -1922,8 +1907,10 @@ describe("Card", () => {
         ilsClient: IlsClient({}),
       });
 
-      // Mocking this for now. Normally, we'd call `card.validate()`.
+      // Mocking this. Normally, we'd call `card.validate()`.
       card.valid = true;
+      card.setPtype();
+
       // Set up a spy for card.setBarcode() which shouldn't be called.
       const spy = jest.spyOn(card, "setBarcode");
 
@@ -1946,18 +1933,19 @@ describe("Card", () => {
         ilsClient: IlsClient({}),
       });
 
-      // Mocking this for now. Normally, we'd call .validate()
+      // Mocking this. Normally, we'd call .validate()
       card.valid = true;
+      card.setPtype();
 
       await expect(card.createIlsPatron()).rejects.toThrow(DatabaseError);
       await expect(card.createIlsPatron()).rejects.toThrowError(
-        "Could not generate a new barcode. Please try again.",
+        "Could not generate a new barcode. Please try again."
       );
     });
 
     it("attempts to create a patron but fails", async () => {
       const integrationError = new ILSIntegrationError(
-        "The ILS could not be requested when attempting to create a patron.",
+        "The ILS could not be requested when attempting to create a patron."
       );
       // Mock that the ILS fails
       IlsClient.mockImplementation(() => ({
@@ -1976,8 +1964,10 @@ describe("Card", () => {
         ilsClient: IlsClient(),
       });
 
-      // Mocking this for now. Normally, we'd call .validate()
+      // Mocking this. Normally, we'd call .validate()
       card.valid = true;
+      card.setPtype();
+
       const spy = jest.spyOn(card, "freeBarcode");
 
       await expect(card.createIlsPatron()).rejects.toEqual(integrationError);
@@ -2007,6 +1997,8 @@ describe("Card", () => {
 
       // Mocking this for now. Normally, we'd call .validate()
       card.valid = true;
+      card.setPtype();
+
       const spy = jest.spyOn(card, "freeBarcode");
 
       const data = await card.createIlsPatron();
@@ -2042,7 +2034,7 @@ describe("Card", () => {
       expect(details.pin).toEqual("1234");
       expect(details.temporary).toEqual(false);
       expect(details.detail).toEqual(
-        "The library card will be a standard library card.",
+        "The library card will be a standard library card."
       );
     });
 
@@ -2057,7 +2049,7 @@ describe("Card", () => {
       expect(details.pin).toEqual("1234");
       expect(details.temporary).toEqual(false);
       expect(details.detail).toEqual(
-        "The library card will be a standard library card.",
+        "The library card will be a standard library card."
       );
       expect(details.patronId).toEqual("123456789");
     });
@@ -2073,7 +2065,7 @@ describe("Card", () => {
       expect(details.pin).toEqual("1234");
       expect(details.temporary).toEqual(true);
       expect(details.detail).toEqual(
-        "The library card will be a standard library card.  Visit your local NYPL branch within 30 days to upgrade to a standard card.",
+        "The library card will be a standard library card.  Visit your local NYPL branch within 30 days to upgrade to a standard card."
       );
     });
   });
@@ -2095,7 +2087,7 @@ describe("Card", () => {
 
       card.cardType = card.getCardType();
       expect(card.selectMessage()).toEqual(
-        "The library card will be a standard library card.",
+        "The library card will be a standard library card."
       );
     });
 
@@ -2110,9 +2102,10 @@ describe("Card", () => {
       });
 
       card.isTemporary = true;
+      card.setPtype();
       card.cardType = card.getCardType();
       expect(card.selectMessage()).toEqual(
-        "The library card will be a temporary library card. The home address is not in New York State but the work address is in New York City. Visit your local NYPL branch within 90 days to upgrade to a standard card.",
+        "The library card will be a temporary library card.  Visit your local NYPL branch within 90 days to upgrade to a standard card."
       );
     });
 
@@ -2130,7 +2123,7 @@ describe("Card", () => {
       card.isTemporary = true;
       card.cardType = card.getCardType();
       expect(card.selectMessage()).toEqual(
-        "The library card will be a temporary library card. The home address is not in New York State but the work address is in New York City. Visit your local NYPL branch within 30 days to upgrade to a standard card.",
+        "The library card will be a temporary library card. The home address is not in New York State but the work address is in New York City. Visit your local NYPL branch within 30 days to upgrade to a standard card."
       );
     });
 
@@ -2148,7 +2141,7 @@ describe("Card", () => {
       card.isTemporary = true;
       card.cardType = card.getCardType();
       expect(card.selectMessage()).toEqual(
-        "The library card will be a temporary library card. The home address is in NYC but is not residential. Visit your local NYPL branch within 30 days to upgrade to a standard card.",
+        "The library card will be a temporary library card. The home address is in NYC but is not residential. Visit your local NYPL branch within 30 days to upgrade to a standard card."
       );
     });
 
@@ -2166,7 +2159,7 @@ describe("Card", () => {
       card.isTemporary = true;
       card.cardType = card.getCardType();
       expect(card.selectMessage()).toEqual(
-        "Library cards are only available for residents of New York State or students and commuters working in New York City.  Visit your local NYPL branch within 30 days to upgrade to a standard card.",
+        "Library cards are only available for residents of New York State or students and commuters working in New York City.  Visit your local NYPL branch within 30 days to upgrade to a standard card."
       );
     });
 
@@ -2185,7 +2178,7 @@ describe("Card", () => {
       card.isTemporary = true;
       card.cardType = card.getCardType();
       expect(card.selectMessage()).toEqual(
-        "Library cards are only available for residents of New York State or students and commuters working in New York City.  Visit your local NYPL branch within 30 days to upgrade to a standard card.",
+        "Library cards are only available for residents of New York State or students and commuters working in New York City.  Visit your local NYPL branch within 30 days to upgrade to a standard card."
       );
     });
   });

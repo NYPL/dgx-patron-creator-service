@@ -1,4 +1,3 @@
-/* eslint-disable */
 const AddressValidationAPI = require("../../../../api/controllers/v0.3/AddressValidationAPI");
 const IlsClient = require("../../../../api/controllers/v0.3/IlsClient");
 const { Card } = require("../../../../api/models/v0.3/modelCard");
@@ -6,10 +5,17 @@ const Address = require("../../../../api/models/v0.3/modelAddress");
 const Policy = require("../../../../api/models/v0.3/modelPolicy");
 const axios = require("axios");
 const { ILSIntegrationError } = require("../../../../api/helpers/errors");
+const encode = require("../../../../api/helpers/encode");
 
 jest.mock("axios");
 jest.mock("../../../../api/controllers/v0.3/AddressValidationAPI");
 
+const tokenUrl = "ils/token/endpoint";
+const createUrl = "ils/create/endpoint";
+const findUrl = "ils/find/endpoint";
+const ilsClientKey = "key";
+const ilsClientSecret = "secret";
+const mockIlsToken = "theAccessToken";
 const mockedSuccessfulResponse = {
   status: 200,
   data: {
@@ -21,6 +27,10 @@ const mockedSuccessfulResponse = {
     ],
     // Other ILS patron fields which aren't necessary for testing
   },
+};
+const mockedSuccessfulTokenResponse = {
+  status: 200,
+  data: { access_token: mockIlsToken },
 };
 const mockedErrorResponse = {
   response: {
@@ -63,16 +73,16 @@ describe("IlsClient", () => {
   });
 
   describe("agencyField", () => {
+    // The `agencyField` method doesn't need any credentials or other props.
     const ilsClient = IlsClient({});
 
     it("returns an object with a key of '86' and an object value", () => {
       const agency = "202";
-      let fixedFields = {};
-
-      let agencyField = ilsClient.agencyField(agency, fixedFields);
+      const fixedFields = {};
+      const agencyField = ilsClient.agencyField(agency, fixedFields);
 
       expect(agencyField).toEqual({
-        "158": {
+        158: {
           label: "AGENCY",
           value: agency,
         },
@@ -81,22 +91,22 @@ describe("IlsClient", () => {
 
     it("adds on to an existing fixedFields object", () => {
       const agency = "202";
-      let fixedFields = {
-        "84": {
+      const fixedFields = {
+        84: {
           label: "some field",
           value: "value",
         },
-        "85": {
+        85: {
           label: "some field 2",
           value: "value 2",
         },
       };
 
-      let agencyField = ilsClient.agencyField(agency, fixedFields);
+      const agencyField = ilsClient.agencyField(agency, fixedFields);
 
       expect(agencyField).toEqual({
         ...fixedFields,
-        "158": {
+        158: {
           label: "AGENCY",
           value: agency,
         },
@@ -107,6 +117,8 @@ describe("IlsClient", () => {
   // The preference object being sent to the ILS is in the form of:
   // { patronCodes: { pcode1: "s" } }
   describe("ecommunicationsPref", () => {
+    // The `ecommunicationsPref` method doesn't need any
+    // credentials or other props.
     const ilsClient = IlsClient({});
 
     // The not subscribed content string is '-'.
@@ -152,6 +164,8 @@ describe("IlsClient", () => {
   // The name being sent to the ILS is in the form of:
   // 'LASTNAME, FIRSTNAME'
   describe("formatPatronName", () => {
+    // The `formatPatronName` method doesn't need any
+    // credentials or other props.
     const ilsClient = IlsClient({});
 
     it("returns an empty string if nothing was passed", () => {
@@ -172,6 +186,8 @@ describe("IlsClient", () => {
   // The address object being sent to the ILS is in the form of:
   // { lines: ['line 1', 'line 2'], type: 'a' }
   describe("formatAddress", () => {
+    // The `formatAddress` method doesn't need any
+    // credentials or other props.
     const ilsClient = IlsClient({});
     const address = new Address(
       {
@@ -211,9 +227,21 @@ describe("IlsClient", () => {
   });
 
   describe("getPatronFromBarcodeOrUsername", () => {
-    const findUrl = "ils/find/endpoint";
-    const ilsToken = "ilsToken";
-    const ilsClient = IlsClient({ findUrl, ilsToken });
+    const ilsClient = IlsClient({
+      findUrl,
+      tokenUrl,
+      ilsClientKey,
+      ilsClientSecret,
+    });
+
+    beforeAll(async () => {
+      // Mock that we got a token for authenticated requests.
+      axios.post.mockImplementationOnce(() =>
+        // eslint-disable-next-line implicit-arrow-linebreak
+        Promise.resolve(mockedSuccessfulTokenResponse)
+      );
+      await ilsClient.generateIlsToken();
+    });
 
     it("calls the ILS with the barcode parameters", async () => {
       const barcode = "999999999";
@@ -237,7 +265,7 @@ describe("IlsClient", () => {
       expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${ilsToken}`,
+          Authorization: `Bearer ${mockIlsToken}`,
         },
       });
     });
@@ -264,7 +292,7 @@ describe("IlsClient", () => {
       expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${ilsToken}`,
+          Authorization: `Bearer ${mockIlsToken}`,
         },
       });
     });
@@ -292,7 +320,7 @@ describe("IlsClient", () => {
       expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${ilsToken}`,
+          Authorization: `Bearer ${mockIlsToken}`,
         },
       });
     });
@@ -323,7 +351,7 @@ describe("IlsClient", () => {
       expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${ilsToken}`,
+          Authorization: `Bearer ${mockIlsToken}`,
         },
       });
     });
@@ -354,7 +382,7 @@ describe("IlsClient", () => {
       expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${ilsToken}`,
+          Authorization: `Bearer ${mockIlsToken}`,
         },
       });
     });
@@ -363,9 +391,20 @@ describe("IlsClient", () => {
   // Checks a barcode or username availability. Internally, `available`
   // calls `getPatronFromBarcodeOrUsername` which is tested above.
   describe("available", () => {
-    const findUrl = "ils/find/endpoint";
-    const ilsToken = "ilsToken";
-    const ilsClient = IlsClient({ findUrl, ilsToken });
+    const ilsClient = IlsClient({
+      findUrl,
+      tokenUrl,
+      ilsClientKey,
+      ilsClientSecret,
+    });
+
+    beforeAll(async () => {
+      // Mock that we got a token for authenticated requests.
+      axios.post.mockImplementationOnce(() =>
+        Promise.resolve(mockedSuccessfulTokenResponse)
+      );
+      await ilsClient.generateIlsToken();
+    });
 
     describe("barcode", () => {
       const barcode = "12341234123412";
@@ -386,7 +425,7 @@ describe("IlsClient", () => {
         expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${ilsToken}`,
+            Authorization: `Bearer ${mockIlsToken}`,
           },
         });
       });
@@ -402,7 +441,7 @@ describe("IlsClient", () => {
         expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${ilsToken}`,
+            Authorization: `Bearer ${mockIlsToken}`,
           },
         });
       });
@@ -421,7 +460,7 @@ describe("IlsClient", () => {
         expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${ilsToken}`,
+            Authorization: `Bearer ${mockIlsToken}`,
           },
         });
       });
@@ -447,7 +486,7 @@ describe("IlsClient", () => {
         expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${ilsToken}`,
+            Authorization: `Bearer ${mockIlsToken}`,
           },
         });
       });
@@ -473,7 +512,7 @@ describe("IlsClient", () => {
         expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${ilsToken}`,
+            Authorization: `Bearer ${mockIlsToken}`,
           },
         });
       });
@@ -489,7 +528,7 @@ describe("IlsClient", () => {
         expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${ilsToken}`,
+            Authorization: `Bearer ${mockIlsToken}`,
           },
         });
       });
@@ -508,7 +547,7 @@ describe("IlsClient", () => {
         expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${ilsToken}`,
+            Authorization: `Bearer ${mockIlsToken}`,
           },
         });
       });
@@ -534,7 +573,7 @@ describe("IlsClient", () => {
         expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${ilsToken}`,
+            Authorization: `Bearer ${mockIlsToken}`,
           },
         });
       });
@@ -543,6 +582,8 @@ describe("IlsClient", () => {
 
   // The patron object being sent to the ILS.
   describe("formatPatronData", () => {
+    // The `formatPatronName` method doesn't need any
+    // credentials or other props.
     const ilsClient = IlsClient({});
     const address = new Address(
       {
@@ -625,9 +666,12 @@ describe("IlsClient", () => {
 
   // Creates a patron in the ILS.
   describe("createPatron", () => {
-    const createUrl = "ils/find/endpoint";
-    const ilsToken = "ilsToken";
-    const ilsClient = IlsClient({ createUrl, ilsToken });
+    const ilsClient = IlsClient({
+      createUrl,
+      tokenUrl,
+      ilsClientKey,
+      ilsClientSecret,
+    });
     const mockedSuccessfulResponse = {
       status: 200,
       data: {
@@ -653,7 +697,7 @@ describe("IlsClient", () => {
       birthdate: "01/01/1988",
       address,
       policy,
-      ilsClient: IlsClient({}),
+      ilsClient,
       acceptTerms: true,
       ageGate: true,
     });
@@ -668,6 +712,14 @@ describe("IlsClient", () => {
     const currentMonth = now.getMonth();
     const currentDay = now.getDate();
     const expirationDate = new Date(currentYear, currentMonth, currentDay + 90);
+
+    beforeAll(async () => {
+      // Mock that we got a token for authenticated requests.
+      axios.post.mockImplementationOnce(() =>
+        Promise.resolve(mockedSuccessfulTokenResponse)
+      );
+      await ilsClient.generateIlsToken();
+    });
 
     it("fails to create a patron", async () => {
       // We want to mock that we called the ILS and it did not find a
@@ -714,7 +766,7 @@ describe("IlsClient", () => {
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${ilsToken}`,
+            Authorization: `Bearer ${mockIlsToken}`,
           },
         }
       );
@@ -756,7 +808,7 @@ describe("IlsClient", () => {
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${ilsToken}`,
+            Authorization: `Bearer ${mockIlsToken}`,
           },
         }
       );
@@ -777,9 +829,12 @@ describe("IlsClient", () => {
 
   // Updates a patron in the ILS.
   describe("updatePatron", () => {
-    const createUrl = "ils/find/endpoint";
-    const ilsToken = "ilsToken";
-    const ilsClient = IlsClient({ createUrl, ilsToken });
+    const ilsClient = IlsClient({
+      createUrl,
+      tokenUrl,
+      ilsClientKey,
+      ilsClientSecret,
+    });
     const mockedSuccessfulResponse = {
       status: 204,
       data: {},
@@ -799,6 +854,14 @@ describe("IlsClient", () => {
       varFields: [{ fieldTag: "x", content: "DEPENDENTS 12346" }],
     };
 
+    beforeAll(async () => {
+      // Mock that we got a token for authenticated requests.
+      axios.post.mockImplementationOnce(() =>
+        Promise.resolve(mockedSuccessfulTokenResponse)
+      );
+      await ilsClient.generateIlsToken();
+    });
+
     it("fails to update a patron", async () => {
       // We want to mock that we called the ILS and it did not find
       // the patron to update.
@@ -815,7 +878,7 @@ describe("IlsClient", () => {
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${ilsToken}`,
+            Authorization: `Bearer ${mockIlsToken}`,
           },
         }
       );
@@ -834,7 +897,7 @@ describe("IlsClient", () => {
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${ilsToken}`,
+            Authorization: `Bearer ${mockIlsToken}`,
           },
         }
       );
@@ -856,7 +919,7 @@ describe("IlsClient", () => {
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${ilsToken}`,
+            Authorization: `Bearer ${mockIlsToken}`,
           },
         }
       );
@@ -880,10 +943,149 @@ describe("IlsClient", () => {
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${ilsToken}`,
+            Authorization: `Bearer ${mockIlsToken}`,
           },
         }
       );
+    });
+  });
+
+  describe("generateIlsToken", () => {
+    it("throws an error without credentials", async () => {
+      const ilsClient = IlsClient({});
+
+      await expect(ilsClient.generateIlsToken()).rejects.toThrow(
+        "The ILS client was set up without a key or secret to generate a token."
+      );
+    });
+
+    it("throws an error if the ILS returned an error", async () => {
+      const ilsClient = IlsClient({ tokenUrl, ilsClientKey, ilsClientSecret });
+      axios.post.mockImplementationOnce(() =>
+        Promise.reject(mockedILSIntegrationError)
+      );
+
+      await expect(ilsClient.generateIlsToken()).rejects.toThrow(
+        "Problem calling the ILS token url, Internal server error"
+      );
+    });
+
+    it("makes a successful call and sets a token and timestamp", async () => {
+      const ilsClient = IlsClient({ tokenUrl, ilsClientKey, ilsClientSecret });
+
+      axios.post.mockImplementationOnce(() =>
+        Promise.resolve(mockedSuccessfulTokenResponse)
+      );
+
+      expect(ilsClient.hasIlsToken()).toEqual(false);
+      expect(ilsClient.isTokenExpired()).toEqual(false);
+
+      await ilsClient.generateIlsToken();
+
+      // The token is private in the IlsClient class but we can at
+      // least know if it was set or not.
+      expect(ilsClient.hasIlsToken()).toEqual(true);
+      // We have a token but it's new so it isn't expired.
+      expect(ilsClient.isTokenExpired()).toEqual(false);
+      expect(axios.post).toHaveBeenCalledWith(
+        tokenUrl,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Basic ${encode(
+              `${ilsClientKey}:${ilsClientSecret}`
+            )}`,
+          },
+        }
+      );
+    });
+  });
+
+  describe("isTokenExpired", () => {
+    it("returns false if generating a token fails", async () => {
+      const ilsClient = IlsClient({});
+
+      expect(ilsClient.isTokenExpired()).toEqual(false);
+
+      try {
+        await ilsClient.generateIlsToken();
+      } catch (error) {
+        console.log("Intentional error");
+      }
+
+      expect(ilsClient.isTokenExpired()).toEqual(false);
+    });
+
+    it("returns false if a *new* token is generated", async () => {
+      const ilsClient = IlsClient({ tokenUrl, ilsClientKey, ilsClientSecret });
+
+      axios.post.mockImplementationOnce(() =>
+        Promise.resolve(mockedSuccessfulTokenResponse)
+      );
+
+      expect(ilsClient.isTokenExpired()).toEqual(false);
+      await ilsClient.generateIlsToken();
+      expect(ilsClient.isTokenExpired()).toEqual(false);
+    });
+
+    it("returns true if the token has expired", async () => {
+      const today = new Date(2020, 10, 15);
+      const expirationDate = new Date(2020, 10, 14);
+      // We are mocking when the Date class gets called.
+      const spy = jest
+        .spyOn(global, "Date")
+        // This gets called when the ilsClient instance is created.
+        .mockReturnValueOnce(today)
+        // This gets called when creating a timestamp but we are
+        // intentionally expiring it to test the function.
+        .mockReturnValueOnce(expirationDate);
+      const ilsClient = IlsClient({ tokenUrl, ilsClientKey, ilsClientSecret });
+
+      axios.post.mockImplementationOnce(() =>
+        Promise.resolve(mockedSuccessfulTokenResponse)
+      );
+
+      expect(ilsClient.isTokenExpired()).toEqual(false);
+      await ilsClient.generateIlsToken();
+      expect(ilsClient.isTokenExpired()).toEqual(true);
+      spy.mockRestore();
+    });
+  });
+
+  // The token is private in the instance. We never know what exactly it is,
+  // but we know if there is one. That token is used to call other API
+  // endpoints.
+  describe("hasIlsToken", () => {
+    it("returns false if generating a token fails", async () => {
+      const ilsClient = IlsClient({ tokenUrl, ilsClientKey, ilsClientSecret });
+      axios.post.mockImplementationOnce(() =>
+        Promise.reject(mockedILSIntegrationError)
+      );
+
+      // No token by default.
+      expect(ilsClient.hasIlsToken()).toEqual(false);
+
+      try {
+        await ilsClient.generateIlsToken();
+      } catch (error) {
+        console.log("Intentional error");
+      }
+
+      // Still no token since an error occured.
+      expect(ilsClient.hasIlsToken()).toEqual(false);
+    });
+
+    it("returns true if a new token is generated", async () => {
+      const ilsClient = IlsClient({ tokenUrl, ilsClientKey, ilsClientSecret });
+
+      axios.post.mockImplementationOnce(() =>
+        Promise.resolve(mockedSuccessfulTokenResponse)
+      );
+
+      expect(ilsClient.hasIlsToken()).toEqual(false);
+      await ilsClient.generateIlsToken();
+      expect(ilsClient.hasIlsToken()).toEqual(true);
     });
   });
 });

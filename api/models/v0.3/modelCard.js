@@ -1,4 +1,3 @@
-/* eslint-disable */
 const UsernameValidationApi = require("../../controllers/v0.3/UsernameValidationAPI");
 const Address = require("./modelAddress");
 const Barcode = require("./modelBarcode");
@@ -47,7 +46,6 @@ const CardValidator = () => {
     }
 
     if (Object.keys(card.errors).length === 0) {
-      card.setExpirationDate();
       return { card, valid: true };
     } else {
       return { card, valid: false };
@@ -77,6 +75,10 @@ const CardValidator = () => {
     // home addresses not in NYS. If the address is not in NYS but there's
     // a work address in NYC, then grant a temporary card.
     card.cardType = card.getCardType();
+    // If the result is a temporary policy, set the card to temporary.
+    if (card.cardType.cardType === "temporary") {
+      card.setTemporary();
+    }
     // If the card is denied, return the error and don't go any further.
     if (!card.cardType.cardType) {
       card.errors["address"] = card.cardType.message;
@@ -146,7 +148,7 @@ const CardValidator = () => {
 
       const today = new Date();
       const birthdate = new Date(card.birthdate);
-      const age = today.getFullYear() - birthdate.getFullYear();
+      let age = today.getFullYear() - birthdate.getFullYear();
       const m = today.getMonth() - birthdate.getMonth();
       if (m < 0 || (m === 0 && today.getDate() < birthdate.getDate())) {
         age = age - 1;
@@ -187,6 +189,7 @@ class Card {
     this.name = args["name"];
     this.address = this.getOrCreateAddress(args["address"]);
     this.workAddress = this.getOrCreateAddress(args["workAddress"]);
+    this.location = args["location"] || "";
     this.username = args["username"];
     this.usernameHasBeenValidated = !!args["usernameHasBeenValidated"];
     this.pin = args["pin"];
@@ -261,7 +264,7 @@ class Card {
     if (!/^\d{4}$/.test(this.pin)) {
       throw new IncorrectPin();
     }
-    const validateByPolicy = ["email", "birthdate"];
+    const validateByPolicy = ["email", "birthdate", "location"];
     // Depending on the policy, some fields are required. Throw an error
     // if a required field is missing.
     validateByPolicy.forEach((attr) => {
@@ -278,7 +281,13 @@ class Card {
 
     if (validated.valid) {
       this.valid = true;
+
+      // For valid data, set the ptype.
+      this.setPtype();
+      // Now set the expiration date based on the ptype.
+      this.setExpirationDate();
     }
+
     return { valid: this.valid, errors: this.errors };
   }
 
@@ -343,12 +352,16 @@ class Card {
     return !!(this.workAddress && this.workAddress.inCity(this.policy));
   }
 
+  livesInCity() {
+    return !!this.address.inCity(this.policy);
+  }
+
   /**
    * livesOrWorksInCity()
    * Checks if the card has an address in NYC or a work address in NYC.
    */
   livesOrWorksInCity() {
-    return !!(this.address.inCity(this.policy) || this.worksInCity());
+    return !!(this.livesInCity() || this.worksInCity());
   }
 
   /**
@@ -428,10 +441,12 @@ class Card {
    * based on the current policy.
    */
   getExpirationDays() {
-    const policy = this.policy.policy;
+    const expirationPolicies = this.policy.getExpirationPoliciesForPtype(
+      this.ptype
+    );
     return this.isTemporary
-      ? policy.cardType["temporary"]
-      : policy.cardType["standard"];
+      ? expirationPolicies["temporary"]
+      : expirationPolicies["standard"];
   }
   /**
    * setExpirationDate()
@@ -494,15 +509,18 @@ class Card {
       return Card.RESPONSES["standardCard"];
     }
 
+    if (this.policy.policyType === "webApplicant") {
+      return Card.RESPONSES["temporaryCard"];
+    }
+
     // The user is denied if the card's home address is not in NY state and
     // there is no work address, or there is a work address but it's not in NYC.
     if (!this.livesInState()) {
       // If the work address is in NYC or the policy type is "webApplicant",
       // the user gets a temporary card.
-      if (this.worksInCity() || this.policy.policyType === "webApplicant") {
+      if (this.worksInCity()) {
         let reason =
           "The home address is not in New York State but the work address is in New York City.";
-        this.setTemporary();
         if (this.addressError) {
           reason = `${reason} ${this.addressError}`;
         }
@@ -523,7 +541,6 @@ class Card {
       !(this.address.inCity(this.policy) && this.address.address.isResidential)
     ) {
       let reason = "The home address is in NYC but is not residential.";
-      this.setTemporary();
       if (this.addressError) {
         reason = `${reason} ${this.addressError}`;
       }
@@ -566,7 +583,6 @@ class Card {
    */
   async createIlsPatron() {
     let response;
-    this.setPtype();
     this.setAgency();
 
     if (!this.validForIls()) {
@@ -633,7 +649,7 @@ class Card {
     const { message, reason = "" } = this.cardType;
 
     // Expiration in days.
-    const expiration = this.policy.policy.cardType["temporary"];
+    const expiration = this.getExpirationDays();
     const expirationString = `Visit your local NYPL branch within ${expiration} days to upgrade to a standard card.`;
     return `${message} ${reason} ${expirationString}`;
   }

@@ -1,15 +1,18 @@
 const IlsClient = require("../../controllers/v0.3/IlsClient");
-const logger = require("../../helpers/Logger");
+
+const lowerCase = (arr) => arr.map((item) => item.toLowerCase());
 
 /**
  * Creates a policy object to find out what type of card is allowed for a
  * given patron and their location.
  *
- * @param {object} args - Object consisting of the policy type.
+ * @param {object} args - Object consisting of the policy type. The `policyType`
+ *  is expected to be either "simplye", "webApplicant", "simplyeJuvenile".
  */
 const Policy = (args) => {
-  const lowerCase = (arr) => arr.map((item) => item.toLowerCase());
   const DEFAULT_POLICY_TYPE = "simplye";
+  const policyType =
+    args && args.policyType ? args.policyType : DEFAULT_POLICY_TYPE;
   const ALLOWED_STATES = lowerCase(["NY", "New York"]);
   const ALLOWED_COUNTIES = lowerCase([
     "Richmond",
@@ -19,22 +22,74 @@ const Policy = (args) => {
     "Bronx",
   ]);
   const ALLOWED_CITIES = lowerCase(["New York", "New York City", "NYC"]);
-  const ilsPolicy = {
+  const getExpirationPoliciesForPtype = (ptype) => {
+    let expTime;
+    switch (ptype) {
+      case IlsClient.WEB_DIGITAL_TEMPORARY:
+        expTime = {
+          standard: IlsClient.WEB_APPLICANT_EXPIRATION_TIME,
+          temporary: IlsClient.WEB_APPLICANT_EXPIRATION_TIME,
+        };
+        break;
+      case IlsClient.WEB_DIGITAL_NON_METRO:
+        expTime = {
+          standard: IlsClient.ONE_YEAR_STANDARD_EXPIRATION_TIME,
+          temporary: IlsClient.ONE_YEAR_STANDARD_EXPIRATION_TIME,
+        };
+        break;
+      case IlsClient.WEB_DIGITAL_METRO:
+        expTime = {
+          standard: IlsClient.STANDARD_EXPIRATION_TIME,
+          temporary: IlsClient.STANDARD_EXPIRATION_TIME,
+        };
+        break;
+      case IlsClient.WEB_APPLICANT_PTYPE:
+        expTime = {
+          standard: IlsClient.STANDARD_EXPIRATION_TIME,
+          temporary: IlsClient.WEB_APPLICANT_EXPIRATION_TIME,
+        };
+        break;
+      case IlsClient.SIMPLYE_JUVENILE:
+        expTime = {
+          standard: IlsClient.STANDARD_EXPIRATION_TIME,
+          temporary: IlsClient.STANDARD_EXPIRATION_TIME,
+        };
+        break;
+      case IlsClient.SIMPLYE_METRO_PTYPE:
+      case IlsClient.SIMPLYE_NON_METRO_PTYPE:
+      default:
+        expTime = {
+          standard: IlsClient.STANDARD_EXPIRATION_TIME,
+          temporary: IlsClient.TEMPORARY_EXPIRATION_TIME,
+        };
+        break;
+    }
+    return expTime;
+  };
+  const ilsPolicies = {
     simplye: {
       agency: IlsClient.DEFAULT_PATRON_AGENCY,
       ptype: {
-        metro: {
-          id: IlsClient.SIMPLYE_METRO_PTYPE,
-          desc: IlsClient.PTYPE_TO_TEXT.SIMPLYE_METRO_PTYPE,
-        },
         default: {
           id: IlsClient.SIMPLYE_NON_METRO_PTYPE,
           desc: IlsClient.PTYPE_TO_TEXT.SIMPLYE_NON_METRO_PTYPE,
         },
-      },
-      cardType: {
-        standard: IlsClient.STANDARD_EXPIRATION_TIME,
-        temporary: IlsClient.TEMPORARY_EXPIRATION_TIME,
+        metro: {
+          id: IlsClient.SIMPLYE_METRO_PTYPE,
+          desc: IlsClient.PTYPE_TO_TEXT.SIMPLYE_METRO_PTYPE,
+        },
+        digitalTemporary: {
+          id: IlsClient.WEB_DIGITAL_TEMPORARY,
+          desc: IlsClient.PTYPE_TO_TEXT.WEB_DIGITAL_TEMPORARY,
+        },
+        digitalNonMetro: {
+          id: IlsClient.WEB_DIGITAL_NON_METRO,
+          desc: IlsClient.PTYPE_TO_TEXT.WEB_DIGITAL_NON_METRO,
+        },
+        digitalMetro: {
+          id: IlsClient.WEB_DIGITAL_METRO,
+          desc: IlsClient.PTYPE_TO_TEXT.WEB_DIGITAL_METRO,
+        },
       },
       requiredFields: ["email", "barcode", "ageGate"],
       minimumAge: 13,
@@ -52,10 +107,6 @@ const Policy = (args) => {
           desc: IlsClient.PTYPE_TO_TEXT.WEB_APPLICANT_PTYPE,
         },
       },
-      cardType: {
-        standard: IlsClient.STANDARD_EXPIRATION_TIME,
-        temporary: IlsClient.WEB_APPLICANT_EXPIRATION_TIME,
-      },
       requiredFields: ["email", "barcode", "birthdate"],
       minimumAge: 13,
       serviceArea: {
@@ -72,10 +123,6 @@ const Policy = (args) => {
           desc: IlsClient.PTYPE_TO_TEXT.SIMPLYE_JUVENILE,
         },
       },
-      cardType: {
-        standard: IlsClient.STANDARD_EXPIRATION_TIME,
-        temporary: IlsClient.STANDARD_EXPIRATION_TIME,
-      },
       requiredFields: ["email", "barcode"],
       serviceArea: {
         city: ALLOWED_CITIES,
@@ -84,13 +131,11 @@ const Policy = (args) => {
       },
     },
   };
-  const policyType = args && args.policyType ? args.policyType : DEFAULT_POLICY_TYPE;
-  const policy = ilsPolicy[policyType] || ilsPolicy[DEFAULT_POLICY_TYPE];
-
-  // Return an array of named, approved patron policy schemes
-  const validTypes = Object.keys(ilsPolicy);
-  const isDefault = policyType === DEFAULT_POLICY_TYPE;
+  const policy = ilsPolicies[policyType] || ilsPolicies[DEFAULT_POLICY_TYPE];
+  // Return an array of named, approved patron policy types.
+  const validTypes = Object.keys(ilsPolicies);
   const isWebApplicant = policyType === "webApplicant";
+  const isSimplyEApplicant = policyType === "simplye";
 
   /**
    * policyField(field)
@@ -106,7 +151,8 @@ const Policy = (args) => {
    *
    * @param {string} field
    */
-  const isRequiredField = (field) => policyField("requiredFields").includes(field);
+  const isRequiredField = (field) =>
+    policyField("requiredFields").includes(field);
 
   /**
    * determinePtype(patron)
@@ -117,10 +163,9 @@ const Policy = (args) => {
    */
   const determinePtype = (patron = undefined) => {
     const ptype = policyField("ptype");
-    const hasServiceArea = policyField("serviceArea")
-      && Object.keys(policyField("serviceArea")).length;
-    const hasMetroKey = Object.keys(ptype).includes("metro");
-    if (hasServiceArea && hasMetroKey) {
+    // TODO: This is okay for now but this actually isn't used. For phase 1,
+    // only the web applicant and simplye juvenile policy types will be used.
+    if (isSimplyEApplicant) {
       if (patron.livesOrWorksInCity()) {
         return ptype.metro.id;
       }
@@ -128,41 +173,53 @@ const Policy = (args) => {
         return ptype.default.id;
       }
     }
-    return ptype.default.id;
-  };
 
-  /**
-   * usesAnApprovedPolicy()
-   * Checks if the passed policy type as the argument is a valid ILS policy.
-   *
-   */
-  const usesAnApprovedPolicy = () => {
-    const keys = Object.keys(ilsPolicy);
-    if (!keys.includes(policyType)) {
-      logger.error(
-        `${policyType} policy type is invalid, must be of type ${keys.join(
-          ", ",
-        )}`,
-      );
-      return false;
+    if (isWebApplicant) {
+      // Location is the value users select or is preselected by the client
+      // application (if the user's IP address was geolocated).
+
+      // The user is in NYS and has a home address in NYC.
+      if (patron.location === "nys" && patron.livesInCity()) {
+        return ptype.digitalMetro.id;
+      }
+      // The user is in NYS and has a home address in NYS but not in NYC. They
+      // also don't have a work address in NYC.
+      if (
+        patron.location === "nys" &&
+        !patron.livesInCity() &&
+        patron.livesInState() &&
+        !patron.worksInCity()
+      ) {
+        return ptype.digitalNonMetro.id;
+      }
+      // The user is in the United States but not in NYS. They have an address
+      // in the US or they have a work address in the US.
+      if (
+        patron.location === "us" &&
+        (!patron.livesInState() || patron.worksInCity())
+      ) {
+        return ptype.digTemp.id;
+      }
+
+      // TODO: This shouldn't happen so... how do we get the default?
+      return ptype.default.id;
     }
-    return true;
+
+    return ptype.default.id;
   };
 
   return {
     // object
-    ilsPolicy,
+    ilsPolicies,
     // variables
     policyType,
     policy,
     validTypes,
-    isDefault,
-    isWebApplicant,
     // functions
+    getExpirationPoliciesForPtype,
     policyField,
     isRequiredField,
     determinePtype,
-    usesAnApprovedPolicy,
   };
 };
 

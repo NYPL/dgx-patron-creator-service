@@ -10,7 +10,10 @@ const logger = require("./Logger");
  * @param {object} message
  */
 function renderResponse(req, res, status, message) {
-  res.status(status).header("Content-Type", "application/json").json(message);
+  return res
+    .status(status)
+    .header("Content-Type", "application/json")
+    .json(message);
 }
 
 /**
@@ -43,7 +46,7 @@ function errorResponseDataWithTag(routeTag) {
     displayMessageToClient,
   }) {
     logger.error(
-      `status: ${status}, type: ${type}, title: ${title}, detail: ${message}, routeTag: ${routeTag}`,
+      `status: ${status}, type: ${type}, title: ${title}, detail: ${message}, routeTag: ${routeTag}`
     );
 
     const response = {

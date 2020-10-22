@@ -5,10 +5,12 @@
 #### Updated
 
 - Updated how errors are handled and returned to the client. All errors are now in the Problem Detail structure which contains "status", "type", "title", "detail" for errors that are returned to the client. Internally, Error objects also contain the "message" property as well as having the option to render "message" to the client, since older clients expect that value in the returned JSON.
+- Updated the IlsClient so it handles token creation rather than having the `endpoints` file generate tokens for authenticated calls. Now the token is private in that class rather than global in the app.
 
 #### Added
 
 - Added new barcode sequence in the database for upcoming p-types.
+- Added new digital p-types.
 
 ### v0.7.4
 
