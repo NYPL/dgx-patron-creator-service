@@ -189,6 +189,7 @@ class Card {
     this.name = args["name"];
     this.address = this.getOrCreateAddress(args["address"]);
     this.workAddress = this.getOrCreateAddress(args["workAddress"]);
+    this.location = args["location"] || "";
     this.username = args["username"];
     this.usernameHasBeenValidated = !!args["usernameHasBeenValidated"];
     this.pin = args["pin"];
@@ -263,7 +264,7 @@ class Card {
     if (!/^\d{4}$/.test(this.pin)) {
       throw new IncorrectPin();
     }
-    const validateByPolicy = ["email", "birthdate"];
+    const validateByPolicy = ["email", "birthdate", "location"];
     // Depending on the policy, some fields are required. Throw an error
     // if a required field is missing.
     validateByPolicy.forEach((attr) => {
@@ -351,12 +352,16 @@ class Card {
     return !!(this.workAddress && this.workAddress.inCity(this.policy));
   }
 
+  livesInCity() {
+    return !!this.address.inCity(this.policy);
+  }
+
   /**
    * livesOrWorksInCity()
    * Checks if the card has an address in NYC or a work address in NYC.
    */
   livesOrWorksInCity() {
-    return !!(this.address.inCity(this.policy) || this.worksInCity());
+    return !!(this.livesInCity() || this.worksInCity());
   }
 
   /**

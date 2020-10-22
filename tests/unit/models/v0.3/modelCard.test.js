@@ -1537,7 +1537,7 @@ describe("Card", () => {
   });
 
   describe("getExpirationDays", () => {
-    it("it returns a standard or temporary expiration for simplye policy", () => {
+    it("returns a standard or temporary expiration for simplye policy", () => {
       const card = new Card({
         ...basicCard,
         policy: Policy({ policyType: "simplye" }),
@@ -1552,7 +1552,7 @@ describe("Card", () => {
       expect(card.getExpirationDays()).toEqual(30);
     });
 
-    it("it returns a standard or temporary expiration for webApplicant policy", () => {
+    it("returns a standard or temporary expiration for webApplicant policy", () => {
       const card = new Card({
         ...basicCard,
         policy: Policy({ policyType: "webApplicant" }),

@@ -307,6 +307,7 @@ async function createPatron(req, res) {
   const card = new Card({
     name: updatedName,
     address: address, // created above
+    location: req.body.location,
     workAddress: workAddress,
     username: req.body.username, // from req
     usernameHasBeenValidated: !!req.body.usernameHasBeenValidated,

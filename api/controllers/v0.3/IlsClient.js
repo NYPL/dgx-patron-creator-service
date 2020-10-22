@@ -459,6 +459,7 @@ IlsClient.NOTICE_PREF_FIELD_TAG = "268";
 IlsClient.NOTE_FIELD_TAG = "x";
 // Standard and temporary expiration times
 IlsClient.STANDARD_EXPIRATION_TIME = 1095; // days, 3 years
+IlsClient.ONE_YEAR_STANDARD_EXPIRATION_TIME = 365; // days, 1 year
 IlsClient.TEMPORARY_EXPIRATION_TIME = 30; // days
 IlsClient.WEB_APPLICANT_EXPIRATION_TIME = 90; // days
 // Ptypes for various library card offerings
@@ -472,6 +473,9 @@ IlsClient.SENIOR_NYS_PTYPE = 21;
 IlsClient.SIMPLYE_JUVENILE = 4;
 IlsClient.SIMPLYE_JUVENILE_ONLY = 5;
 IlsClient.SIMPLYE_YOUNG_ADULT = 6;
+IlsClient.WEB_DIGITAL_TEMPORARY = 7;
+IlsClient.WEB_DIGITAL_NON_METRO = 8;
+IlsClient.WEB_DIGITAL_METRO = 9;
 // The following two p-types don't have a code yet.
 // Using 101 for now but MUST be updated.
 IlsClient.DISABLED_METRO_NY_PTYPE = 101;
@@ -494,6 +498,9 @@ IlsClient.PTYPE_TO_TEXT = {
   SIMPLYE_JUVENILE: "SimplyE Juvenile",
   SIMPLYE_JUVENILE_ONLY: "SimplyE Juvenile Only",
   SIMPLYE_YOUNG_ADULT: "SimplyE Young Adult",
+  WEB_DIGITAL_TEMPORARY: "Web Digital Temporary",
+  WEB_DIGITAL_NON_METRO: "Web Digital Non-Metro",
+  WEB_DIGITAL_METRO: "Web Digital Metro",
   TEEN_METRO_PTYPE: "Teen Metro (3 Year)",
   TEEN_NYS_PTYPE: "Teen NY State (3 Year)",
   MARLI_PTYPE: "Marli",
