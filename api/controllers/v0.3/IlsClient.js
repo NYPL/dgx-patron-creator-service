@@ -209,7 +209,7 @@ const IlsClient = (args) => {
    */
   const createPatron = async (patron) => {
     const ilsPatron = formatPatronData(patron);
-    console.log("ilsPatron", ilsPatron);
+
     return (
       axios
         .post(createUrl, ilsPatron, {

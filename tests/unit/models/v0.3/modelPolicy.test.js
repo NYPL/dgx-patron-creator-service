@@ -106,19 +106,13 @@ describe("Policy", () => {
 
       // Check the Non-metro ptype first:
       let exptime = policy.getExpirationPoliciesForPtype(nonMetroPtype);
-
       // The standard time is 3 years or 1095 days.
       expect(exptime.standard).toEqual(1095);
-      // The temporary time is 30 days.
-      expect(exptime.temporary).toEqual(30);
 
       // Check the metro ptype next:
       exptime = policy.getExpirationPoliciesForPtype(metroPtype);
-
       // The standard time is 3 years or 1095 days.
       expect(exptime.standard).toEqual(1095);
-      // The temporary time is 30 days.
-      expect(exptime.temporary).toEqual(30);
     });
   });
 
@@ -162,32 +156,23 @@ describe("Policy", () => {
       const digitalMetro = ptypes.digitalMetro.id;
 
       let exptime = policy.getExpirationPoliciesForPtype(webApplicantPtype);
-
       // The standard time is 3 years or 1095 days.
       expect(exptime.standard).toEqual(1095);
-      // The temporary time is 90 days.
-      expect(exptime.temporary).toEqual(90);
 
       // Check the digital temporary ptype next:
       exptime = policy.getExpirationPoliciesForPtype(digitalTemporary);
-
-      // The standard and temporary time is 90 days.
+      // The standard time is 90 days.
       expect(exptime.standard).toEqual(90);
-      expect(exptime.temporary).toEqual(90);
 
       // Check the metro ptype next:
       exptime = policy.getExpirationPoliciesForPtype(digitalNonMetro);
-
-      // The standard and temporary time is 1 year or 365 days.
+      // The standard time is 1 year or 365 days.
       expect(exptime.standard).toEqual(365);
-      expect(exptime.temporary).toEqual(365);
 
       // Check the metro ptype next:
       exptime = policy.getExpirationPoliciesForPtype(digitalMetro);
-
-      // The standard and temporary time is 3 years or 1095 days.
+      // The standard time is 3 years or 1095 days.
       expect(exptime.standard).toEqual(1095);
-      expect(exptime.temporary).toEqual(1095);
     });
   });
 

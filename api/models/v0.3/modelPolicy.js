@@ -15,42 +15,24 @@ const Policy = (args) => {
     let expTime;
     switch (ptype) {
       case IlsClient.WEB_DIGITAL_TEMPORARY:
-        expTime = {
-          standard: IlsClient.WEB_APPLICANT_EXPIRATION_TIME,
-          temporary: IlsClient.WEB_APPLICANT_EXPIRATION_TIME,
-        };
+        expTime = IlsClient.WEB_APPLICANT_EXPIRATION_TIME;
         break;
       case IlsClient.WEB_DIGITAL_NON_METRO:
-        expTime = {
-          standard: IlsClient.ONE_YEAR_STANDARD_EXPIRATION_TIME,
-          temporary: IlsClient.ONE_YEAR_STANDARD_EXPIRATION_TIME,
-        };
+        expTime = IlsClient.ONE_YEAR_STANDARD_EXPIRATION_TIME;
         break;
       case IlsClient.WEB_DIGITAL_METRO:
-        expTime = {
-          standard: IlsClient.STANDARD_EXPIRATION_TIME,
-          temporary: IlsClient.STANDARD_EXPIRATION_TIME,
-        };
+        expTime = IlsClient.STANDARD_EXPIRATION_TIME;
         break;
       case IlsClient.WEB_APPLICANT_PTYPE:
-        expTime = {
-          standard: IlsClient.STANDARD_EXPIRATION_TIME,
-          temporary: IlsClient.WEB_APPLICANT_EXPIRATION_TIME,
-        };
+        expTime = IlsClient.WEB_APPLICANT_EXPIRATION_TIME;
         break;
       case IlsClient.SIMPLYE_JUVENILE:
-        expTime = {
-          standard: IlsClient.STANDARD_EXPIRATION_TIME,
-          temporary: IlsClient.STANDARD_EXPIRATION_TIME,
-        };
+        expTime = IlsClient.STANDARD_EXPIRATION_TIME;
         break;
       case IlsClient.SIMPLYE_METRO_PTYPE:
       case IlsClient.SIMPLYE_NON_METRO_PTYPE:
       default:
-        expTime = {
-          standard: IlsClient.STANDARD_EXPIRATION_TIME,
-          temporary: IlsClient.TEMPORARY_EXPIRATION_TIME,
-        };
+        expTime = IlsClient.STANDARD_EXPIRATION_TIME;
         break;
     }
     return expTime;
@@ -150,30 +132,39 @@ const Policy = (args) => {
       return;
     }
 
+    // TODO: Verify this - a card is denied if the user doesn't have an address
+    // in the US or their geolocation is empty.
+    if (!card.livesInUS || card.location === "") {
+      return;
+    }
+
     // We now assume the policy is "webApplicant".
 
     // Location is the value from a user's IP address after passing through a
     // geolocation API. If the IP address check failed, the default will be the
     // value of "us" and that defaults to a temporary card.
 
-    // The user's location is in NYS (including NYC) and has a
-    // home address in NYC.
+    // The user's location is in NYS (including NYC) and has a home address
+    // in NYC. Also, there were no errors validating against Service Objects.
     if (
       (card.location === "nyc" || card.location === "nys") &&
       card.livesInNYCity() &&
-      card.addressIsResidential()
+      card.addressIsResidential() &&
+      card.addressHasBeenValidated()
     ) {
       return ptype.digitalMetro.id;
     }
 
     // The user is in NYS and has a home address in NYS but not in NYC. They
-    // also don't have a work address in NYC.
+    // also don't have a work address in NYC. Also, there were no errors
+    // validating against Service Objects.
     if (
       card.location === "nys" &&
       !card.livesInNYCity() &&
       card.livesInNYState() &&
       !card.worksInNYCity() &&
-      card.addressIsResidential()
+      card.addressIsResidential() &&
+      card.addressHasBeenValidated()
     ) {
       return ptype.digitalNonMetro.id;
     }

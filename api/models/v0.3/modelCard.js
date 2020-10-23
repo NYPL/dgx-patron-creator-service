@@ -1,7 +1,7 @@
 const UsernameValidationApi = require("../../controllers/v0.3/UsernameValidationAPI");
 const Address = require("./modelAddress");
 const Barcode = require("./modelBarcode");
-const { strToBool } = require("../../helpers/utils");
+const { strToBool, normalizedBirthdate } = require("../../helpers/utils");
 const {
   DatabaseError,
   InvalidRequest,
@@ -29,7 +29,7 @@ class Card {
     this.usernameHasBeenValidated = !!args.usernameHasBeenValidated;
     this.pin = args.pin;
     this.email = args.email;
-    this.birthdate = this.normalizedBirthdate(args.birthdate);
+    this.birthdate = normalizedBirthdate(args.birthdate);
     this.ageGate = strToBool(args.ageGate);
     this.ecommunicationsPref = !!args.ecommunicationsPref;
     this.policy = args.policy;
@@ -42,10 +42,8 @@ class Card {
     this.ilsClient = args.ilsClient;
 
     this.errors = {};
-    this.addressError = "";
 
     // Attributes set during processing
-    this.isTemporary = false;
     this.barcode = undefined;
     this.ptype = undefined;
     this.patronId = undefined;
@@ -133,12 +131,15 @@ class Card {
     // Validating the home address and an optional work address:
     await this.validateAddresses();
 
+    // No errors! Set the ptype, the expiration date, and the patron agency.
     if (Object.keys(this.errors).length === 0) {
       this.valid = true;
       // For valid data, set the ptype.
       this.setPtype();
       // Now set the expiration date based on the ptype.
       this.setExpirationDate();
+      // Set the patron agency for this card.
+      this.setAgency();
     }
 
     return { valid: this.valid, errors: this.errors };
@@ -185,6 +186,14 @@ class Card {
   }
 
   /**
+   * livesInNYCity()
+   * Checks if the card has a home address in NYC.
+   */
+  livesInNYCity() {
+    return !!this.address.inNYCity();
+  }
+
+  /**
    * worksInNYCity()
    * Checks if the card has a work address in NYC.
    */
@@ -192,40 +201,29 @@ class Card {
     return !!(this.workAddress && this.workAddress.inNYCity());
   }
 
-  livesInNYCity() {
-    return !!this.address.inNYCity();
-  }
-
   /**
-   * livesOrWorksInNYCity()
-   * Checks if the card has an address in NYC or a work address in NYC.
+   * livesInNYState()
+   * Checks if the card has a home address in NYS. Note, we don't need to check
+   * that the card has a work address in NYS.
    */
-  livesOrWorksInNYCity() {
-    return !!(this.livesInNYCity() || this.worksInNYCity());
+  livesInNYState() {
+    return this.address.inNYState();
   }
 
   /**
    * livesInUS
-   * Checks if the card has an address in the US.
+   * Checks if the card has a home address in the US.
    */
   livesInUS() {
     return this.address.inUS();
   }
 
   /**
-   * livesInUS
-   * Checks if the card has an address in the US.
+   * worksInUS
+   * Checks if the card has an work address in the US.
    */
   worksInUS() {
     return this.workAddress.inUS();
-  }
-
-  /**
-   * livesInNYState()
-   * Checks if the card has an address in NY state.
-   */
-  livesInNYState() {
-    return this.address.inNYState();
   }
 
   /**
@@ -257,13 +255,24 @@ class Card {
    * Sets this card's barcode to the next available barcode in the ILS.
    */
   async setBarcode() {
-    // TODO: Get/set barcode values based on ptype when that's settled.
-    // For now this is mocked.
-    const barcodeStartSequence = "288888"; // "25555";
+    let barcodeStartSequence;
+    if ([7, 8, 9].includes(this.ptype)) {
+      // WEB_DIGITAL_TEMPORARY, WEB_DIGITAL_NON_METRO, and WEB_DIGITAL_METRO
+      // ptypes get barcodes with this starting sequence.
+      barcodeStartSequence = "25555";
+    } else if (this.ptype === 4) {
+      // SIMPLYE_JUVENILE ptype gets barcodes with this starting sequence.
+      barcodeStartSequence = "288888";
+    } else {
+      throw new DatabaseError("No barcode can be generated for this ptype.");
+    }
+
     const barcode = new Barcode({ ilsClient: this.ilsClient });
+    // Let's try to generate a barcode.
     this.barcode = await barcode.getNextAvailableBarcode(barcodeStartSequence);
 
-    // Throw an error so no attempt to create the patron in the ILS is made.
+    // If there was a problem generating a barcode, throw an error so no
+    // attempt to create the patron in the ILS is made.
     if (!this.barcode) {
       throw new DatabaseError(
         "Could not generate a new barcode. Please try again."
@@ -300,26 +309,14 @@ class Card {
   }
 
   /**
-   * setTemporary()
-   * Sets the current card to temporary.
-   */
-  setTemporary() {
-    this.isTemporary = true;
-  }
-
-  /**
-   * getExpirationDays()
+   * getExpirationTime()
    * Get the number of days that the current card is set to expired
    * based on the current policy.
    */
-  getExpirationDays() {
-    const expirationPolicies = this.policy.getExpirationPoliciesForPtype(
-      this.ptype
-    );
-    return this.isTemporary
-      ? expirationPolicies["temporary"]
-      : expirationPolicies["standard"];
+  getExpirationTime() {
+    return this.policy.getExpirationPoliciesForPtype(this.ptype);
   }
+
   /**
    * setExpirationDate()
    * Set's the expiration date for the account based on the current policy and
@@ -329,7 +326,7 @@ class Card {
    */
   setExpirationDate() {
     const now = new Date();
-    const policyDays = this.getExpirationDays();
+    const policyDays = this.getExpirationTime();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
     const currentDay = now.getDate();
@@ -340,99 +337,6 @@ class Card {
     );
 
     this.expirationDate = expirationDate;
-  }
-
-  /**
-   * checkWorkType()
-   * This is used in the /validations/address endpoint only.
-   * The `address` is used as a work address, so never return a standard
-   * card. Now check if the work address is in the city. If it is,
-   * it is a temporary card, otherwise it's denied.
-   */
-  checkWorkType() {
-    return this.address.inNYCity()
-      ? Card.RESPONSES["temporaryCard"]
-      : Card.RESPONSES["cardDenied"];
-  }
-
-  /**
-   * getCardType()
-   * Returns an object response with what type of card, based on the policy and
-   * the patron's address, is processed.
-   * - "SimplyE Juveniles" always get a standard card.
-   * - "Web applicants" get a temporary card or standard card:
-   *   temporary - 1 - if the home address is not in NYS but the work address
-   *           is in NYC.
-   *             - 2 - if they are in NYS but the address is not residential
-   *   standard - the patron is in NYS and has a residential home address,
-   *           regardless if they have a work address or not.
-   * - "Simplye" applicants get a denied, temporary, or standard card:
-   *   denied - if the home address is not in NYS and there is no work address
-   *           or the work address is not in NYC.
-   *   temporary - 1 - if the home address is not in NYS but the work address
-   *           is in NYC.
-   *             - 2 - if they are in NYC but the address is not residential
-   *   standard - the patron is in NYC and has a residential home address,
-   *           regardless if they have a work address or not.
-   */
-  getCardType() {
-    // This policy type always get a standard card.
-    if (this.policy.policyType === "simplyeJuvenile") {
-      return Card.RESPONSES["standardCard"];
-    }
-
-    if (this.policy.policyType === "webApplicant") {
-      return Card.RESPONSES["temporaryCard"];
-    }
-
-    // The user is denied if the card's home address is not in NY state and
-    // there is no work address, or there is a work address but it's not in NYC.
-    if (!this.livesInNYState()) {
-      // If the work address is in NYC or the policy type is "webApplicant",
-      // the user gets a temporary card.
-      if (this.worksInNYCity()) {
-        let reason =
-          "The home address is not in New York State but the work address is in New York City.";
-        if (this.addressError) {
-          reason = `${reason} ${this.addressError}`;
-        }
-
-        return {
-          ...Card.RESPONSES["temporaryCard"],
-          reason,
-        };
-      }
-
-      return Card.RESPONSES["cardDenied"];
-    }
-
-    // The user is in NYS. We must make sure they are in NYC and their address
-    // is residential for a standard card. Otherwise, the user gets a
-    // temporary card.
-    if (!(this.address.inNYCity() && this.address.address.isResidential)) {
-      let reason = "The home address is in NYC but is not residential.";
-      if (this.addressError) {
-        reason = `${reason} ${this.addressError}`;
-      }
-
-      return {
-        ...Card.RESPONSES["temporaryCard"],
-        reason,
-      };
-    }
-
-    return Card.RESPONSES["standardCard"];
-  }
-
-  /**
-   * normalizedBirthdate(birthdate)
-   * Convert a MM/DD/YYYY date string to a Date object.
-   */
-  normalizedBirthdate(birthdate) {
-    if (birthdate) {
-      return new Date(birthdate);
-    }
-    return;
   }
 
   /**
@@ -453,7 +357,6 @@ class Card {
    */
   async createIlsPatron() {
     let response;
-    this.setAgency();
 
     // To prevent calling this function before validating the data and
     // setting a ptype.
@@ -461,13 +364,12 @@ class Card {
       throw new NotILSValid("The card has not been validated or has no ptype.");
     }
 
-    // The barcode is required for all ptypes we will assign. If no barcode
+    // The barcode is required for all ptypes that we can assign. If no barcode
     // is created, an error will be thrown and the patron won't be created
     // in the ILS.
     await this.setBarcode();
 
-    // Now create the patron in the ILS.
-    console.log("this card", this);
+    // Great, we have a barcode, now attempt to create the patron in the ILS.
     try {
       response = await this.ilsClient.createPatron(this);
       this.setPatronId(response.data);
@@ -488,12 +390,9 @@ class Card {
    */
   details() {
     let details = {
-      type: "card-granted",
       barcode: this.barcode,
       username: this.username,
       pin: this.pin,
-      temporary: this.isTemporary,
-      detail: this.selectMessage(),
     };
 
     if (this.patronId) {
@@ -504,23 +403,6 @@ class Card {
     }
 
     return details;
-  }
-
-  /**
-   * selectMessage()
-   * Returns the appropriate message based on the card's validity or errors.
-   */
-  selectMessage() {
-    if (!this.isTemporary) {
-      return this.cardType.message;
-    }
-
-    const { message, reason = "" } = this.cardType;
-
-    // Expiration in days.
-    const expiration = this.getExpirationDays();
-    const expirationString = `Visit your local NYPL branch within ${expiration} days to upgrade to a standard card.`;
-    return `${message} ${reason} ${expirationString}`;
   }
 
   async validateAddresses() {
@@ -538,21 +420,6 @@ class Card {
       // The work address needs to be valid for a card. It's okay if the
       // work address is not valid, use the home address only instead.
       await this.validateAddress("workAddress");
-    }
-
-    // Now the card object has updated home and work addresses that have been
-    // validated by Service Objects. Now check to see what type of card the
-    // patron gets based on the policy and addresses. It will be denied for
-    // home addresses not in NYS. If the address is not in NYS but there's
-    // a work address in NYC, then grant a temporary card.
-    this.cardType = this.getCardType();
-    // If the result is a temporary policy, set the card to temporary.
-    if (this.cardType.cardType === "temporary") {
-      this.setTemporary();
-    }
-    // If the card is denied, return the error and don't go any further.
-    if (!this.cardType.cardType) {
-      this.errors["address"] = this.cardType.message;
     }
   }
 
@@ -576,14 +443,6 @@ class Card {
     // Otherwise, let's make a call to Service Objects.
     let addressResponse = await this[addressType].validate();
 
-    // If there's an `error` property in `addressResponse`, then this will be
-    // skipped. The address could not be validated but the naive "is the
-    // address in NYC or NYS" checks are still done in `getCardType`.
-    if (addressResponse.error) {
-      this.addressError =
-        "There was an error verifying the address through Service Objects.";
-    }
-
     if (addressResponse.address) {
       // The validated address from SO is not an Address object, so create it:
       const address = new Address(
@@ -597,7 +456,7 @@ class Card {
       this[addressType] = address;
     } else if (addressResponse.addresses) {
       this.errors[addressType] = {
-        detail: Card.RESPONSES.cardDeniedMultipleAddresses.message,
+        detail: Card.RESPONSES.cardDeniedMultipleAddresses.detail,
         addresses: addressResponse.addresses,
       };
     }
@@ -610,7 +469,9 @@ class Card {
   validateBirthdate() {
     const minAge = this.policy.policyField("minimumAge");
     const today = new Date();
-    const birthdate = new Date(this.birthdate);
+    // `this.birthdate` should already be a Date object. The field is checked
+    // before this function is called so this should never be undefined.
+    const birthdate = this.birthdate;
     let age = today.getFullYear() - birthdate.getFullYear();
     const m = today.getMonth() - birthdate.getMonth();
     if (m < 0 || (m === 0 && today.getDate() < birthdate.getDate())) {
@@ -628,22 +489,22 @@ class Card {
 Card.RESPONSES = {
   cardDenied: {
     cardType: null,
-    message:
+    detail:
       "Library cards are only available for residents of New York State or students and commuters working in New York City.",
   },
   cardDeniedMultipleAddresses: {
     cardType: null,
-    message:
+    detail:
       "The entered address is ambiguous and will not result in a library card.",
   },
   temporaryCard: {
     cardType: "temporary",
-    message: "The library card will be a temporary library card.",
+    detail: "The library card will be a temporary library card.",
   },
   standardCard: {
     cardType: "standard",
-    message: "The library card will be a standard library card.",
+    detail: "The library card will be a standard library card.",
   },
 };
 
-module.exports = { Card };
+module.exports = Card;

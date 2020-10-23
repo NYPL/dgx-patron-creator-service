@@ -89,6 +89,9 @@ const updateJuvenileName = (name, parentArrayName = []) => {
   return updatedName;
 };
 
+const nyCities = ["New York", "New York City", "NYC"];
+const nyCounties = ["Richmond", "Queens", "New York", "Kings", "Bronx"];
+const nyStates = ["NY", "New York"];
 const listOfStates = [
   "Alabama",
   "Alaska",
@@ -157,10 +160,25 @@ const listOfStates = [
  */
 const lowerCaseArray = (arr) => arr.map((item) => item.toLowerCase());
 
+/**
+ * normalizedBirthdate(birthdate)
+ * Convert a MM/DD/YYYY date string to a Date object.
+ */
+const normalizedBirthdate = (birthdate) => {
+  if (birthdate) {
+    return new Date(birthdate);
+  }
+  return;
+};
+
 module.exports = {
   strToBool,
   normalizeName,
   updateJuvenileName,
   lowerCaseArray,
-  listOfStates,
+  allowedCities: lowerCaseArray(nyCities),
+  allowedCounties: lowerCaseArray(nyCounties),
+  allowedStates: lowerCaseArray(nyStates),
+  allStates: lowerCaseArray(listOfStates),
+  normalizedBirthdate,
 };

@@ -3,8 +3,10 @@ const isEmpty = require("underscore").isEmpty;
 const { SONoLicenseKeyError } = require("../../helpers/errors");
 const {
   strToBool,
-  lowerCaseArray,
-  listOfStates,
+  allowedCities,
+  allowedCounties,
+  allowedStates,
+  allStates,
 } = require("../../helpers/utils");
 
 /**
@@ -26,17 +28,6 @@ class Address {
     this.soLicenseKey = soLicenseKey;
     // Set in the API call or through the request body.
     this.hasBeenValidated = strToBool(args.hasBeenValidated);
-
-    this.ALLOWED_STATES = lowerCaseArray(["NY", "New York"]);
-    this.ALLOWED_COUNTIES = lowerCaseArray([
-      "Richmond",
-      "Queens",
-      "New York",
-      "Kings",
-      "Bronx",
-    ]);
-    this.ALLOWED_CITIES = lowerCaseArray(["New York", "New York City", "NYC"]);
-    this.ALL_STATES = lowerCaseArray(listOfStates);
   }
 
   /**
@@ -44,7 +35,7 @@ class Address {
    * Checks if the address is in the United States.
    */
   inUS() {
-    return this.ALL_STATES.includes(this.address.state.toLowerCase());
+    return allStates.includes(this.address.state.toLowerCase());
   }
 
   /**
@@ -52,7 +43,7 @@ class Address {
    * Checks to see if the address is in the New York state.
    */
   inNYState() {
-    return this.ALLOWED_STATES.includes(this.address.state.toLowerCase());
+    return allowedStates.includes(this.address.state.toLowerCase());
   }
 
   /**
@@ -61,8 +52,8 @@ class Address {
    */
   inNYCity() {
     return (
-      this.ALLOWED_CITIES.includes(this.address.city.toLowerCase()) ||
-      this.ALLOWED_COUNTIES.includes(this.address.county.toLowerCase())
+      allowedCities.includes(this.address.city.toLowerCase()) ||
+      allowedCounties.includes(this.address.county.toLowerCase())
     );
   }
 

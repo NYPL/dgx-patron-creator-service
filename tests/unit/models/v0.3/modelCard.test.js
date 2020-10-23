@@ -1,6 +1,5 @@
 /* eslint-disable jest/no-disabled-tests */
-const { Card } = require("../../../../api/models/v0.3/modelCard");
-
+const Card = require("../../../../api/models/v0.3/modelCard");
 const Policy = require("../../../../api/models/v0.3/modelPolicy");
 const Address = require("../../../../api/models/v0.3/modelAddress");
 const UsernameValidationAPI = require("../../../../api/controllers/v0.3/UsernameValidationAPI");
@@ -618,11 +617,6 @@ describe.skip("Card", () => {
   });
 
   describe("Init", () => {
-    it("should not set a temporary card by default", () => {
-      const card = new Card(basicCard);
-      expect(card.isTemporary).toEqual(false);
-    });
-
     it("should set homeLibraryCard to 'eb' by default", () => {
       // `basicCard` does not have a homeLibraryCard value.
       let card = new Card(basicCard);
@@ -1134,82 +1128,6 @@ describe.skip("Card", () => {
     });
   });
 
-  // If they have a resident address, is it in NYC?
-  // If not, do they work in NYC?
-  describe("livesOrWorksInNYCity", () => {
-    const simplyePolicy = Policy();
-    const webApplicant = Policy({ policyType: "webApplicant" });
-
-    const addressInNYCity = new Address(
-      {
-        line1: "street address",
-        city: "New York",
-        state: "New York",
-      },
-      "soLicenseKey"
-    );
-
-    it("returns false because they do not live in NYC", () => {
-      const card = new Card({
-        ...basicCard,
-        address: new Address({ city: "Albany" }, "soLicenseKey"),
-        policy: simplyePolicy,
-      });
-      const cardWeb = new Card({
-        ...basicCard,
-        address: new Address({ city: "Albany" }, "soLicenseKey"),
-        policy: webApplicant,
-      });
-      expect(card.livesOrWorksInNYCity()).toEqual(false);
-      expect(cardWeb.livesOrWorksInNYCity()).toEqual(false);
-    });
-
-    it("returns true because they do not live in NYC but work there", () => {
-      const card = new Card({
-        ...basicCard,
-        address: new Address({ city: "Albany" }, "soLicenseKey"),
-        workAddress: addressInNYCity,
-        policy: simplyePolicy,
-      });
-      const cardWeb = new Card({
-        ...basicCard,
-        address: new Address({ city: "Albany" }, "soLicenseKey"),
-        workAddress: addressInNYCity,
-        policy: webApplicant,
-      });
-      expect(card.livesOrWorksInNYCity()).toEqual(true);
-      expect(cardWeb.livesOrWorksInNYCity()).toEqual(true);
-    });
-
-    it("returns true if they live in NYC regardless of work address", () => {
-      let card = new Card({
-        ...basicCard,
-        policy: simplyePolicy,
-      });
-      expect(card.livesOrWorksInNYCity()).toEqual(true);
-
-      card = new Card({
-        ...basicCard,
-        workAddress: addressInNYCity,
-        policy: simplyePolicy,
-      });
-      expect(card.livesOrWorksInNYCity()).toEqual(true);
-
-      let cardWeb = new Card({
-        ...basicCard,
-        policy: webApplicant,
-      });
-      expect(cardWeb.livesOrWorksInNYCity()).toEqual(true);
-
-      cardWeb = new Card({
-        ...basicCard,
-        workAddress: addressInNYCity,
-        policy: webApplicant,
-      });
-      expect(cardWeb.livesOrWorksInNYCity()).toEqual(true);
-    });
-  });
-
   // Are they in NY state?
   describe("livesInNYState", () => {
     const simplyePolicy = Policy();
@@ -1443,48 +1361,15 @@ describe.skip("Card", () => {
     });
   });
 
-  describe("setTemporary", () => {
-    it("should not be temporary by default and set to temporary when called", () => {
-      const card = new Card(basicCard);
-
-      expect(card.isTemporary).toEqual(false);
-      card.setTemporary();
-      expect(card.isTemporary).toEqual(true);
-    });
-  });
-
-  describe("getExpirationDays", () => {
-    it("returns a standard or temporary expiration for simplye policy", () => {
+  describe("getExpirationTime", () => {
+    it("returns an expiration time for simplye policy", () => {
       const card = new Card({
         ...basicCard,
         policy: Policy({ policyType: "simplye" }),
       });
 
       // A standard card has an expiration of 3 years or 1095 days.
-      expect(card.isTemporary).toEqual(false);
-      expect(card.getExpirationDays()).toEqual(1095);
-
-      // A temporary card has an expiration of 30 days.
-      card.isTemporary = true;
-      expect(card.getExpirationDays()).toEqual(30);
-    });
-
-    it.skip("returns a standard or temporary expiration for webApplicant policy", () => {
-      const card = new Card({
-        ...basicCard,
-        policy: Policy({ policyType: "webApplicant" }),
-      });
-
-      // We need to set the ptype first before finding the expiration dates.
-      card.setPtype();
-
-      // A standard card has an expiration of 1095 days (3 years).
-      expect(card.isTemporary).toEqual(false);
-      expect(card.getExpirationDays()).toEqual(1095);
-
-      // A temporary card has an expiration of 90 days.
-      card.isTemporary = true;
-      expect(card.getExpirationDays()).toEqual(90);
+      expect(card.getExpirationTime()).toEqual(1095);
     });
   });
 
@@ -1506,7 +1391,6 @@ describe.skip("Card", () => {
         .mockReturnValueOnce(today)
         .mockReturnValueOnce(expirationDate);
 
-      simplyeCard.isTemporary = true;
       simplyeCard.setExpirationDate();
       expect(simplyeCard.expirationDate).toEqual(expirationDate);
       spy.mockRestore();
@@ -1520,7 +1404,6 @@ describe.skip("Card", () => {
         .mockReturnValue(today)
         .mockReturnValue(expirationDate);
 
-      simplyeCard.isTemporary = false;
       simplyeCard.setExpirationDate();
       expect(simplyeCard.expirationDate).toEqual(expirationDate);
       spy.mockRestore();
@@ -1534,7 +1417,6 @@ describe.skip("Card", () => {
         .mockReturnValue(today)
         .mockReturnValue(expirationDate);
 
-      expect(webCard.isTemporary).toEqual(false);
       webCard.setExpirationDate();
       expect(webCard.expirationDate).toEqual(expirationDate);
       spy.mockRestore();
@@ -1548,63 +1430,9 @@ describe.skip("Card", () => {
         .mockReturnValue(today)
         .mockReturnValue(expirationDate);
 
-      webCard.isTemporary = true;
       webCard.setExpirationDate();
       expect(webCard.expirationDate).toEqual(expirationDate);
       spy.mockRestore();
-    });
-  });
-
-  // This is used in the /validations/address endpoint only. This assumes that
-  // the `address` is meant to be a work address, so only a temporary or
-  // a denied response will be returned.
-  describe("checkWorkType", () => {
-    const workAddressInNYC = new Address({
-      line1: "476 5th Avenue",
-      city: "New York",
-      state: "NY",
-      zip: "10018",
-    });
-    const workAddressNotInNYC = new Address({
-      line1: "1234 1st",
-      city: "Hoboken",
-      state: "NJ",
-    });
-    it("should return a denied response for an address not in NYC", () => {
-      const simplyeCard = new Card({
-        ...basicCard,
-        address: workAddressNotInNYC,
-        policy: Policy({ policyType: "simplye" }),
-      });
-      const webApplicantCard = new Card({
-        ...basicCard,
-        address: workAddressNotInNYC,
-        policy: Policy({ policyType: "webApplicant" }),
-      });
-
-      expect(simplyeCard.checkWorkType()).toEqual({
-        cardType: null,
-        message:
-          "Library cards are only available for residents of New York State or students and commuters working in New York City.",
-      });
-      expect(webApplicantCard.checkWorkType()).toEqual({
-        cardType: null,
-        message:
-          "Library cards are only available for residents of New York State or students and commuters working in New York City.",
-      });
-    });
-
-    it("should return a temporary response for an address in NYC", () => {
-      const simplyeCard = new Card({
-        ...basicCard,
-        address: workAddressInNYC,
-        policy: Policy({ policyType: "simplye" }),
-      });
-
-      expect(simplyeCard.checkWorkType()).toEqual({
-        cardType: "temporary",
-        message: "The library card will be a temporary library card.",
-      });
     });
   });
 
@@ -1972,8 +1800,6 @@ describe.skip("Card", () => {
     });
 
     it("returns a temporary card message", () => {
-      // mocked for now
-      card.isTemporary = true;
       card.cardType = card.getCardType();
       const details = card.details();
 
@@ -2018,7 +1844,6 @@ describe.skip("Card", () => {
         policy: Policy({ policyType: "webApplicant" }),
       });
 
-      card.isTemporary = true;
       card.setPtype();
       card.cardType = card.getCardType();
       expect(card.selectMessage()).toEqual(
@@ -2037,7 +1862,6 @@ describe.skip("Card", () => {
         policy: simplyePolicy,
       });
 
-      card.isTemporary = true;
       card.cardType = card.getCardType();
       expect(card.selectMessage()).toEqual(
         "The library card will be a temporary library card. The home address is not in New York State but the work address is in New York City. Visit your local NYPL branch within 30 days to upgrade to a standard card."
@@ -2055,7 +1879,6 @@ describe.skip("Card", () => {
         policy: simplyePolicy,
       });
 
-      card.isTemporary = true;
       card.cardType = card.getCardType();
       expect(card.selectMessage()).toEqual(
         "The library card will be a temporary library card. The home address is in NYC but is not residential. Visit your local NYPL branch within 30 days to upgrade to a standard card."
@@ -2073,7 +1896,6 @@ describe.skip("Card", () => {
         policy: simplyePolicy,
       });
 
-      card.isTemporary = true;
       card.cardType = card.getCardType();
       expect(card.selectMessage()).toEqual(
         "Library cards are only available for residents of New York State or students and commuters working in New York City.  Visit your local NYPL branch within 30 days to upgrade to a standard card."
@@ -2092,7 +1914,6 @@ describe.skip("Card", () => {
         policy: simplyePolicy,
       });
 
-      card.isTemporary = true;
       card.cardType = card.getCardType();
       expect(card.selectMessage()).toEqual(
         "Library cards are only available for residents of New York State or students and commuters working in New York City.  Visit your local NYPL branch within 30 days to upgrade to a standard card."

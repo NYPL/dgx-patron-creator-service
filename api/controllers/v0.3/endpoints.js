@@ -4,7 +4,7 @@ const IlsClient = require("./IlsClient");
 const modelStreamPatron = require("./../../models/v0.3/modelStreamPatron.js");
 const streamPublish = require("./../../helpers/streamPublish");
 const logger = require("../../helpers/Logger");
-const { Card } = require("../../models/v0.3/modelCard");
+const Card = require("../../models/v0.3/modelCard");
 const Address = require("../../models/v0.3/modelAddress");
 const Policy = require("../../models/v0.3/modelPolicy");
 const {
@@ -208,8 +208,6 @@ async function checkUsername(req, res) {
 async function checkAddress(req, res) {
   let addressResponse;
   try {
-    const isWorkAddress = req.body.isWorkAddress || false;
-    const policyType = req.body.policyType || "simplye";
     const address = new Address(req.body.address, soLicenseKey);
     let validatedAddress = await address.validate();
     let policyResponse = {};
@@ -229,31 +227,14 @@ async function checkAddress(req, res) {
           ...collectErrorResponseData(invalidError),
         };
       }
-      // If only one address is returned, attempt to get the policy response
-      // from a Card instance and the validated address or original address.
-    } else if (!validatedAddress.addresses) {
-      // Initialize a patron/card object _just_ to determine cardType by policy.
-      // We don't and can't actually validate this patron/card object since
-      // the rest of the needed values are not part of this call (i.e. name,
-      // username, etc).
-      const card = new Card({
-        // The response address is the SO validated one. If SO threw an error or
-        // returned multiple addresses, just use the original address
-        address: validatedAddress.address || address,
-        policy: Policy({ policyType }),
-      });
-      // We want to respond with the policy type so the user knows what type
-      // of card they'll get with the address they submitted.
-      policyResponse = isWorkAddress
-        ? card.checkWorkType()
-        : card.getCardType();
     } else {
+      policyResponse = Card.RESPONSES.standardCard;
+    }
+
+    if (validatedAddress.addresses && validatedAddress.addresses.length !== 0) {
       // More than one address is returned from Service Objects. The card is
       // denied until an unambiguous address is submitted.
-      policyResponse = {
-        ...Card.RESPONSES.cardDeniedMultipleAddresses,
-        detail: Card.RESPONSES.cardDeniedMultipleAddresses.message,
-      };
+      policyResponse = Card.RESPONSES.cardDeniedMultipleAddresses;
     }
 
     addressResponse = {
@@ -300,7 +281,9 @@ async function createPatron(req, res) {
     : undefined;
 
   // The default and only allowed policty type will be "webApplicant" since we
-  // are assigning the new "web digital" type p-types.
+  // are assigning the new "web digital" type p-types. At a later time after
+  // 11/20, the "simple" policy type will be passed and more p-types
+  // can be assigned.
   const policyType = "webApplicant";
   const updatedName = normalizeName(
     req.body.name,
