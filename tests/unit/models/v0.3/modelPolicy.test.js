@@ -1,6 +1,6 @@
 /* eslint-disable jest/no-disabled-tests */
 const Policy = require("../../../../api/models/v0.3/modelPolicy");
-const { Card } = require("../../../../api/models/v0.3/modelCard");
+const Card = require("../../../../api/models/v0.3/modelCard");
 const Address = require("../../../../api/models/v0.3/modelAddress");
 
 describe("Policy", () => {
@@ -19,17 +19,11 @@ describe("Policy", () => {
         "default",
         "metro",
       ]);
-      expect(policy.policyField("requiredFields")).toEqual([
-        "email",
-        "barcode",
-        "ageGate",
-      ]);
+      expect(policy.policyField("requiredFields")).toEqual(["ageGate"]);
       expect(policy.policyField("minimumAge")).toEqual(13);
     });
 
-    it("verifies that `email` and `barcode` are required fields", () => {
-      expect(policy.isRequiredField("email")).toEqual(true);
-      expect(policy.isRequiredField("barcode")).toEqual(true);
+    it("verifies that `ageGate` is a required field", () => {
       expect(policy.isRequiredField("ageGate")).toEqual(true);
     });
 
@@ -107,12 +101,12 @@ describe("Policy", () => {
       // Check the Non-metro ptype first:
       let exptime = policy.getExpirationPoliciesForPtype(nonMetroPtype);
       // The standard time is 3 years or 1095 days.
-      expect(exptime.standard).toEqual(1095);
+      expect(exptime).toEqual(1095);
 
       // Check the metro ptype next:
       exptime = policy.getExpirationPoliciesForPtype(metroPtype);
       // The standard time is 3 years or 1095 days.
-      expect(exptime.standard).toEqual(1095);
+      expect(exptime).toEqual(1095);
     });
   });
 
@@ -133,17 +127,11 @@ describe("Policy", () => {
         "digitalNonMetro",
         "digitalMetro",
       ]);
-      expect(policy.policyField("requiredFields")).toEqual([
-        "email",
-        "barcode",
-        "birthdate",
-      ]);
+      expect(policy.policyField("requiredFields")).toEqual(["birthdate"]);
       expect(policy.policyField("minimumAge")).toEqual(13);
     });
 
-    it("verifies that `email`, `barcode`, and `birthdate` are required fields", () => {
-      expect(policy.isRequiredField("email")).toEqual(true);
-      expect(policy.isRequiredField("barcode")).toEqual(true);
+    it("verifies that `birthdate` is a required field", () => {
       expect(policy.isRequiredField("birthdate")).toEqual(true);
       expect(policy.isRequiredField("ageGate")).toEqual(false);
     });
@@ -156,23 +144,23 @@ describe("Policy", () => {
       const digitalMetro = ptypes.digitalMetro.id;
 
       let exptime = policy.getExpirationPoliciesForPtype(webApplicantPtype);
-      // The standard time is 3 years or 1095 days.
-      expect(exptime.standard).toEqual(1095);
+      // The standard time is 90 days.
+      expect(exptime).toEqual(90);
 
       // Check the digital temporary ptype next:
       exptime = policy.getExpirationPoliciesForPtype(digitalTemporary);
       // The standard time is 90 days.
-      expect(exptime.standard).toEqual(90);
+      expect(exptime).toEqual(90);
 
       // Check the metro ptype next:
       exptime = policy.getExpirationPoliciesForPtype(digitalNonMetro);
       // The standard time is 1 year or 365 days.
-      expect(exptime.standard).toEqual(365);
+      expect(exptime).toEqual(365);
 
       // Check the metro ptype next:
       exptime = policy.getExpirationPoliciesForPtype(digitalMetro);
       // The standard time is 3 years or 1095 days.
-      expect(exptime.standard).toEqual(1095);
+      expect(exptime).toEqual(1095);
     });
   });
 
@@ -188,15 +176,7 @@ describe("Policy", () => {
       // Values found in IlsClient:
       expect(policy.policyField("agency")).toEqual("202");
       expect(Object.keys(policy.policyField("ptype"))).toEqual(["default"]);
-      expect(policy.policyField("requiredFields")).toEqual([
-        "email",
-        "barcode",
-      ]);
-    });
-
-    it("verifies that `email`, `barcode`, and `birthdate` are required fields", () => {
-      expect(policy.isRequiredField("email")).toEqual(true);
-      expect(policy.isRequiredField("barcode")).toEqual(true);
+      expect(policy.policyField("requiredFields")).toEqual([]);
     });
 
     it("always returns the default ptype for simplye juvenile accounts", () => {
@@ -229,8 +209,8 @@ describe("Policy", () => {
       const exptime = policy.getExpirationPoliciesForPtype(juvenilePType);
 
       // Both the standard and temporary time is 3 years or 1095 days.
-      expect(exptime.standard).toEqual(1095);
-      expect(exptime.temporary).toEqual(1095);
+      expect(exptime).toEqual(1095);
+      expect(exptime).toEqual(1095);
     });
   });
 });

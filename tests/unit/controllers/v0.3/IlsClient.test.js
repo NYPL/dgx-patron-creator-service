@@ -1,7 +1,7 @@
 /* eslint-disable jest/no-disabled-tests */
 const AddressValidationAPI = require("../../../../api/controllers/v0.3/AddressValidationAPI");
 const IlsClient = require("../../../../api/controllers/v0.3/IlsClient");
-const { Card } = require("../../../../api/models/v0.3/modelCard");
+const Card = require("../../../../api/models/v0.3/modelCard");
 const Address = require("../../../../api/models/v0.3/modelAddress");
 const Policy = require("../../../../api/models/v0.3/modelPolicy");
 const axios = require("axios");
