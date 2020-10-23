@@ -68,7 +68,7 @@ const mockedILSIntegrationError = {
   },
 };
 
-describe.skip("IlsClient", () => {
+describe("IlsClient", () => {
   beforeEach(() => {
     axios.mockClear();
   });
