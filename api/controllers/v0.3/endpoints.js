@@ -298,7 +298,10 @@ async function createPatron(req, res) {
         req.body.workAddress.hasBeenValidated
       )
     : undefined;
-  const policyType = req.body.policyType || "simplye";
+
+  // The default and only allowed policty type will be "webApplicant" since we
+  // are assigning the new "web digital" type p-types.
+  const policyType = "webApplicant";
   const updatedName = normalizeName(
     req.body.name,
     req.body.firstName,

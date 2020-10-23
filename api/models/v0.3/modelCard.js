@@ -4,175 +4,11 @@ const Barcode = require("./modelBarcode");
 const { strToBool } = require("../../helpers/utils");
 const {
   DatabaseError,
-  MissingRequiredValues,
-  IncorrectPin,
+  InvalidRequest,
   NotILSValid,
   TermsNotAccepted,
   AgeGateFailure,
 } = require("../../helpers/errors");
-
-/**
- * A validator class to verify a card's address and birthdate. Doesn't
- * directly talk to an API so it's placed in this same file as a simple class.
- */
-const CardValidator = () => {
-  const NO_ADDRESS_ERROR = "An address was not added to the card.";
-
-  /**
-   * validate(card)
-   * Validates that the card has a correct and valid address, username, email,
-   * and birthdate.
-   *
-   * @param {Card object} card
-   */
-
-  const validate = async (card) => {
-    // Will throw an error if the username is not valid.
-    const validUsername = await card.checkValidUsername();
-    if (!validUsername.available) {
-      card.errors["username"] = validUsername.response.message;
-    }
-
-    // Validating the home address and an optional work address:
-    card = await validateAddresses(card);
-
-    if (card.email && !/^[^@]+@[^@]+$/.test(card.email)) {
-      card.errors["email"] = "Email address must be valid";
-    }
-
-    if (card.birthdate) {
-      card = validateBirthdate(card);
-    }
-
-    if (Object.keys(card.errors).length === 0) {
-      return { card, valid: true };
-    } else {
-      return { card, valid: false };
-    }
-  };
-
-  const validateAddresses = async (card) => {
-    if (!card.address) {
-      card.errors["address"] = NO_ADDRESS_ERROR;
-      // There's no home address so don't bother checking the work address.
-      return card;
-    } else {
-      // The home address must be validated for a card.
-      card = await validateAddress(card, "address");
-    }
-
-    // Work Address is optional.
-    if (card.workAddress) {
-      // The work address needs to be valid for a card. It's okay if the
-      // work address is not valid, use the home address only instead.
-      card = await validateAddress(card, "workAddress");
-    }
-
-    // Now the card object has updated home and work addresses that have been
-    // validated by Service Objects. Now check to see what type of card the
-    // patron gets based on the policy and addresses. It will be denied for
-    // home addresses not in NYS. If the address is not in NYS but there's
-    // a work address in NYC, then grant a temporary card.
-    card.cardType = card.getCardType();
-    // If the result is a temporary policy, set the card to temporary.
-    if (card.cardType.cardType === "temporary") {
-      card.setTemporary();
-    }
-    // If the card is denied, return the error and don't go any further.
-    if (!card.cardType.cardType) {
-      card.errors["address"] = card.cardType.message;
-    }
-
-    return card;
-  };
-
-  /**
-   * validateAddress(card, addressType, workAddress)
-   * Returns the card object with updated validated address or errors based
-   * on policy and Service Objects verification.
-   *
-   * @param {Card object} card
-   * @param {string} addressType - "address" or "workAddress"
-   */
-  const validateAddress = async (card, addressType = "address") => {
-    // If the address has already been validated by the
-    // /api/validations/address endpoint, then don't make a request to Service
-    // Objects to validate the address. Just return the card because the
-    // address is already correct.
-    if (card[addressType].hasBeenValidated) {
-      return card;
-    }
-
-    // Otherwise, let's make a call to Service Objects.
-    let addressResponse = await card[addressType].validate();
-
-    // If there's an `error` property in `addressResponse`, then this will be
-    // skipped. The address could not be validated but the naive "is the
-    // address in NYC or NYS" checks are still done in `getCardType`.
-    if (addressResponse.error) {
-      card.addressError =
-        "There was an error verifying the address through Service Objects.";
-    }
-
-    if (addressResponse.address) {
-      // The validated address from SO is not an Address object, so create it:
-      const address = new Address(
-        {
-          ...addressResponse.address,
-          hasBeenValidated: addressResponse.address.hasBeenValidated,
-        },
-        card[addressType].soLicenseKey
-      );
-      // Reset the card's address type input to the validated version.
-      card[addressType] = address;
-    } else if (addressResponse.addresses) {
-      card.errors[addressType] = {
-        detail: Card.RESPONSES.cardDeniedMultipleAddresses.message,
-        addresses: addressResponse.addresses,
-      };
-    }
-
-    return card;
-  };
-
-  /**
-   * validateBirthdate(card)
-   * Validates the card's birthdate.
-   *
-   * @param {Card object} card
-   */
-  const validateBirthdate = (card) => {
-    if (card.requiredByPolicy("birthdate")) {
-      const minAge = card.policy.policyField("minimumAge");
-
-      const today = new Date();
-      const birthdate = new Date(card.birthdate);
-      let age = today.getFullYear() - birthdate.getFullYear();
-      const m = today.getMonth() - birthdate.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < birthdate.getDate())) {
-        age = age - 1;
-      }
-
-      if (minAge > age) {
-        card.errors[
-          "age"
-        ] = `Date of birth is below the minimum age of ${minAge}.`;
-      }
-    }
-    return card;
-  };
-
-  return {
-    // Main function to use
-    validate,
-    // Exposing to test
-    validateAddress,
-    validateAddresses,
-    validateBirthdate,
-  };
-};
-
-const cardValidator = CardValidator();
 
 /**
  * A card class to create proper Card data structure and validations
@@ -185,32 +21,31 @@ const cardValidator = CardValidator();
  */
 class Card {
   constructor(args) {
-    this.name = args["name"];
-    this.address = this.getOrCreateAddress(args["address"]);
-    this.workAddress = this.getOrCreateAddress(args["workAddress"]);
-    // will be nyc, nys, or us
-    this.location = args["location"] || "us";
-    this.username = args["username"];
-    this.usernameHasBeenValidated = !!args["usernameHasBeenValidated"];
-    this.pin = args["pin"];
-    this.email = args["email"] || "";
-    this.birthdate = this.normalizedBirthdate(args["birthdate"]);
-    this.ageGate = strToBool(args["ageGate"]);
-    this.ecommunicationsPref = !!args["ecommunicationsPref"];
-    this.policy = args["policy"] || "";
-    this.isTemporary = false;
-    this.varFields = args["varFields"] || {};
+    this.name = args.name;
+    this.address = this.getOrCreateAddress(args.address);
+    this.workAddress = this.getOrCreateAddress(args.workAddress);
+    this.location = args.location || "";
+    this.username = args.username;
+    this.usernameHasBeenValidated = !!args.usernameHasBeenValidated;
+    this.pin = args.pin;
+    this.email = args.email;
+    this.birthdate = this.normalizedBirthdate(args.birthdate);
+    this.ageGate = strToBool(args.ageGate);
+    this.ecommunicationsPref = !!args.ecommunicationsPref;
+    this.policy = args.policy;
+    this.varFields = args.varFields || {};
     // SimplyE will always set the home library to the `eb` code. Eventually,
     // the web app will pass a `homeLibraryCode` parameter with a patron's
     // home library. For now, `eb` is hardcoded.
-    this.homeLibraryCode = args["homeLibraryCode"] || "eb";
-    this.acceptTerms = strToBool(args["acceptTerms"]);
+    this.homeLibraryCode = args.homeLibraryCode || "eb";
+    this.acceptTerms = strToBool(args.acceptTerms);
+    this.ilsClient = args.ilsClient;
+
     this.errors = {};
     this.addressError = "";
 
-    this.ilsClient = args["ilsClient"];
-
     // Attributes set during processing
+    this.isTemporary = false;
     this.barcode = undefined;
     this.ptype = undefined;
     this.patronId = undefined;
@@ -241,47 +76,65 @@ class Card {
    * card's address and username against the ILS.
    */
   async validate() {
-    // First check if the terms were accepted.
+    // First check if the terms and conditions were accepted. If not, we don't
+    // bother to check the rest of the request values.
     if (!this.acceptTerms) {
       throw new TermsNotAccepted();
+    }
+
+    // These values are necessary for a Card object:
+    // name, address, email, username, pin, birthdate or ageGate.
+    // First check and return an error for any empty values.
+    if (
+      !this.name ||
+      !this.address ||
+      !this.username ||
+      !this.pin ||
+      !this.email
+    ) {
+      throw new InvalidRequest(
+        "'name', 'address', 'username', 'pin', and 'email' are all required fields."
+      );
     }
 
     // For "simplye" policy types, the user must pass through the age gate,
     // which is simply a checkbox and boolean value that the patron is over
     // the age of 13.
-    if (this.policy.policyType === "simplye" && !this.ageGate) {
+    if (this.requiredByPolicy("ageGate") && !this.ageGate) {
       throw new AgeGateFailure();
     }
-
-    // These four values are necessary for a Card object:
-    // name, address, username, pin
-    if (!this.name || !this.address || !this.username || !this.pin) {
-      throw new MissingRequiredValues(
-        "'name', 'address', 'username', and 'pin' are all required."
-      );
+    if (this.requiredByPolicy("birthdate") && !this.birthdate) {
+      throw new InvalidRequest("'birthdate' is a required field.");
     }
+
+    // Now that we have all values, validate each field and if there are any
+    // errors, collect them in the `errors` object which will be returned
+    // to the user.
+    if (this.email && !/^[^@]+@[^@]+$/.test(this.email)) {
+      this.errors["email"] = "Email address must be valid.";
+    }
+
     // The pin must be a 4 digit string. Throw an error if it's incorrect.
     if (!/^\d{4}$/.test(this.pin)) {
-      throw new IncorrectPin();
+      this.errors["pin"] =
+        "PIN should be 4 numeric characters only. Please revise your PIN.";
     }
-    const validateByPolicy = ["email", "birthdate", "location"];
-    // Depending on the policy, some fields are required. Throw an error
-    // if a required field is missing.
-    validateByPolicy.forEach((attr) => {
-      if (this.requiredByPolicy(attr) && !this[attr]) {
-        throw new MissingRequiredValues(
-          `${attr} cannot be empty for this policy type.`
-        );
-      }
-    });
 
-    // Now that all values have gone through a basic validation process,
-    // do the more in-depth validation.
-    const validated = await cardValidator.validate(this);
+    if (this.requiredByPolicy("birthdate")) {
+      this.validateBirthdate();
+    }
 
-    if (validated.valid) {
+    // Will throw an error if the username is not valid.
+    const validUsername = await this.checkValidUsername();
+    if (!validUsername.available) {
+      this.errors["username"] = validUsername.response.message;
+    }
+
+    // Validating the home address and an optional work address:
+    await this.validateAddresses();
+
+    if (Object.keys(this.errors).length === 0) {
       this.valid = true;
-
       // For valid data, set the ptype.
       this.setPtype();
       // Now set the expiration date based on the ptype.
@@ -300,19 +153,6 @@ class Card {
    * call the ILS API if it already received a value.
    */
   async checkValidUsername() {
-    this.hasValidUsername =
-      this.hasValidUsername !== undefined
-        ? this.hasValidUsername
-        : await this.checkUsernameAvailability();
-    return this.hasValidUsername;
-  }
-
-  /**
-   * checkUsernameAvailability()
-   * Verifies that the current username is valid against the
-   * UsernameValidation API.
-   */
-  async checkUsernameAvailability() {
     const { responses, validate } = UsernameValidationApi({
       ilsClient: this.ilsClient,
     });
@@ -615,28 +455,27 @@ class Card {
     let response;
     this.setAgency();
 
+    // To prevent calling this function before validating the data and
+    // setting a ptype.
     if (!this.validForIls()) {
       throw new NotILSValid("The card has not been validated or has no ptype.");
     }
 
-    // The barcode is required for `simplye`, `webApplicant`, and
-    // `simplyeJuvenile` so let's create one. If no barcode is created,
-    // an error will be thrown an the patron won't be created in the ILS.
-    if (this.policy.isRequiredField("barcode")) {
-      await this.setBarcode();
-    }
+    // The barcode is required for all ptypes we will assign. If no barcode
+    // is created, an error will be thrown and the patron won't be created
+    // in the ILS.
+    await this.setBarcode();
 
     // Now create the patron in the ILS.
+    console.log("this card", this);
     try {
       response = await this.ilsClient.createPatron(this);
       this.setPatronId(response.data);
     } catch (error) {
-      if (this.policy.isRequiredField("barcode")) {
-        // We want to catch the error from creating a patron here to be able to
-        // free up the barcode in the database. Continue to send the same error
-        // as an API response.
-        await this.freeBarcode(this.barcode);
-      }
+      // We want to catch the error from creating a patron here to be able to
+      // free up the barcode in the database. Continue to send the same error
+      // as an API response.
+      await this.freeBarcode(this.barcode);
       throw error;
     }
 
@@ -683,6 +522,107 @@ class Card {
     const expirationString = `Visit your local NYPL branch within ${expiration} days to upgrade to a standard card.`;
     return `${message} ${reason} ${expirationString}`;
   }
+
+  async validateAddresses() {
+    if (!this.address) {
+      this.errors["address"] = "An address was not added to the card.";
+      // There's no home address so don't bother checking the work address.
+      return;
+    } else {
+      // The home address must be validated for a card.
+      await this.validateAddress("address");
+    }
+
+    // Work Address is optional.
+    if (this.workAddress) {
+      // The work address needs to be valid for a card. It's okay if the
+      // work address is not valid, use the home address only instead.
+      await this.validateAddress("workAddress");
+    }
+
+    // Now the card object has updated home and work addresses that have been
+    // validated by Service Objects. Now check to see what type of card the
+    // patron gets based on the policy and addresses. It will be denied for
+    // home addresses not in NYS. If the address is not in NYS but there's
+    // a work address in NYC, then grant a temporary card.
+    this.cardType = this.getCardType();
+    // If the result is a temporary policy, set the card to temporary.
+    if (this.cardType.cardType === "temporary") {
+      this.setTemporary();
+    }
+    // If the card is denied, return the error and don't go any further.
+    if (!this.cardType.cardType) {
+      this.errors["address"] = this.cardType.message;
+    }
+  }
+
+  /**
+   * validateAddress(addressType)
+   * Returns the card object with updated validated address or errors based
+   * on policy and Service Objects verification.
+   *
+   * @param {Card object} card
+   * @param {string} addressType - "address" or "workAddress"
+   */
+  async validateAddress(addressType = "address") {
+    // If the address has already been validated by the
+    // /api/validations/address endpoint, then don't make a request to Service
+    // Objects to validate the address. Just return the card because the
+    // address is already correct.
+    if (this[addressType].hasBeenValidated) {
+      return;
+    }
+
+    // Otherwise, let's make a call to Service Objects.
+    let addressResponse = await this[addressType].validate();
+
+    // If there's an `error` property in `addressResponse`, then this will be
+    // skipped. The address could not be validated but the naive "is the
+    // address in NYC or NYS" checks are still done in `getCardType`.
+    if (addressResponse.error) {
+      this.addressError =
+        "There was an error verifying the address through Service Objects.";
+    }
+
+    if (addressResponse.address) {
+      // The validated address from SO is not an Address object, so create it:
+      const address = new Address(
+        {
+          ...addressResponse.address,
+          hasBeenValidated: addressResponse.address.hasBeenValidated,
+        },
+        this[addressType].soLicenseKey
+      );
+      // Reset the card's address type input to the validated version.
+      this[addressType] = address;
+    } else if (addressResponse.addresses) {
+      this.errors[addressType] = {
+        detail: Card.RESPONSES.cardDeniedMultipleAddresses.message,
+        addresses: addressResponse.addresses,
+      };
+    }
+  }
+
+  /**
+   * validateBirthdate
+   * Validates the card's birthdate.
+   */
+  validateBirthdate() {
+    const minAge = this.policy.policyField("minimumAge");
+    const today = new Date();
+    const birthdate = new Date(this.birthdate);
+    let age = today.getFullYear() - birthdate.getFullYear();
+    const m = today.getMonth() - birthdate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthdate.getDate())) {
+      age = age - 1;
+    }
+
+    if (minAge > age) {
+      this.errors[
+        "birthdate"
+      ] = `Date of birth is below the minimum age of ${minAge}.`;
+    }
+  }
 }
 
 Card.RESPONSES = {
@@ -706,7 +646,4 @@ Card.RESPONSES = {
   },
 };
 
-module.exports = {
-  CardValidator,
-  Card,
-};
+module.exports = { Card };

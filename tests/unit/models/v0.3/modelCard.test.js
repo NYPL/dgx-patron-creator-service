@@ -1,8 +1,5 @@
 /* eslint-disable jest/no-disabled-tests */
-const {
-  Card,
-  CardValidator,
-} = require("../../../../api/models/v0.3/modelCard");
+const { Card } = require("../../../../api/models/v0.3/modelCard");
 
 const Policy = require("../../../../api/models/v0.3/modelPolicy");
 const Address = require("../../../../api/models/v0.3/modelAddress");
@@ -54,563 +51,563 @@ const invalid = {
     "Usernames should be 5-25 characters, letters or numbers only. Please revise your username.",
 };
 
-describe("CardValidator", () => {
-  const cardValidator = CardValidator();
-  const {
-    validate,
-    validateAddress,
-    validateAddresses,
-    validateBirthdate,
-  } = cardValidator;
+// describe("CardValidator", () => {
+//   const cardValidator = CardValidator();
+//   const {
+//     validate,
+//     validateAddress,
+//     validateAddresses,
+//     validateBirthdate,
+//   } = cardValidator;
 
-  describe("validateBirthdate", () => {
-    it("returns no errors if the policy doesn't require it", () => {
-      const card = new Card({
-        ...basicCard,
-        policy: Policy({ policyType: "simplyeJuvenile" }),
-      });
+//   describe("validateBirthdate", () => {
+//     it("returns no errors if the policy doesn't require it", () => {
+//       const card = new Card({
+//         ...basicCard,
+//         policy: Policy({ policyType: "simplyeJuvenile" }),
+//       });
 
-      const validatedCard = validateBirthdate(card);
+//       const validatedCard = validateBirthdate(card);
 
-      expect(validatedCard.errors).toEqual({});
-    });
+//       expect(validatedCard.errors).toEqual({});
+//     });
 
-    it("returns no errors if the policy requires it but the birthdate is valid", () => {
-      const card = new Card({
-        ...basicCard,
-        policy: Policy({ policyType: "webApplicant" }),
-      });
+//     it("returns no errors if the policy requires it but the birthdate is valid", () => {
+//       const card = new Card({
+//         ...basicCard,
+//         policy: Policy({ policyType: "webApplicant" }),
+//       });
 
-      const validatedCard = validateBirthdate(card);
+//       const validatedCard = validateBirthdate(card);
 
-      expect(validatedCard.errors).toEqual({});
-    });
+//       expect(validatedCard.errors).toEqual({});
+//     });
 
-    it("returns an error if the policy requires it and the birthdate is not valid", () => {
-      // Only the "webApplicant" policy type requires a birthdate
-      const card = new Card({
-        ...basicCard,
-        birthdate: "01/01/2013",
-        policy: Policy({ policyType: "webApplicant" }),
-      });
+//     it("returns an error if the policy requires it and the birthdate is not valid", () => {
+//       // Only the "webApplicant" policy type requires a birthdate
+//       const card = new Card({
+//         ...basicCard,
+//         birthdate: "01/01/2013",
+//         policy: Policy({ policyType: "webApplicant" }),
+//       });
 
-      const validatedCard = validateBirthdate(card);
+//       const validatedCard = validateBirthdate(card);
 
-      expect(validatedCard.errors).toEqual({
-        age: "Date of birth is below the minimum age of 13.",
-      });
-    });
-  });
+//       expect(validatedCard.errors).toEqual({
+//         age: "Date of birth is below the minimum age of 13.",
+//       });
+//     });
+//   });
 
-  describe("validateAddress", () => {
-    it("should not call `address.validate` if the address has been validated", async () => {
-      const cardValidAddress = {
-        name: "First Last",
-        address: new Address(
-          { line1: "476th 5th Ave.", city: "New York", hasBeenValidated: true },
-          "soLicenseKey"
-        ),
-        username: "username",
-        pin: "1234",
-        // required for web applicants
-        birthdate: "01/01/1988",
-      };
-      const card = new Card({
-        ...cardValidAddress,
-        policy: Policy(),
-      });
+//   describe("validateAddress", () => {
+//     it("should not call `address.validate` if the address has been validated", async () => {
+//       const cardValidAddress = {
+//         name: "First Last",
+//         address: new Address(
+//           { line1: "476th 5th Ave.", city: "New York", hasBeenValidated: true },
+//           "soLicenseKey"
+//         ),
+//         username: "username",
+//         pin: "1234",
+//         // required for web applicants
+//         birthdate: "01/01/1988",
+//       };
+//       const card = new Card({
+//         ...cardValidAddress,
+//         policy: Policy(),
+//       });
 
-      const oldValidate = card.address.validate;
-      // The return value doesn't matter because we expect it to NOT be called.
-      const mockValidate = jest.fn().mockReturnValue("doesn't matter");
-      card.address.validate = mockValidate;
+//       const oldValidate = card.address.validate;
+//       // The return value doesn't matter because we expect it to NOT be called.
+//       const mockValidate = jest.fn().mockReturnValue("doesn't matter");
+//       card.address.validate = mockValidate;
 
-      await validateAddress(card, "address");
+//       await validateAddress(card, "address");
 
-      expect(mockValidate).not.toHaveBeenCalled();
+//       expect(mockValidate).not.toHaveBeenCalled();
 
-      // Resetting or clearing the mock isn't working so restoring it this way:
-      card.address.validate = oldValidate;
-    });
+//       // Resetting or clearing the mock isn't working so restoring it this way:
+//       card.address.validate = oldValidate;
+//     });
 
-    it("should throw an error if Service Objects threw an error", async () => {
-      const card = new Card({
-        ...basicCard,
-        policy: Policy(),
-      });
+//     it("should throw an error if Service Objects threw an error", async () => {
+//       const card = new Card({
+//         ...basicCard,
+//         policy: Policy(),
+//       });
 
-      const oldValidate = card.address.validate;
-      // `address.validate()` calls Service Objects, but mock an error.
-      const mockValidate = jest
-        .fn()
-        .mockRejectedValueOnce(new Error("Something happened in SO."));
-      card.address.validate = mockValidate;
+//       const oldValidate = card.address.validate;
+//       // `address.validate()` calls Service Objects, but mock an error.
+//       const mockValidate = jest
+//         .fn()
+//         .mockRejectedValueOnce(new Error("Something happened in SO."));
+//       card.address.validate = mockValidate;
 
-      await expect(validateAddress(card, "address")).rejects.toThrow(
-        "Something happened in SO."
-      );
-      // For the rest of the tests, since the `hasBeenValidated` flag is false,
-      // we expect the `address.validate` function to be called.
-      expect(mockValidate).toHaveBeenCalled();
+//       await expect(validateAddress(card, "address")).rejects.toThrow(
+//         "Something happened in SO."
+//       );
+//       // For the rest of the tests, since the `hasBeenValidated` flag is false,
+//       // we expect the `address.validate` function to be called.
+//       expect(mockValidate).toHaveBeenCalled();
 
-      // Resetting or clearing the mock isn't working so restoring it this way:
-      card.address.validate = oldValidate;
-    });
+//       // Resetting or clearing the mock isn't working so restoring it this way:
+//       card.address.validate = oldValidate;
+//     });
 
-    it("should not update the errors object in the card if any errors are returned", async () => {
-      const card = new Card({
-        ...basicCard,
-        workAddress: new Address({}, "soLicenseKey"),
-        policy: Policy(),
-      });
+//     it("should not update the errors object in the card if any errors are returned", async () => {
+//       const card = new Card({
+//         ...basicCard,
+//         workAddress: new Address({}, "soLicenseKey"),
+//         policy: Policy(),
+//       });
 
-      // An error is caught and returned as an object, not as a thrown error.
-      const jestMock = jest.fn().mockReturnValue({
-        error: { message: "something bad happened" },
-      });
-      const oldValidate = card.address.validate;
-      const oldWorkValidate = card.workAddress.validate;
-      card.address.validate = jestMock;
-      card.workAddress.validate = jestMock;
+//       // An error is caught and returned as an object, not as a thrown error.
+//       const jestMock = jest.fn().mockReturnValue({
+//         error: { message: "something bad happened" },
+//       });
+//       const oldValidate = card.address.validate;
+//       const oldWorkValidate = card.workAddress.validate;
+//       card.address.validate = jestMock;
+//       card.workAddress.validate = jestMock;
 
-      expect(card.errors).toEqual({});
+//       expect(card.errors).toEqual({});
 
-      // Check the card's `address` first.
-      await validateAddress(card, "address");
-      // Address errors for cards are actually okay. Those errors are
-      // looked over and a basic check to see if the address is in NYS and NYC
-      // is performed. This is because Service Objects can return errors for a
-      // bad address or can have an error in the API call. If any of that
-      // happens, we can keep going and give the user a temporary card.
-      expect(card.errors).toEqual({});
+//       // Check the card's `address` first.
+//       await validateAddress(card, "address");
+//       // Address errors for cards are actually okay. Those errors are
+//       // looked over and a basic check to see if the address is in NYS and NYC
+//       // is performed. This is because Service Objects can return errors for a
+//       // bad address or can have an error in the API call. If any of that
+//       // happens, we can keep going and give the user a temporary card.
+//       expect(card.errors).toEqual({});
 
-      // Messages get added to the `errors` object for each type of address
-      // that was checked by the `validateAddress` method. Here we check
-      // the card's `workAddress`.
-      await validateAddress(card, "workAddress");
-      expect(card.errors).toEqual({});
+//       // Messages get added to the `errors` object for each type of address
+//       // that was checked by the `validateAddress` method. Here we check
+//       // the card's `workAddress`.
+//       await validateAddress(card, "workAddress");
+//       expect(card.errors).toEqual({});
 
-      card.address.validate = oldValidate;
-      card.workAddress.validate = oldWorkValidate;
-    });
+//       card.address.validate = oldValidate;
+//       card.workAddress.validate = oldWorkValidate;
+//     });
 
-    it("should update the addresses based on typed and updated validated values", async () => {
-      const card = new Card({
-        ...basicCard,
-        address: new Address({ city: "Woodside", state: "NY" }, "soLicenseKey"),
-        workAddress: new Address(
-          { city: "New York", state: "NY" },
-          "soLicenseKey"
-        ),
-        policy: Policy(),
-      });
+//     it("should update the addresses based on typed and updated validated values", async () => {
+//       const card = new Card({
+//         ...basicCard,
+//         address: new Address({ city: "Woodside", state: "NY" }, "soLicenseKey"),
+//         workAddress: new Address(
+//           { city: "New York", state: "NY" },
+//           "soLicenseKey"
+//         ),
+//         policy: Policy(),
+//       });
 
-      const mockAddressValidate = jest.fn().mockReturnValue({
-        address: {
-          city: "Woodside",
-          state: "NY",
-          zip: "11377",
-          isResidential: true,
-          hasBeenValidated: true,
-        },
-      });
-      const mockWorkAddressValidate = jest.fn().mockReturnValue({
-        address: {
-          city: "New York",
-          state: "NY",
-          zip: "10018",
-          isResidential: false,
-          hasBeenValidated: true,
-        },
-      });
+//       const mockAddressValidate = jest.fn().mockReturnValue({
+//         address: {
+//           city: "Woodside",
+//           state: "NY",
+//           zip: "11377",
+//           isResidential: true,
+//           hasBeenValidated: true,
+//         },
+//       });
+//       const mockWorkAddressValidate = jest.fn().mockReturnValue({
+//         address: {
+//           city: "New York",
+//           state: "NY",
+//           zip: "10018",
+//           isResidential: false,
+//           hasBeenValidated: true,
+//         },
+//       });
 
-      // Mock these functions.
-      card.address.validate = mockAddressValidate;
-      card.workAddress.validate = mockWorkAddressValidate;
+//       // Mock these functions.
+//       card.address.validate = mockAddressValidate;
+//       card.workAddress.validate = mockWorkAddressValidate;
 
-      // The original `address` and `workAddress` did not have a zip code
-      // and both have `hasBeenValidated`=false.
-      expect(card.address.address).toEqual({
-        city: "Woodside",
-        county: "",
-        isResidential: false,
-        line1: "",
-        line2: "",
-        state: "NY",
-        zip: "",
-      });
-      expect(card.address.hasBeenValidated).toEqual(false);
-      expect(card.workAddress.address).toEqual({
-        city: "New York",
-        county: "",
-        isResidential: false,
-        line1: "",
-        line2: "",
-        state: "NY",
-        zip: "",
-      });
-      expect(card.workAddress.hasBeenValidated).toEqual(false);
+//       // The original `address` and `workAddress` did not have a zip code
+//       // and both have `hasBeenValidated`=false.
+//       expect(card.address.address).toEqual({
+//         city: "Woodside",
+//         county: "",
+//         isResidential: false,
+//         line1: "",
+//         line2: "",
+//         state: "NY",
+//         zip: "",
+//       });
+//       expect(card.address.hasBeenValidated).toEqual(false);
+//       expect(card.workAddress.address).toEqual({
+//         city: "New York",
+//         county: "",
+//         isResidential: false,
+//         line1: "",
+//         line2: "",
+//         state: "NY",
+//         zip: "",
+//       });
+//       expect(card.workAddress.hasBeenValidated).toEqual(false);
 
-      // Now call the validate function:
-      await validateAddress(card, "address");
-      await validateAddress(card, "workAddress");
+//       // Now call the validate function:
+//       await validateAddress(card, "address");
+//       await validateAddress(card, "workAddress");
 
-      // We expect the `card.address` object to be updated to the validated
-      // address that Service Objects returned through `address.validate`
-      // which is the function we mocked.
-      // What has changed is a new zip code, SO says it's residential only
-      // for the home address, and it's now `hasBeenValidated` = true.
-      expect(card.address.address).toEqual({
-        city: "Woodside",
-        county: "",
-        isResidential: true,
-        line1: "",
-        line2: "",
-        state: "NY",
-        zip: "11377",
-      });
-      expect(card.address.hasBeenValidated).toEqual(true);
-      expect(card.workAddress.address).toEqual({
-        city: "New York",
-        county: "",
-        isResidential: false,
-        line1: "",
-        line2: "",
-        state: "NY",
-        zip: "10018",
-      });
-      expect(card.workAddress.hasBeenValidated).toEqual(true);
-    });
+//       // We expect the `card.address` object to be updated to the validated
+//       // address that Service Objects returned through `address.validate`
+//       // which is the function we mocked.
+//       // What has changed is a new zip code, SO says it's residential only
+//       // for the home address, and it's now `hasBeenValidated` = true.
+//       expect(card.address.address).toEqual({
+//         city: "Woodside",
+//         county: "",
+//         isResidential: true,
+//         line1: "",
+//         line2: "",
+//         state: "NY",
+//         zip: "11377",
+//       });
+//       expect(card.address.hasBeenValidated).toEqual(true);
+//       expect(card.workAddress.address).toEqual({
+//         city: "New York",
+//         county: "",
+//         isResidential: false,
+//         line1: "",
+//         line2: "",
+//         state: "NY",
+//         zip: "10018",
+//       });
+//       expect(card.workAddress.hasBeenValidated).toEqual(true);
+//     });
 
-    it("should return an error if multiple addresses are returned", async () => {
-      const card = new Card({
-        ...basicCard,
-        address: new Address(
-          {
-            line1: "37 61",
-            city: "New York",
-            state: "NY",
-          },
-          "soLicenseKey"
-        ),
-        policy: Policy(),
-      });
+//     it("should return an error if multiple addresses are returned", async () => {
+//       const card = new Card({
+//         ...basicCard,
+//         address: new Address(
+//           {
+//             line1: "37 61",
+//             city: "New York",
+//             state: "NY",
+//           },
+//           "soLicenseKey"
+//         ),
+//         policy: Policy(),
+//       });
 
-      const mockAddressValidate = jest.fn().mockReturnValue({
-        addresses: [
-          {
-            line1: "37 W 61st St",
-            line2: "",
-            city: "New York",
-            county: "New York",
-            state: "NY",
-            zip: "10023-7605",
-            isResidential: false,
-            hasBeenValidated: true,
-          },
-          {
-            line1: "37 E 61st St",
-            line2: "",
-            city: "New York",
-            county: "New York",
-            state: "NY",
-            zip: "10065-8006",
-            isResidential: false,
-            hasBeenValidated: true,
-          },
-        ],
-      });
+//       const mockAddressValidate = jest.fn().mockReturnValue({
+//         addresses: [
+//           {
+//             line1: "37 W 61st St",
+//             line2: "",
+//             city: "New York",
+//             county: "New York",
+//             state: "NY",
+//             zip: "10023-7605",
+//             isResidential: false,
+//             hasBeenValidated: true,
+//           },
+//           {
+//             line1: "37 E 61st St",
+//             line2: "",
+//             city: "New York",
+//             county: "New York",
+//             state: "NY",
+//             zip: "10065-8006",
+//             isResidential: false,
+//             hasBeenValidated: true,
+//           },
+//         ],
+//       });
 
-      // Mock these functions.
-      card.address.validate = mockAddressValidate;
+//       // Mock these functions.
+//       card.address.validate = mockAddressValidate;
 
-      expect(card.address.address).toEqual({
-        city: "New York",
-        county: "",
-        isResidential: false,
-        line1: "37 61",
-        line2: "",
-        state: "NY",
-        zip: "",
-      });
-      expect(card.address.hasBeenValidated).toEqual(false);
+//       expect(card.address.address).toEqual({
+//         city: "New York",
+//         county: "",
+//         isResidential: false,
+//         line1: "37 61",
+//         line2: "",
+//         state: "NY",
+//         zip: "",
+//       });
+//       expect(card.address.hasBeenValidated).toEqual(false);
 
-      // Now call the validate function:
-      await validateAddress(card, "address");
+//       // Now call the validate function:
+//       await validateAddress(card, "address");
 
-      expect(card.address.address).toEqual({
-        city: "New York",
-        county: "",
-        isResidential: false,
-        line1: "37 61",
-        line2: "",
-        state: "NY",
-        zip: "",
-      });
-      expect(card.address.hasBeenValidated).toEqual(false);
-      expect(card.errors).toEqual({
-        address: {
-          detail:
-            "The entered address is ambiguous and will not result in a library card.",
-          addresses: [
-            {
-              line1: "37 W 61st St",
-              line2: "",
-              city: "New York",
-              county: "New York",
-              state: "NY",
-              zip: "10023-7605",
-              isResidential: false,
-              hasBeenValidated: true,
-            },
-            {
-              line1: "37 E 61st St",
-              line2: "",
-              city: "New York",
-              county: "New York",
-              state: "NY",
-              zip: "10065-8006",
-              isResidential: false,
-              hasBeenValidated: true,
-            },
-          ],
-        },
-      });
-    });
-  });
+//       expect(card.address.address).toEqual({
+//         city: "New York",
+//         county: "",
+//         isResidential: false,
+//         line1: "37 61",
+//         line2: "",
+//         state: "NY",
+//         zip: "",
+//       });
+//       expect(card.address.hasBeenValidated).toEqual(false);
+//       expect(card.errors).toEqual({
+//         address: {
+//           detail:
+//             "The entered address is ambiguous and will not result in a library card.",
+//           addresses: [
+//             {
+//               line1: "37 W 61st St",
+//               line2: "",
+//               city: "New York",
+//               county: "New York",
+//               state: "NY",
+//               zip: "10023-7605",
+//               isResidential: false,
+//               hasBeenValidated: true,
+//             },
+//             {
+//               line1: "37 E 61st St",
+//               line2: "",
+//               city: "New York",
+//               county: "New York",
+//               state: "NY",
+//               zip: "10065-8006",
+//               isResidential: false,
+//               hasBeenValidated: true,
+//             },
+//           ],
+//         },
+//       });
+//     });
+//   });
 
-  // This function updates the `card`'s `cardType response value calling
-  // `card.getCardType` which has its own set of tests. Only doing a couple
-  // here since more are covered in that set of tests.
-  describe("validateAddresses", () => {
-    it("returns an error if there is no home address", async () => {
-      const card = new Card({
-        ...basicCard,
-        address: undefined,
-      });
+//   // This function updates the `card`'s `cardType response value calling
+//   // `card.getCardType` which has its own set of tests. Only doing a couple
+//   // here since more are covered in that set of tests.
+//   describe("validateAddresses", () => {
+//     it("returns an error if there is no home address", async () => {
+//       const card = new Card({
+//         ...basicCard,
+//         address: undefined,
+//       });
 
-      await validateAddresses(card);
+//       await validateAddresses(card);
 
-      expect(card.errors).toEqual({
-        address: "An address was not added to the card.",
-      });
-    });
+//       expect(card.errors).toEqual({
+//         address: "An address was not added to the card.",
+//       });
+//     });
 
-    it.skip("should update the cardType response to denied for an address not in NYS", async () => {
-      let card = new Card({
-        ...basicCard,
-        address: new Address({ city: "Hoboken", state: "NJ" }),
-        policy: Policy(),
-      });
+//     it.skip("should update the cardType response to denied for an address not in NYS", async () => {
+//       let card = new Card({
+//         ...basicCard,
+//         address: new Address({ city: "Hoboken", state: "NJ" }),
+//         policy: Policy(),
+//       });
 
-      const mockAddressValidate = jest.fn().mockReturnValue({
-        address: {
-          city: "Hoboken",
-          state: "NJ",
-          zip: "07030",
-          isResidential: true,
-          hasBeenValidated: true,
-        },
-      });
-      card.address.validate = mockAddressValidate;
+//       const mockAddressValidate = jest.fn().mockReturnValue({
+//         address: {
+//           city: "Hoboken",
+//           state: "NJ",
+//           zip: "07030",
+//           isResidential: true,
+//           hasBeenValidated: true,
+//         },
+//       });
+//       card.address.validate = mockAddressValidate;
 
-      expect(card.cardType).toEqual({});
-      // validateAddresses returns the `card` with updated values but the
-      // real change is in `card.cardType`.
-      card = await validateAddresses(card);
-      expect(card.cardType).toEqual({
-        cardType: null,
-        message:
-          "Library cards are only available for residents of New York State or students and commuters working in New York City.",
-      });
-    });
+//       expect(card.cardType).toEqual({});
+//       // validateAddresses returns the `card` with updated values but the
+//       // real change is in `card.cardType`.
+//       card = await validateAddresses(card);
+//       expect(card.cardType).toEqual({
+//         cardType: null,
+//         message:
+//           "Library cards are only available for residents of New York State or students and commuters working in New York City.",
+//       });
+//     });
 
-    it("should update the cardType response to temporary for an address not in NYS but work address in NYC", async () => {
-      let card = new Card({
-        ...basicCard,
-        address: new Address({ city: "Hoboken", state: "NJ" }),
-        workAddress: new Address({ citY: "New York", state: "NY" }),
-        policy: Policy({ policyType: "simplye" }),
-      });
+//     it("should update the cardType response to temporary for an address not in NYS but work address in NYC", async () => {
+//       let card = new Card({
+//         ...basicCard,
+//         address: new Address({ city: "Hoboken", state: "NJ" }),
+//         workAddress: new Address({ citY: "New York", state: "NY" }),
+//         policy: Policy({ policyType: "simplye" }),
+//       });
 
-      const mockAddressValidate = jest.fn().mockReturnValue({
-        address: {
-          city: "Hoboken",
-          state: "NJ",
-          zip: "07030",
-          isResidential: true,
-          hasBeenValidated: true,
-        },
-      });
-      const mockWorkAddressValidate = jest.fn().mockReturnValue({
-        address: {
-          city: "New York",
-          state: "NY",
-          zip: "10018",
-          isResidential: false,
-          hasBeenValidated: true,
-        },
-      });
-      card.address.validate = mockAddressValidate;
-      card.workAddress.validate = mockWorkAddressValidate;
+//       const mockAddressValidate = jest.fn().mockReturnValue({
+//         address: {
+//           city: "Hoboken",
+//           state: "NJ",
+//           zip: "07030",
+//           isResidential: true,
+//           hasBeenValidated: true,
+//         },
+//       });
+//       const mockWorkAddressValidate = jest.fn().mockReturnValue({
+//         address: {
+//           city: "New York",
+//           state: "NY",
+//           zip: "10018",
+//           isResidential: false,
+//           hasBeenValidated: true,
+//         },
+//       });
+//       card.address.validate = mockAddressValidate;
+//       card.workAddress.validate = mockWorkAddressValidate;
 
-      expect(card.cardType).toEqual({});
-      // validateAddresses returns the `card` with updated values but the
-      // real change is in `card.cardType`.
-      card = await validateAddresses(card);
-      expect(card.cardType).toEqual({
-        cardType: "temporary",
-        message: "The library card will be a temporary library card.",
-        reason:
-          "The home address is not in New York State but the work address is in New York City.",
-      });
-    });
-  });
+//       expect(card.cardType).toEqual({});
+//       // validateAddresses returns the `card` with updated values but the
+//       // real change is in `card.cardType`.
+//       card = await validateAddresses(card);
+//       expect(card.cardType).toEqual({
+//         cardType: "temporary",
+//         message: "The library card will be a temporary library card.",
+//         reason:
+//           "The home address is not in New York State but the work address is in New York City.",
+//       });
+//     });
+//   });
 
-  describe("validate", () => {
-    it("should fail if the username is not valid", async () => {
-      const card = new Card({
-        ...basicCard,
-        email: "test@email.com",
-        address: new Address({ city: "Hoboken", state: "NJ" }),
-        policy: Policy({ policyType: "simplye" }),
-      });
+//   describe("validate", () => {
+//     it("should fail if the username is not valid", async () => {
+//       const card = new Card({
+//         ...basicCard,
+//         email: "test@email.com",
+//         address: new Address({ city: "Hoboken", state: "NJ" }),
+//         policy: Policy({ policyType: "simplye" }),
+//       });
 
-      const mockAddressValidate = jest.fn().mockReturnValue({
-        address: {
-          city: "Woodside",
-          state: "NY",
-          zip: "11377",
-          isResidential: true,
-        },
-      });
-      card.address.validate = mockAddressValidate;
-      // Mock that the UsernameValidationAPI returned an error response:
-      card.checkValidUsername = jest.fn().mockReturnValue({
-        available: false,
-        response: { message: "uhuh bad username" },
-      });
+//       const mockAddressValidate = jest.fn().mockReturnValue({
+//         address: {
+//           city: "Woodside",
+//           state: "NY",
+//           zip: "11377",
+//           isResidential: true,
+//         },
+//       });
+//       card.address.validate = mockAddressValidate;
+//       // Mock that the UsernameValidationAPI returned an error response:
+//       card.checkValidUsername = jest.fn().mockReturnValue({
+//         available: false,
+//         response: { message: "uhuh bad username" },
+//       });
 
-      const result = await validate(card);
+//       const result = await validate(card);
 
-      expect(result).toEqual({
-        card,
-        valid: false,
-      });
-      expect(result.card.errors).toEqual({
-        username: "uhuh bad username",
-      });
-    });
+//       expect(result).toEqual({
+//         card,
+//         valid: false,
+//       });
+//       expect(result.card.errors).toEqual({
+//         username: "uhuh bad username",
+//       });
+//     });
 
-    it("should fail if email is not valid", async () => {
-      const card = new Card({
-        ...basicCard,
-        email: "test@",
-        policy: Policy({ policyType: "simplye" }),
-      });
-      const mockAddressValidate = jest.fn().mockReturnValue({
-        address: {
-          city: "Woodside",
-          state: "NY",
-          zip: "11377",
-          isResidential: true,
-        },
-      });
-      card.address.validate = mockAddressValidate;
-      // Mock that the UsernameValidationAPI returned an error response:
-      card.checkValidUsername = jest.fn().mockReturnValue({
-        available: true,
-        response: { message: "the username is valid" },
-      });
+//     it("should fail if email is not valid", async () => {
+//       const card = new Card({
+//         ...basicCard,
+//         email: "test@",
+//         policy: Policy({ policyType: "simplye" }),
+//       });
+//       const mockAddressValidate = jest.fn().mockReturnValue({
+//         address: {
+//           city: "Woodside",
+//           state: "NY",
+//           zip: "11377",
+//           isResidential: true,
+//         },
+//       });
+//       card.address.validate = mockAddressValidate;
+//       // Mock that the UsernameValidationAPI returned an error response:
+//       card.checkValidUsername = jest.fn().mockReturnValue({
+//         available: true,
+//         response: { message: "the username is valid" },
+//       });
 
-      const result = await validate(card);
+//       const result = await validate(card);
 
-      expect(result).toEqual({
-        card,
-        valid: false,
-      });
-      expect(result.card.errors).toEqual({
-        email: "Email address must be valid",
-      });
-    });
+//       expect(result).toEqual({
+//         card,
+//         valid: false,
+//       });
+//       expect(result.card.errors).toEqual({
+//         email: "Email address must be valid",
+//       });
+//     });
 
-    // This is for the "webApplicant" policy type only.
-    it("should fail if age is under 13", async () => {
-      const card = new Card({
-        ...basicCard,
-        birthdate: "01/01/2010",
-        email: "test@email.com",
-        policy: Policy({ policyType: "webApplicant" }),
-      });
-      const mockAddressValidate = jest.fn().mockReturnValue({
-        address: {
-          city: "Woodside",
-          state: "NY",
-          zip: "11377",
-          isResidential: true,
-        },
-      });
-      card.address.validate = mockAddressValidate;
-      // Mock that the UsernameValidationAPI returned an error response:
-      card.checkValidUsername = jest.fn().mockReturnValue({
-        available: true,
-        response: { message: "the username is valid" },
-      });
+//     // This is for the "webApplicant" policy type only.
+//     it("should fail if age is under 13", async () => {
+//       const card = new Card({
+//         ...basicCard,
+//         birthdate: "01/01/2010",
+//         email: "test@email.com",
+//         policy: Policy({ policyType: "webApplicant" }),
+//       });
+//       const mockAddressValidate = jest.fn().mockReturnValue({
+//         address: {
+//           city: "Woodside",
+//           state: "NY",
+//           zip: "11377",
+//           isResidential: true,
+//         },
+//       });
+//       card.address.validate = mockAddressValidate;
+//       // Mock that the UsernameValidationAPI returned an error response:
+//       card.checkValidUsername = jest.fn().mockReturnValue({
+//         available: true,
+//         response: { message: "the username is valid" },
+//       });
 
-      const result = await validate(card);
-      const minimumAge = card.policy.policyField("minimumAge");
-      expect(result).toEqual({
-        card,
-        valid: false,
-      });
-      expect(result.card.errors).toEqual({
-        age: `Date of birth is below the minimum age of ${minimumAge}.`,
-      });
-    });
+//       const result = await validate(card);
+//       const minimumAge = card.policy.policyField("minimumAge");
+//       expect(result).toEqual({
+//         card,
+//         valid: false,
+//       });
+//       expect(result.card.errors).toEqual({
+//         age: `Date of birth is below the minimum age of ${minimumAge}.`,
+//       });
+//     });
 
-    it("should fail if there is no home address", async () => {
-      const card = new Card({
-        ...basicCard,
-        address: undefined,
-        email: "test@email.com",
-        policy: Policy({ policyType: "simplye" }),
-      });
-      // Mock that the UsernameValidationAPI returned an error response:
-      card.checkValidUsername = jest.fn().mockReturnValue({
-        available: true,
-        response: { message: "the username is valid" },
-      });
+//     it("should fail if there is no home address", async () => {
+//       const card = new Card({
+//         ...basicCard,
+//         address: undefined,
+//         email: "test@email.com",
+//         policy: Policy({ policyType: "simplye" }),
+//       });
+//       // Mock that the UsernameValidationAPI returned an error response:
+//       card.checkValidUsername = jest.fn().mockReturnValue({
+//         available: true,
+//         response: { message: "the username is valid" },
+//       });
 
-      const result = await validate(card);
-      expect(result).toEqual({
-        card,
-        valid: false,
-      });
-      expect(result.card.errors).toEqual({
-        address: "An address was not added to the card.",
-      });
-    });
+//       const result = await validate(card);
+//       expect(result).toEqual({
+//         card,
+//         valid: false,
+//       });
+//       expect(result.card.errors).toEqual({
+//         address: "An address was not added to the card.",
+//       });
+//     });
 
-    it("should return a valid response along with the card if all the values are correct", async () => {
-      const card = new Card({
-        ...basicCard,
-        email: "test@email.com",
-        policy: Policy({ policyType: "simplye" }),
-      });
-      // Mock that the UsernameValidationAPI returned an error response:
-      card.checkValidUsername = jest.fn().mockReturnValue({
-        available: true,
-        response: { message: "the username is valid" },
-      });
+//     it("should return a valid response along with the card if all the values are correct", async () => {
+//       const card = new Card({
+//         ...basicCard,
+//         email: "test@email.com",
+//         policy: Policy({ policyType: "simplye" }),
+//       });
+//       // Mock that the UsernameValidationAPI returned an error response:
+//       card.checkValidUsername = jest.fn().mockReturnValue({
+//         available: true,
+//         response: { message: "the username is valid" },
+//       });
 
-      const result = await validate(card);
-      expect(result).toEqual({
-        card,
-        valid: true,
-      });
-    });
-  });
-});
+//       const result = await validate(card);
+//       expect(result).toEqual({
+//         card,
+//         valid: true,
+//       });
+//     });
+//   });
+// });
 
 describe.skip("Card", () => {
   beforeEach(() => {
@@ -927,65 +924,6 @@ describe.skip("Card", () => {
   describe("checkValidUsername", () => {
     const card = new Card(basicCard);
 
-    it("should return whatever value is already set", async () => {
-      expect(card.hasValidUsername).toEqual(undefined);
-      // mock that it has a valid name
-      card.hasValidUsername = true;
-      expect(await card.checkValidUsername()).toEqual(true);
-      // mock that it has an invalid name
-      card.hasValidUsername = false;
-      expect(await card.checkValidUsername()).toEqual(false);
-    });
-    it("should check for username availability", async () => {
-      card.checkUsernameAvailability = jest.fn().mockReturnValue(true);
-      card.hasValidUsername = undefined;
-      expect(await card.checkValidUsername()).toEqual(true);
-    });
-
-    it("throws an error if no ilsClient was passed to the Card object, which calls the Username Validation API", async () => {
-      // The current Card object doesn't have an IlsClient. We are mocking
-      // the `checkUsernameAvailability` and throwing an error from there.
-      const noIlsClient = new NoILSClient(
-        "ILS Client not set in Username Validation API."
-      );
-      // This is just to mock the class.
-      UsernameValidationAPI.mockImplementation(() => ({
-        validate: () => {},
-        responses: {},
-      }));
-      card.checkUsernameAvailability = jest.fn().mockRejectedValue(noIlsClient);
-
-      // Mock that it hasn't been validated yet.
-      card.hasValidUsername = undefined;
-
-      await expect(card.checkValidUsername()).rejects.toEqual(noIlsClient);
-    });
-
-    it("throws an error if the ILS could not be reached", async () => {
-      const iLSIntegrationError = new ILSIntegrationError(
-        "The ILS could not be requested when validating the username."
-      );
-      // This is just to mock the class.
-      UsernameValidationAPI.mockImplementation(() => ({
-        validate: () => {},
-        responses: {},
-      }));
-      card.checkUsernameAvailability = jest
-        .fn()
-        .mockRejectedValue(iLSIntegrationError);
-
-      // Mock that it hasn't been validated yet.
-      card.hasValidUsername = undefined;
-
-      await expect(card.checkValidUsername()).rejects.toEqual(
-        iLSIntegrationError
-      );
-    });
-  });
-
-  describe("checkUsernameAvailability", () => {
-    const card = new Card(basicCard);
-
     it("doesn't call the UsernameValidationAPI if the username has already been validated", async () => {
       const cardWithUsername = new Card({
         ...basicCard,
@@ -1000,7 +938,7 @@ describe.skip("Card", () => {
         responses: { available },
       }));
 
-      const usernameAvailability = await cardWithUsername.checkUsernameAvailability();
+      const usernameAvailability = await cardWithUsername.checkValidUsername();
       expect(mockValidate).not.toHaveBeenCalled();
       expect(usernameAvailability.available).toEqual(true);
       expect(usernameAvailability.response).toEqual(available);
@@ -1015,7 +953,7 @@ describe.skip("Card", () => {
         responses: { available },
       }));
 
-      const usernameAvailability = await card.checkUsernameAvailability();
+      const usernameAvailability = await card.checkValidUsername();
       // The `UsernameValidationAPI.validate` function is now always called
       // since we now never set `usernameHasBeenValidated` to true. This holds
       // for the rest of the tests even though a spy isn't created.
@@ -1032,7 +970,7 @@ describe.skip("Card", () => {
         responses: { available },
       }));
 
-      const usernameAvailability = await card.checkUsernameAvailability();
+      const usernameAvailability = await card.checkValidUsername();
       expect(usernameAvailability.available).toEqual(false);
       expect(usernameAvailability.response).toEqual(unavailable);
     });
@@ -1044,7 +982,7 @@ describe.skip("Card", () => {
         responses: { available },
       }));
 
-      const usernameAvailability = await card.checkUsernameAvailability();
+      const usernameAvailability = await card.checkValidUsername();
       expect(usernameAvailability.available).toEqual(true);
       expect(usernameAvailability.response).toEqual(available);
     });
@@ -1062,9 +1000,7 @@ describe.skip("Card", () => {
         responses: {},
       }));
 
-      await expect(card.checkUsernameAvailability()).rejects.toEqual(
-        noIlsClient
-      );
+      await expect(card.checkValidUsername()).rejects.toEqual(noIlsClient);
     });
 
     it("throws an error if the ILS could not be reached", async () => {
@@ -1078,7 +1014,7 @@ describe.skip("Card", () => {
         responses: {},
       }));
 
-      await expect(card.checkUsernameAvailability()).rejects.toEqual(
+      await expect(card.checkValidUsername()).rejects.toEqual(
         iLSIntegrationError
       );
     });
@@ -1346,7 +1282,7 @@ describe.skip("Card", () => {
       });
 
       // Mock a call to the ILS.
-      card.checkUsernameAvailability = jest.fn().mockReturnValue({
+      card.checkValidUsername = jest.fn().mockReturnValue({
         available: true,
         response: available,
       });
@@ -1366,7 +1302,7 @@ describe.skip("Card", () => {
       });
 
       // Mock a call to the ILS.
-      card.checkUsernameAvailability = jest.fn().mockReturnValue({
+      card.checkValidUsername = jest.fn().mockReturnValue({
         available: true,
         response: available,
       });

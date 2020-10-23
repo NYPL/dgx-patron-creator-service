@@ -2,7 +2,7 @@ const IlsClient = require("../../controllers/v0.3/IlsClient");
 
 /**
  * Creates a policy object to find out what type of card is allowed for a
- * given patron and their location.
+ * given card and their location.
  *
  * @param {object} args - Object consisting of the policy type. The `policyType`
  *  is expected to be either "simplye", "webApplicant", "simplyeJuvenile".
@@ -68,7 +68,7 @@ const Policy = (args) => {
           desc: IlsClient.PTYPE_TO_TEXT.SIMPLYE_METRO_PTYPE,
         },
       },
-      requiredFields: ["email", "barcode", "ageGate"],
+      requiredFields: ["ageGate"],
       minimumAge: 13,
     },
     webApplicant: {
@@ -91,7 +91,7 @@ const Policy = (args) => {
           desc: IlsClient.PTYPE_TO_TEXT.WEB_DIGITAL_METRO,
         },
       },
-      requiredFields: ["email", "barcode", "birthdate"],
+      requiredFields: ["birthdate"],
       minimumAge: 13,
     },
     simplyeJuvenile: {
@@ -102,7 +102,7 @@ const Policy = (args) => {
           desc: IlsClient.PTYPE_TO_TEXT.SIMPLYE_JUVENILE,
         },
       },
-      requiredFields: ["email", "barcode"],
+      requiredFields: [],
     },
   };
   const policy = ilsPolicies[policyType] || ilsPolicies[DEFAULT_POLICY_TYPE];
@@ -128,13 +128,13 @@ const Policy = (args) => {
     policyField("requiredFields").includes(field);
 
   /**
-   * determinePtype(patron)
-   * Determines the ptype for a patron based on the policy type and the
-   * patron's address.
+   * determinePtype(card)
+   * Determines the ptype for a card account based on the policy type and the
+   * card's location and address.
    *
-   * @param {Patron object} patron
+   * @param {Card object} card
    */
-  const determinePtype = (patron = undefined) => {
+  const determinePtype = (card) => {
     const ptype = policyField("ptype");
 
     // The "simplyeJuvenile" policy only has one ptype. Easy enough, just
@@ -146,7 +146,7 @@ const Policy = (args) => {
     // The "simplye" policy type will be updated at a later time. Right now,
     // we will not assign ptypes of 2 or 3 which are related to the
     // "simplye" policy. Also, if it's not a "webApplicant", just return.
-    if (isSimplyEApplicant || !isWebApplicant || !patron) {
+    if (isSimplyEApplicant || !isWebApplicant || !card) {
       return;
     }
 
@@ -159,9 +159,9 @@ const Policy = (args) => {
     // The user's location is in NYS (including NYC) and has a
     // home address in NYC.
     if (
-      (patron.location === "nyc" || patron.location === "nys") &&
-      patron.livesInNYCity() &&
-      patron.addressIsResidential()
+      (card.location === "nyc" || card.location === "nys") &&
+      card.livesInNYCity() &&
+      card.addressIsResidential()
     ) {
       return ptype.digitalMetro.id;
     }
@@ -169,11 +169,11 @@ const Policy = (args) => {
     // The user is in NYS and has a home address in NYS but not in NYC. They
     // also don't have a work address in NYC.
     if (
-      patron.location === "nys" &&
-      !patron.livesInNYCity() &&
-      patron.livesInNYState() &&
-      !patron.worksInNYCity() &&
-      patron.addressIsResidential()
+      card.location === "nys" &&
+      !card.livesInNYCity() &&
+      card.livesInNYState() &&
+      !card.worksInNYCity() &&
+      card.addressIsResidential()
     ) {
       return ptype.digitalNonMetro.id;
     }
@@ -182,8 +182,8 @@ const Policy = (args) => {
     // in the US or they have a work address in the US. Or, if the address was
     // not validated.
     if (
-      (patron.location === "us" && (patron.livesInUS || patron.worksInUS())) ||
-      !patron.addressHasBeenValidated()
+      (card.location === "us" && (card.livesInUS || card.worksInUS())) ||
+      !card.addressHasBeenValidated()
     ) {
       return ptype.digitalTemporary.id;
     }

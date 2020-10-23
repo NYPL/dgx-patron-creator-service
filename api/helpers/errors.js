@@ -149,15 +149,6 @@ class DatabaseError extends ProblemDetail {
   }
 }
 
-class MissingRequiredValues extends ProblemDetail {
-  constructor(detail) {
-    super();
-    this.status = 400;
-    this.type = "missing-required-values";
-    this.title = "Missing Required Values";
-    this.message = detail;
-  }
-}
 class IncorrectPin extends ProblemDetail {
   constructor() {
     super();
@@ -313,7 +304,6 @@ module.exports = {
   PatronNotFound,
   NoBarcode,
   DatabaseError,
-  MissingRequiredValues,
   IncorrectPin,
   ExpiredAccount,
   NotEligibleCard,

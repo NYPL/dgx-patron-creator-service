@@ -390,6 +390,7 @@ describe("DependentAccountAPI", () => {
     IlsClient.HOMEBOUND_NYC_PTYPE = 101;
     IlsClient.SIMPLYE_METRO_PTYPE = 2;
     IlsClient.SIMPLYE_NON_METRO_PTYPE = 3;
+    IlsClient.WEB_DIGITAL_TEMPORARY = 7;
     IlsClient.WEB_DIGITAL_NON_METRO = 8;
     IlsClient.WEB_DIGITAL_METRO = 9;
     IlsClient.TEEN_METRO_PTYPE = 50;
@@ -428,6 +429,11 @@ describe("DependentAccountAPI", () => {
 
       valid = checkPType(patronType);
       expect(valid).toEqual(false);
+
+      patronType = 7; // Web Digital Temporary
+
+      valid = checkPType(patronType);
+      expect(valid).toEqual(false);
     });
 
     it("returns true if the patron has a valid p-type", () => {
@@ -453,6 +459,11 @@ describe("DependentAccountAPI", () => {
       expect(valid).toEqual(true);
 
       patronType = 50; // Teen Metro (3 Year)
+
+      valid = checkPType(patronType);
+      expect(valid).toEqual(true);
+
+      patronType = 9; // Web Digital Metro
 
       valid = checkPType(patronType);
       expect(valid).toEqual(true);
