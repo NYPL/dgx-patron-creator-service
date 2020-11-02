@@ -282,7 +282,7 @@ async function createPatron(req, res) {
 
   // The default and only allowed policty type will be "webApplicant" since we
   // are assigning the new "web digital" type p-types. At a later time after
-  // 11/20, the "simple" policy type will be passed and more p-types
+  // 12/20, the "simple" policy type will be passed and more p-types
   // can be assigned.
   const policyType = "webApplicant";
   const updatedName = normalizeName(

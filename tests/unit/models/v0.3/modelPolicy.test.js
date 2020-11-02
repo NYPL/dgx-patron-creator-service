@@ -26,88 +26,6 @@ describe("Policy", () => {
     it("verifies that `ageGate` is a required field", () => {
       expect(policy.isRequiredField("ageGate")).toEqual(true);
     });
-
-    it.skip("returns the ptype for patrons in the metro", () => {
-      // Metro residents have a city of "New York" or can also have counties
-      // of Richmond, Queens, New York, Kings, and the Bronx.
-      const metroAddress = new Address({
-        line1: "476th 5th Ave",
-        city: "New York",
-        state: "New York",
-        zip: "10018",
-      });
-      // Card = Patron
-      const metroCard = new Card({
-        name: "some name",
-        username: "username",
-        address: metroAddress,
-        pin: "1234",
-        // TODO: This cyclical dependancy seems unnecessary but will update later.
-        policy,
-      });
-      const metroAddress2 = new Address({
-        line1: "some address",
-        state: "New York",
-        county: "Queens",
-        zip: "11368",
-      });
-      const metroCard2 = new Card({
-        name: "some name",
-        username: "username",
-        address: metroAddress2,
-        pin: "1234",
-        policy,
-      });
-      const simplyePtype = policy.ilsPolicies.simplye.ptype;
-      const metroPtype = simplyePtype.metro.id;
-
-      let ptype = policy.determinePtype(metroCard);
-      expect(ptype).toEqual(metroPtype);
-      expect(ptype).toEqual(2);
-
-      ptype = policy.determinePtype(metroCard2);
-      expect(ptype).toEqual(metroPtype);
-      expect(ptype).toEqual(2);
-    });
-
-    it.skip("returns the ptype for patrons in the state", () => {
-      const stateAddress = new Address({
-        line1: "Some address",
-        city: "Albany",
-        state: "New York",
-        zip: "10018",
-      });
-      const stateCard = new Card({
-        name: "some name",
-        username: "username",
-        address: stateAddress,
-        pin: "1234",
-        policy,
-      });
-
-      const simplyePtype = policy.ilsPolicies.simplye.ptype;
-      const nysPtype = simplyePtype.default.id;
-
-      const ptype = policy.determinePtype(stateCard);
-      expect(ptype).toEqual(nysPtype);
-      expect(ptype).toEqual(3);
-    });
-
-    it("sets up the correct expiration dates", () => {
-      const ptypes = policy.ilsPolicies.simplye.ptype;
-      const nonMetroPtype = ptypes.default.id;
-      const metroPtype = ptypes.metro.id;
-
-      // Check the Non-metro ptype first:
-      let exptime = policy.getExpirationPoliciesForPtype(nonMetroPtype);
-      // The standard time is 3 years or 1095 days.
-      expect(exptime).toEqual(1095);
-
-      // Check the metro ptype next:
-      exptime = policy.getExpirationPoliciesForPtype(metroPtype);
-      // The standard time is 3 years or 1095 days.
-      expect(exptime).toEqual(1095);
-    });
   });
 
   describe("Web Applicant", () => {
@@ -162,6 +80,80 @@ describe("Policy", () => {
       // The standard time is 3 years or 1095 days.
       expect(exptime).toEqual(1095);
     });
+
+    it("returns the ptype for patrons in the metro", () => {
+      // Metro residents have a city of "New York" or can also have counties
+      // of Richmond, Queens, New York, Kings, and the Bronx.
+      const metroAddress = new Address({
+        line1: "476th 5th Ave",
+        city: "New York",
+        state: "NY",
+        zip: "10018",
+        isResidential: true,
+        hasBeenValidated: true,
+      });
+      const metroCard = new Card({
+        name: "some name",
+        username: "username",
+        address: metroAddress,
+        pin: "1234",
+        location: "nyc",
+        policy,
+      });
+      const metroAddress2 = new Address({
+        line1: "some address",
+        city: "Queens",
+        county: "Queens",
+        state: "NY",
+        zip: "11368",
+        isResidential: true,
+        hasBeenValidated: true,
+      });
+      const metroCard2 = new Card({
+        name: "some name",
+        username: "username",
+        address: metroAddress2,
+        pin: "1234",
+        location: "nyc",
+        policy,
+      });
+      const webApplicant = policy.ilsPolicies.webApplicant.ptype;
+      const digitalMetro = webApplicant.digitalMetro.id;
+
+      let ptype = policy.determinePtype(metroCard);
+      expect(ptype).toEqual(digitalMetro);
+      expect(ptype).toEqual(9);
+
+      ptype = policy.determinePtype(metroCard2);
+      expect(ptype).toEqual(digitalMetro);
+      expect(ptype).toEqual(9);
+    });
+
+    it("returns the ptype for nonMetro patron", () => {
+      const stateAddress = new Address({
+        line1: "Some address",
+        city: "Albany",
+        state: "NY",
+        zip: "10018",
+        isResidential: true,
+        hasBeenValidated: true,
+      });
+      const stateCard = new Card({
+        name: "some name",
+        username: "username",
+        address: stateAddress,
+        pin: "1234",
+        location: "nys",
+        policy,
+      });
+
+      const webApplicant = policy.ilsPolicies.webApplicant.ptype;
+      const digitalNonMetro = webApplicant.digitalNonMetro.id;
+
+      const ptype = policy.determinePtype(stateCard);
+      expect(ptype).toEqual(digitalNonMetro);
+      expect(ptype).toEqual(8);
+    });
   });
 
   describe("SimplyE Juvenile", () => {
@@ -183,7 +175,7 @@ describe("Policy", () => {
       const address = new Address({
         line1: "476th 5th Ave",
         city: "New York City",
-        state: "New York",
+        state: "NY",
         zip: "10018",
       });
       const card = new Card({

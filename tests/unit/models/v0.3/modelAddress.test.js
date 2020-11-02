@@ -31,26 +31,30 @@ describe("Address", () => {
       const address = new Address({
         line1: "476th 5th Ave",
         city: "New York City",
-        state: "New York",
+        state: "NY",
       });
 
       expect(address.address).toEqual({
         ...emptyAddress,
         line1: "476th 5th Ave",
         city: "New York City",
-        state: "New York",
+        state: "NY",
       });
     });
 
     it("returns an error if the two address lines are too long", async () => {
-      const address = new Address({
-        line1:
-          "some very long line to throw a validation error for the address",
-        line2: "continuing the very long address line for the error more text",
-        city: "New York City",
-        state: "New York",
-        zip: "10018",
-      });
+      const address = new Address(
+        {
+          line1:
+            "some very long line to throw a validation error for the address",
+          line2:
+            "continuing the very long address line for the error more text",
+          city: "New York City",
+          state: "NY",
+          zip: "10018",
+        },
+        "soLicenseKey"
+      );
       const response = await address.validate();
       const addressLength =
         address.address.line1.length + address.address.line2.length;
@@ -67,15 +71,33 @@ describe("Address", () => {
   });
 
   describe("class methods", () => {
+    describe("inUS", () => {
+      it("should return false for addresses outside the US and true for in US", () => {
+        const addressNotUS = new Address({
+          line1: "street address",
+          state: "",
+        });
+        const addressInUS = new Address({
+          line1: "476 5th Ave",
+          city: "New York",
+          state: "NY",
+          zip: "10018",
+        });
+
+        expect(addressNotUS.inUS()).toEqual(false);
+        expect(addressInUS.inUS()).toEqual(true);
+      });
+    });
+
     describe("inNYState", () => {
       it("should return false for addresses outside NYS and true for in NYS", () => {
         const addressNotNY = new Address({
           line1: "street address",
-          state: "New Jersey",
+          state: "NJ",
         });
         const addressNY = new Address({
           line1: "street address",
-          state: "New York",
+          state: "NY",
         });
 
         expect(addressNotNY.inNYState()).toEqual(false);
@@ -121,50 +143,30 @@ describe("Address", () => {
         const address = new Address({
           line1: "476th 5th Ave",
           city: "New York City",
-          state: "New York",
+          state: "NY",
           zip: "10018",
         });
         expect(address.toString()).toEqual(
-          "476th 5th Ave\nNew York City, New York 10018"
+          "476th 5th Ave\nNew York City, NY 10018"
         );
-      });
-    });
-
-    // The call for `AddressValidationAPI.validate` is tested in
-    // AddressValidationAPI.test.js. This function just calls that function
-    // and returns the same response.
-    describe("validateInAPI", () => {
-      it("should throw an error if no license key was passed", async () => {
-        const address = new Address();
-
-        await expect(address.validateInAPI()).rejects.toThrow(
-          "No license key passed in validateInAPI."
-        );
-      });
-
-      it("should return a validated address response", async () => {
-        AddressValidationAPI.mockImplementation(() => ({
-          validate: () => Promise.resolve({ type: "valid-address" }),
-        }));
-
-        // mock that the address is valid and has been validated.
-        const address = new Address(
-          {
-            hasBeenValidated: true,
-          },
-          "soLicenseKey"
-        );
-
-        const resp = await address.validateInAPI();
-        expect(resp).toEqual({ type: "valid-address" });
       });
     });
 
     describe("validate", () => {
+      it("should throw an error if no license key was passed", async () => {
+        const address = new Address();
+
+        await expect(address.validate()).rejects.toThrow(
+          "No SO license key passed in validate."
+        );
+      });
       it("should return the current address if it already has been validated", async () => {
-        AddressValidationAPI.mockImplementation(() => {
-          () => Promise.resolve({ type: "valid-address" });
-        });
+        const mockAPI = jest.fn(() =>
+          Promise.resolve({ type: "valid-address" })
+        );
+        AddressValidationAPI.mockImplementation(() => ({
+          validate: mockAPI,
+        }));
         // mock that the address is valid and has been validated.
         const address = new Address(
           {
@@ -176,12 +178,12 @@ describe("Address", () => {
           },
           "soLicenseKey"
         );
-        const validateInAPISpy = jest.spyOn(address, "validateInAPI");
+        // const validateInAPISpy = jest.spyOn(address, "validateInAPI");
         const resp = await address.validate();
 
-        // If the address has already been validated, then "validatedInAPI"
-        // won't be called.
-        expect(validateInAPISpy).not.toHaveBeenCalled();
+        // If the address has already been validated, then
+        // "AddressValidationAPI.validate" won't be called.
+        expect(mockAPI).not.toHaveBeenCalled();
         expect(resp).toEqual({
           type: "valid-address",
           ...address,
@@ -189,6 +191,12 @@ describe("Address", () => {
       });
 
       it("should return 'unrecognized-address' type if the address is not valid", async () => {
+        const mockAPI = jest.fn(() =>
+          Promise.resolve({ type: "unrecognized-address" })
+        );
+        AddressValidationAPI.mockImplementation(() => ({
+          validate: mockAPI,
+        }));
         // mock that the address is valid and has been validated.
         const address = new Address(
           {
@@ -199,10 +207,8 @@ describe("Address", () => {
           },
           "soLicenseKey"
         );
-        address.validateInAPI = jest
-          .fn()
-          .mockReturnValue({ type: "unrecognized-address" });
         const resp = await address.validate();
+        expect(mockAPI).toHaveBeenCalled();
         expect(resp).toEqual({ type: "unrecognized-address" });
       });
     });

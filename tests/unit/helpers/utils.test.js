@@ -2,6 +2,7 @@ const {
   strToBool,
   normalizeName,
   updateJuvenileName,
+  normalizedBirthdate,
 } = require("../../../api/helpers/utils");
 
 describe("strToBool", () => {
@@ -76,5 +77,15 @@ describe("normalizeName", () => {
     };
     const { name, firstName, lastName } = body;
     expect(normalizeName(name, firstName, lastName)).toEqual("James");
+  });
+});
+
+describe("normalizedBirthdate", () => {
+  it("should return undefined if nothing is passed", () => {
+    expect(normalizedBirthdate()).toEqual(undefined);
+  });
+  it("should return a new date object", () => {
+    const date = "01/01/1988";
+    expect(normalizedBirthdate(date)).toEqual(new Date(date));
   });
 });

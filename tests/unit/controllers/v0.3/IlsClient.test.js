@@ -592,25 +592,28 @@ describe("IlsClient", () => {
         city: "New York",
         state: "NY",
         zip: "10018",
+        isResidential: true,
+        hasBeenValidated: true,
       },
       "soLicenseKey"
     );
-    const policy = Policy({ policyType: "simplye" });
+    const policy = Policy({ policyType: "webApplicant" });
     const card = new Card({
-      name: "First Last",
+      name: "First Last test",
       username: "username",
       pin: "1234",
       birthdate: "01/01/1988",
       email: "email@gmail.com",
       address,
       policy,
+      location: "nyc",
       ilsClient: IlsClient({}),
       varFields: [{ fieldTag: "x", content: "DEPENDENT OF 1234" }],
       acceptTerms: true,
       ageGate: true,
     });
 
-    it.skip("returns an ILS-ready patron object", async () => {
+    it("returns an ILS-ready patron object", async () => {
       // We want to mock that we called the ILS and it did not find a
       // username, so it is valid and the card is valid.
       axios.get.mockImplementationOnce(() =>
@@ -625,6 +628,7 @@ describe("IlsClient", () => {
               city: "New York",
               state: "NY",
               zip: "10018",
+              isResidential: true,
               hasBeenValidated: true,
             },
           }),
@@ -632,15 +636,12 @@ describe("IlsClient", () => {
 
       // Make sure we have a validated card.
       await card.validate();
-      // Mock that the ptype and agency were added to the card.
-      card.setPtype();
-      card.setAgency();
+
       const formatted = ilsClient.formatPatronData(card);
 
       expect(formatted.names).toEqual(["LAST, FIRST"]);
       expect(formatted.pin).toEqual("1234");
-      // simplye applicants are ptype of 2.
-      expect(formatted.patronType).toEqual(2);
+      expect(formatted.patronType).toEqual(9);
       expect(formatted.birthDate).toEqual("1988-01-01");
       expect(formatted.addresses).toEqual([
         {
@@ -659,7 +660,7 @@ describe("IlsClient", () => {
       expect(formatted.fixedFields).toEqual({
         "158": {
           label: "AGENCY",
-          value: "202",
+          value: "198",
         },
       });
     });
@@ -686,6 +687,8 @@ describe("IlsClient", () => {
         city: "New York",
         state: "NY",
         zip: "10018",
+        isResidential: true,
+        hasBeenValidated: true,
       },
       "soLicenseKey"
     );
@@ -699,6 +702,7 @@ describe("IlsClient", () => {
       address,
       policy,
       ilsClient,
+      location: "nyc",
       acceptTerms: true,
       ageGate: true,
     });
@@ -712,7 +716,11 @@ describe("IlsClient", () => {
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
     const currentDay = now.getDate();
-    const expirationDate = new Date(currentYear, currentMonth, currentDay + 90);
+    const expirationDate = new Date(
+      currentYear,
+      currentMonth,
+      currentDay + 1095
+    );
 
     beforeAll(async () => {
       // Mock that we got a token for authenticated requests.
@@ -722,7 +730,7 @@ describe("IlsClient", () => {
       await ilsClient.generateIlsToken();
     });
 
-    it.skip("fails to create a patron", async () => {
+    it("fails to create a patron", async () => {
       // We want to mock that we called the ILS and it did not find a
       // username, so it is valid and the card is valid.
       axios.get.mockImplementationOnce(() =>
@@ -738,7 +746,8 @@ describe("IlsClient", () => {
 
       const patron = await ilsClient.createPatron(card);
       expect(patron).toEqual(mockedErrorResponse.response);
-      expect(axios.post).toHaveBeenCalledWith(
+      expect(axios.post).toHaveBeenNthCalledWith(
+        4,
         createUrl,
         {
           addresses: [
@@ -754,7 +763,7 @@ describe("IlsClient", () => {
           patronCodes: { pcode1: "-" },
           homeLibraryCode: "eb",
           names: ["LAST, FIRST"],
-          patronType: 1,
+          patronType: 9,
           pin: "1234",
           varFields: [{ content: "username", fieldTag: "u" }],
           fixedFields: {
@@ -773,7 +782,7 @@ describe("IlsClient", () => {
       );
     });
 
-    it.skip("successfully creates a patron", async () => {
+    it("successfully creates a patron", async () => {
       axios.post.mockImplementationOnce(() =>
         Promise.resolve(mockedSuccessfulResponse)
       );
@@ -781,7 +790,8 @@ describe("IlsClient", () => {
       const patron = await ilsClient.createPatron(card);
 
       expect(patron).toEqual(mockedSuccessfulResponse);
-      expect(axios.post).toHaveBeenCalledWith(
+      expect(axios.post).toHaveBeenNthCalledWith(
+        5,
         createUrl,
         {
           addresses: [
@@ -796,7 +806,7 @@ describe("IlsClient", () => {
           patronCodes: { pcode1: "-" },
           homeLibraryCode: "eb",
           names: ["LAST, FIRST"],
-          patronType: 1,
+          patronType: 9,
           pin: "1234",
           varFields: [{ content: "username", fieldTag: "u" }],
           fixedFields: {
@@ -1012,7 +1022,7 @@ describe("IlsClient", () => {
       try {
         await ilsClient.generateIlsToken();
       } catch (error) {
-        console.log("Intentional error");
+        console.log("Intentional test error");
       }
 
       expect(ilsClient.isTokenExpired()).toEqual(false);
@@ -1070,7 +1080,7 @@ describe("IlsClient", () => {
       try {
         await ilsClient.generateIlsToken();
       } catch (error) {
-        console.log("Intentional error");
+        console.log("Intentional test error");
       }
 
       // Still no token since an error occured.

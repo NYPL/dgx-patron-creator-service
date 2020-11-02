@@ -47,7 +47,6 @@ class Card {
     this.barcode = undefined;
     this.ptype = undefined;
     this.patronId = undefined;
-    this.hasValidUsername = undefined;
     this.expirationDate = undefined;
     this.agency = undefined;
     this.valid = false;

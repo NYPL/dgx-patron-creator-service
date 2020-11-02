@@ -31,8 +31,10 @@ const Policy = (args) => {
         break;
       case IlsClient.SIMPLYE_METRO_PTYPE:
       case IlsClient.SIMPLYE_NON_METRO_PTYPE:
-      default:
         expTime = IlsClient.STANDARD_EXPIRATION_TIME;
+        break;
+      default:
+        expTime = IlsClient.WEB_APPLICANT_EXPIRATION_TIME;
         break;
     }
     return expTime;
@@ -87,7 +89,7 @@ const Policy = (args) => {
       requiredFields: [],
     },
   };
-  const policy = ilsPolicies[policyType] || ilsPolicies[DEFAULT_POLICY_TYPE];
+  const policy = ilsPolicies[policyType];
   const isWebApplicant = policyType === "webApplicant";
   const isSimplyEApplicant = policyType === "simplye";
   const isJuvenileApplicant = policyType === "simplyeJuvenile";
@@ -134,7 +136,7 @@ const Policy = (args) => {
 
     // TODO: Verify this - a card is denied if the user doesn't have an address
     // in the US or their geolocation is empty.
-    if (!card.livesInUS || card.location === "") {
+    if (!card.livesInUS() || card.location === "") {
       return;
     }
 

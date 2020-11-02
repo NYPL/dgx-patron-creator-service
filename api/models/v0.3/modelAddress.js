@@ -70,26 +70,15 @@ class Address {
   }
 
   /**
-   * validateInAPI()
-   */
-  async validateInAPI() {
-    if (!this.soLicenseKey) {
-      throw new SONoLicenseKeyError("No license key passed in validateInAPI.");
-    }
-
-    const { validate } = AddressValidationAPI({
-      soLicenseKey: this.soLicenseKey,
-    });
-
-    return await validate(this.address);
-  }
-
-  /**
    * validate(isWorkAddress)
    * Simple validation to make sure the address length is the proper length. If
    * it is, it then validates the address in Service Objects.
    */
   async validate() {
+    if (!this.soLicenseKey) {
+      throw new SONoLicenseKeyError("No SO license key passed in validate.");
+    }
+
     const requiredFields = ["line1", "city", "state", "zip"];
 
     requiredFields.forEach((field) => {
@@ -118,13 +107,18 @@ class Address {
       };
     }
 
-    const validation = await this.validateInAPI();
+    // Get the `validate` function from the class that makes the API call
+    // to Service Objects.
+    const { validate } = AddressValidationAPI({
+      soLicenseKey: this.soLicenseKey,
+    });
+    const validatedAddress = await validate(this.address);
 
-    if (validation.type === "valid-address") {
+    if (validatedAddress.type === "valid-address") {
       this.hasBeenValidated = true;
     }
 
-    return validation;
+    return validatedAddress;
   }
 }
 
