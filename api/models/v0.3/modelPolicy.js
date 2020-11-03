@@ -95,7 +95,7 @@ const Policy = (args) => {
   const isJuvenileApplicant = policyType === "simplyeJuvenile";
 
   /**
-   * policyField(field)
+   * policyField
    * Returns the field in the current policy object.
    *
    * @param {string} field
@@ -112,7 +112,7 @@ const Policy = (args) => {
     policyField("requiredFields").includes(field);
 
   /**
-   * determinePtype(card)
+   * determinePtype
    * Determines the ptype for a card account based on the policy type and the
    * card's location and address.
    *

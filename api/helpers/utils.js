@@ -91,7 +91,7 @@ const updateJuvenileName = (name, parentArrayName = []) => {
 
 const nyCities = ["New York", "New York City", "NYC"];
 const nyCounties = ["Richmond", "Queens", "New York", "Kings", "Bronx"];
-const nyStates = ["NY", "New York"];
+const nyStates = ["NY"];
 const listOfStates = [
   "al",
   "ak",

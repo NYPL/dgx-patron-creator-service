@@ -743,8 +743,8 @@ describe("Card", () => {
   describe("livesInNYState", () => {
     const simplyePolicy = Policy();
     const webApplicant = Policy({ policyType: "webApplicant" });
-    const addressNotNY = new Address({ state: "New Jersey" }, "soLicenseKey");
-    const addressNY = new Address({ state: "New York" }, "soLicenseKey");
+    const addressNotNY = new Address({ state: "NJ" }, "soLicenseKey");
+    const addressNY = new Address({ state: "NY" }, "soLicenseKey");
 
     it("returns false for web applicants if they are not in NY state", () => {
       const cardNotNY = new Card({
