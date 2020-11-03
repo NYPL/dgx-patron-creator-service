@@ -1,20 +1,16 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const awsDecrypt = require("./config/awsDecrypt");
 
 // Import controllers
-const createPatronV0_1 = require("./api/controllers/v0.1/createPatron.js"); // eslint-disable-line camelcase
-const validations = require("./api/controllers/v0.1/validations.js");
-const createPatronV0_2 = require("./api/controllers/v0.2/createPatron.js"); // eslint-disable-line camelcase
 const apiDoc = require("./api/controllers/apiDoc.js");
-const createPatronV0_3 = require("./api/controllers/v0.3/endpoints.js"); // eslint-disable-line camelcase
+const createPatronV0_3 = require("./api/controllers/v0.3/endpoints.js");
 
-const awsDecrypt = require("./config/awsDecrypt");
+const BarcodeDb = require("./db");
 
 const app = express();
 const pathName = `${process.cwd()}/config/deploy_${app.get("env")}.env`;
 require("dotenv").config({ path: pathName });
-
-const BarcodeDb = require("./db");
 
 // Decrypt any database credentials if on QA or production for the NYPL AWS
 // environment. Then create the single database instance in the app.
@@ -51,11 +47,9 @@ async function initDatabase() {
 
 initDatabase();
 
-// Below are the middlewares for response headers
 /**
- * allowCrossDomain(req, res, next)
+ * allowCrossDomain
  * Set up the middleware to support CORS. It will be used in every response.
- *
  * @param {HTTP request} req
  * @param {HTTP response} res
  * @param {next}
@@ -65,7 +59,7 @@ function allowCrossDomain(req, res, next) {
   res.header("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, OPTIONS");
   res.header(
     "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept",
+    "Origin, X-Requested-With, Content-Type, Accept"
   );
   next();
 }
@@ -78,124 +72,56 @@ app.use(bodyParser.json());
 app.use(
   bodyParser.urlencoded({
     extended: true,
-  }),
+  })
 );
 
-// Below are the middlewares for response body
-
 /**
- * v1Error(err, req)
- * Format the response for errors on v0.1 routes
- *
- * @param {error object} err
- * @param {HTTP request} req
- */
-// eslint-disable-next-line no-unused-vars
-function v1Error(err, req) {
-  return {
-    data: {
-      status_code_from_card_creator: null,
-      status: err.status,
-      type: "invalid-request",
-      message: `Request body: ${err.body}`,
-      detail: "The patron creator did not forward the request to Card Creator.",
-    },
-    count: 0,
-  };
-}
-
-/**
- * v2Error(err, req)
- * Format the response for errors on v0.2 routes
- *
- * @param {error object} err
- * @param {HTTP request} req
- */
-// eslint-disable-next-line no-unused-vars
-function v2Error(err, req) {
-  return {
-    status_code_from_card_ils: null,
-    status: err.status,
-    type: "invalid-request",
-    message: `Request body: ${err.body}`,
-    detail: "The patron creator did not forward the request to the ILS.",
-  };
-}
-
-/**
- * errorHandler(err, req, res, next)
- * Rendering the error response if the request to this service fails.
- * We need "next" here as the forth argument following the Express's convention
- *
- * @param {error object} err
+ * deprecatedEndpoint
+ * For deprecated endpoints, send a note to use the v0.3 endpoints.
  * @param {HTTP request} req
  * @param {HTTP response} res
- * @param {next}
  */
-// eslint-disable-next-line no-unused-vars
-function errorHandler(err, req, res, next) {
-  // eslint-disable-next-line no-console
-  console.error(
-    `status_code: ${err.status}, `
-      + "type: \"invalid-request\", "
-      + `message: "Request body: ${err.body}"` // eslint-disable-line comma-dangle
-  );
-  let jsonError;
-
-  if (req.url.includes("v0.1")) {
-    if (req.url.includes("validations")) {
-      jsonError = validations.renderResponseData(
-        null,
-        false,
-        "invalid-request",
-        null,
-        `Error request with request body ${err.body}`,
-        {},
-      );
-    } else {
-      jsonError = v1Error(err, req);
-    }
-  } else if (req.url.includes("v0.2")) {
-    jsonError = v2Error(err, req);
-  }
-
-  res.status(err.status).json(jsonError);
+function deprecatedEndpoint(req, res) {
+  return res.status(400).header("Content-Type", "application/json").json({
+    status: 400,
+    type: "deprecated-endpoint",
+    title: "Deprecated Endpoint",
+    detail:
+      "This endpoint is deprecated. Use the v0.3 endpoints and find more information on https://github.com/NYPL/dgx-patron-creator-service/wiki",
+  });
 }
 
-// Error handling
-app.use(errorHandler);
-
-// Below are the routes
 const router = express.Router();
 
 // This route will make a request for swaggerDoc.json
 app.get("/docs/patrons-validations", apiDoc.renderApiDoc);
 
+// The base of the endpoints.
 app.use("/api", router);
 
-router.route("/v0.1/patrons/").post(createPatronV0_1.createPatron);
-// Still supporting older v0.1 validation endpoints
-router.route("/v0.1/validations/username").post(validations.checkUserName);
-router.route("/v0.1/validations/address").post(validations.checkAddress);
+// These endpoints are now deprecated. Send a note
+router.route("/v0.1/patrons/").post(deprecatedEndpoint);
+router.route("/v0.1/validations/username").post(deprecatedEndpoint);
+router.route("/v0.1/validations/address").post(deprecatedEndpoint);
+router.route("/v0.2/patrons/").post(deprecatedEndpoint);
 
-// New validation will be part of the `patrons` endpoint.
-router.route("/v0.2/patrons/").post(createPatronV0_2.createPatron);
-
-// Still supporting older v0.1 validation endpoints
+// The new validation endpoints.
 router.route("/v0.3/validations/username").post(createPatronV0_3.checkUsername);
 router.route("/v0.3/validations/address").post(createPatronV0_3.checkAddress);
+// Check if a patron is eligible to create dependent juvenile accounts.
 router
   .route("/v0.3/patrons/dependent-eligibility")
   .get(createPatronV0_3.checkDependentEligibility);
+// Endpoints to create ILS accounts.
 router.route("/v0.3/patrons/dependents").post(createPatronV0_3.createDependent);
 router.route("/v0.3/patrons/").post(createPatronV0_3.createPatron);
 
-// Do not listen to connections in Lambda environment
+// Do not listen to connections in the Lambda environment.
 if (!process.env.AWS_LAMBDA_FUNCTION_NAME) {
   const port = process.env.PORT || 3001;
 
   app.listen(port, () => {
-    console.info(`Server started on port ${port}`); // eslint-disable-line no-console
+    console.info(`Server started on port ${port}`);
   });
 }
 

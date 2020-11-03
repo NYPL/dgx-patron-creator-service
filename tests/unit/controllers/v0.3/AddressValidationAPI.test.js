@@ -108,7 +108,7 @@ describe("AddressValidationAPI", () => {
           status: 502,
           type: "service-objects-authorization-error",
         },
-        title: "Unrecognized address.",
+        title: "Unrecognized address",
         originalAddress: {
           city: "New York",
           line1: "476 5th Avenue",
@@ -139,7 +139,7 @@ describe("AddressValidationAPI", () => {
           status: 502,
           type: "service-objects-integration-error",
         },
-        title: "Unrecognized address.",
+        title: "Unrecognized address",
         originalAddress: {
           city: "New York",
           line1: "476 5th Avenue",
@@ -183,7 +183,7 @@ describe("AddressValidationAPI", () => {
           status: 502,
           type: "service-objects-domain-specific-error",
         },
-        title: "Unrecognized address.",
+        title: "Unrecognized address",
         originalAddress: rawAddress1,
       });
     });
@@ -211,7 +211,7 @@ describe("AddressValidationAPI", () => {
       expect(response).toEqual({
         status: 400,
         type: "unrecognized-address",
-        title: "Unrecognized address.",
+        title: "Unrecognized address",
         originalAddress: rawAddress1,
         error: {
           code: "7",
@@ -234,7 +234,7 @@ describe("AddressValidationAPI", () => {
 
       expect(response).toEqual({
         type: "valid-address",
-        title: "Valid address.",
+        title: "Valid address",
         address: {
           ...rawAddress1,
           county: undefined,
@@ -283,13 +283,13 @@ describe("AddressValidationAPI", () => {
 
       expect(alternateAddressesResponse()).toEqual({
         type: "alternate-addresses",
-        title: "Alternate addresses have been identified.",
+        title: "Alternate addresses have been identified",
         addresses: [],
       });
 
       expect(alternateAddressesResponse(emptyAlternates)).toEqual({
         type: "alternate-addresses",
-        title: "Alternate addresses have been identified.",
+        title: "Alternate addresses have been identified",
         addresses: [],
       });
     });
@@ -299,7 +299,7 @@ describe("AddressValidationAPI", () => {
 
       expect(alternateAddressesResponse(addresses)).toEqual({
         type: "alternate-addresses",
-        title: "Alternate addresses have been identified.",
+        title: "Alternate addresses have been identified",
         addresses: [rawAddress1, rawAddress2],
       });
     });
@@ -315,7 +315,7 @@ describe("AddressValidationAPI", () => {
       expect(parseResponse(addresses, errors, rawAddress1)).toEqual({
         type: "unrecognized-address",
         originalAddress: rawAddress1,
-        title: "Unrecognized address.",
+        title: "Unrecognized address",
         error: {},
         status: 400,
       });
@@ -331,7 +331,7 @@ describe("AddressValidationAPI", () => {
       expect(parseResponse(responseAddresses, errors, rawAddress1)).toEqual({
         status: 400,
         type: "alternate-addresses",
-        title: "Alternate addresses have been identified.",
+        title: "Alternate addresses have been identified",
         addresses,
         originalAddress: rawAddress1,
       });
@@ -348,7 +348,7 @@ describe("AddressValidationAPI", () => {
 
       expect(response).toEqual({
         type: "valid-address",
-        title: "Valid address.",
+        title: "Valid address",
         address: {
           ...address.address,
           county: undefined,
@@ -364,7 +364,7 @@ describe("AddressValidationAPI", () => {
 
       expect(response).toEqual({
         type: "valid-address",
-        title: "Valid address.",
+        title: "Valid address",
         address: {
           ...rawAddress1,
           county: undefined,
