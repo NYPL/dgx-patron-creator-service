@@ -89,8 +89,87 @@ const updateJuvenileName = (name, parentArrayName = []) => {
   return updatedName;
 };
 
+const nyCities = ["New York", "New York City", "NYC"];
+const nyCounties = ["Richmond", "Queens", "New York", "Kings", "Bronx"];
+const nyStates = ["NY"];
+const listOfStates = [
+  "al",
+  "ak",
+  "az",
+  "ar",
+  "ca",
+  "co",
+  "ct",
+  "de",
+  "fl",
+  "ga",
+  "hi",
+  "id",
+  "il",
+  "in",
+  "ia",
+  "ks",
+  "ky",
+  "la",
+  "me",
+  "md",
+  "ma",
+  "mi",
+  "mn",
+  "ms",
+  "mo",
+  "mt",
+  "ne",
+  "nv",
+  "nh",
+  "nj",
+  "nm",
+  "ny",
+  "nc",
+  "nd",
+  "oh",
+  "ok",
+  "or",
+  "pa",
+  "ri",
+  "sc",
+  "sd",
+  "tn",
+  "tx",
+  "ut",
+  "vt",
+  "va",
+  "wa",
+  "wv",
+  "wi",
+  "wy",
+];
+
+/**
+ * lowerCaseArray
+ * Make all values in a string array lowercase.
+ */
+const lowerCaseArray = (arr) => arr.map((item) => item.toLowerCase());
+
+/**
+ * normalizedBirthdate(birthdate)
+ * Convert a MM/DD/YYYY date string to a Date object.
+ */
+const normalizedBirthdate = (birthdate) => {
+  if (birthdate) {
+    return new Date(birthdate);
+  }
+  return;
+};
+
 module.exports = {
   strToBool,
   normalizeName,
   updateJuvenileName,
+  lowerCaseArray,
+  allowedCities: lowerCaseArray(nyCities),
+  allowedCounties: lowerCaseArray(nyCounties),
+  allowedStates: lowerCaseArray(nyStates),
+  allStates: lowerCaseArray(listOfStates),
+  normalizedBirthdate,
 };

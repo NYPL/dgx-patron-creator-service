@@ -1,8 +1,13 @@
-/* eslint-disable */
 const AddressValidationAPI = require("../../controllers/v0.3/AddressValidationAPI");
 const isEmpty = require("underscore").isEmpty;
 const { SONoLicenseKeyError } = require("../../helpers/errors");
-const { strToBool } = require("../../helpers/utils");
+const {
+  strToBool,
+  allowedCities,
+  allowedCounties,
+  allowedStates,
+  allStates,
+} = require("../../helpers/utils");
 
 /**
  * Creates objects with proper address structure and validates
@@ -26,37 +31,29 @@ class Address {
   }
 
   /**
-   * inState(policyParam)
-   * Checks to see if the address is in the New York state.
-   *
-   * @param {Policy object} policyParam
+   * inUS
+   * Checks if the address is in the United States.
    */
-  inState(policyParam) {
-    const policy = policyParam.policy;
-    return !!(
-      policy.serviceArea &&
-      policy.serviceArea["state"].includes(this.address.state.toLowerCase())
-    );
+  inUS() {
+    return allStates.includes(this.address.state.toLowerCase());
   }
 
   /**
-   * inCity(policyParam)
-   * Checks to see if the address is in New York City.
-   *
-   * @param {Policy object} policyParam
+   * inNYState
+   * Checks to see if the address is in the New York state.
    */
-  inCity(policyParam) {
-    const policy = policyParam.policy;
-    if (!policy.serviceArea) {
-      return false;
-    }
+  inNYState() {
+    return allowedStates.includes(this.address.state.toLowerCase());
+  }
+
+  /**
+   * inNYCity
+   * Checks to see if the address is in New York City.
+   */
+  inNYCity() {
     return (
-      (policy.serviceArea["city"] &&
-        policy.serviceArea["city"].includes(this.address.city.toLowerCase())) ||
-      (policy.serviceArea["county"] &&
-        policy.serviceArea["county"].includes(
-          this.address.county.toLowerCase()
-        ))
+      allowedCities.includes(this.address.city.toLowerCase()) ||
+      allowedCounties.includes(this.address.county.toLowerCase())
     );
   }
 
@@ -73,26 +70,15 @@ class Address {
   }
 
   /**
-   * validateInAPI()
-   */
-  async validateInAPI() {
-    if (!this.soLicenseKey) {
-      throw new SONoLicenseKeyError("No license key passed in validateInAPI.");
-    }
-
-    const { validate } = AddressValidationAPI({
-      soLicenseKey: this.soLicenseKey,
-    });
-
-    return await validate(this.address);
-  }
-
-  /**
    * validate(isWorkAddress)
    * Simple validation to make sure the address length is the proper length. If
    * it is, it then validates the address in Service Objects.
    */
   async validate() {
+    if (!this.soLicenseKey) {
+      throw new SONoLicenseKeyError("No SO license key passed in validate.");
+    }
+
     const requiredFields = ["line1", "city", "state", "zip"];
 
     requiredFields.forEach((field) => {
@@ -121,13 +107,18 @@ class Address {
       };
     }
 
-    const validation = await this.validateInAPI();
+    // Get the `validate` function from the class that makes the API call
+    // to Service Objects.
+    const { validate } = AddressValidationAPI({
+      soLicenseKey: this.soLicenseKey,
+    });
+    const validatedAddress = await validate(this.address);
 
-    if (validation.type === "valid-address") {
+    if (validatedAddress.type === "valid-address") {
       this.hasBeenValidated = true;
     }
 
-    return validation;
+    return validatedAddress;
   }
 }
 

@@ -1,13 +1,10 @@
-# v0.1 & v0.2
+# Deprecated v0.1 & v0.2 Endpoints
 
 This README is for the app version under `0.4.0` and for endpoints `/v0.1` and `/v0.2`. These endpoints are deprecated as the v0.1 endpoints depended on the NYPL Simplified Card Creator API which will be deprecated, and as the v0.2 endpoint was a proof-of-concept, not used in production, and used an older ILS API version.
 
 For the v0.1 endpoints, the Library Card app form on NYPL's website will fire a POST request to the service after it has been submitted. The service will then take the information and fire another POST request to NYPL Simplified's Card Creator API. Finally, it will return the results based on the response from the Card Creator API.
 
 The Card Creator's documentation can be found [here](https://github.com/NYPL-Simplified/card-creator).
-
-_Please contact [NYPL's Simplified Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials to the Card Creator API._
-_Please contact an NYPL engineer to get AWS credentials for NYPL's AWS accounts._
 
 ## Credentials
 
@@ -17,8 +14,6 @@ You need credentials for making a successful API call to NYPL's Simplified Card 
 CARD_CREATOR_USERNAME=username
 CARD_CREATOR_PASSWORD=password
 ```
-
-_Please contact [NYPL's Simplified Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials to the Card Creator API._
 
 All credentials that are used as environment variables need to be encrypted through the AWS KMS service. See [NYPL Engineering General](https://github.com/NYPL/engineering-general/blob/8afa65f3af28654159f11b5b1ac91dde5812153e/security/secrets.md) for more details.
 
@@ -30,8 +25,6 @@ You need credentials for making a successful API call to NYPL's Platform API whe
 CARD_CREATOR_USERNAME=username
 CARD_CREATOR_PASSWORD=password
 ```
-
-_Please contact [NYPL's Simplified Card Creator team](https://github.com/NYPL-Simplified/card-creator) if you need the credentials to the Card Creator API._
 
 All credentials that are used as environment variables need to be encrypted through the AWS KMS service. See [NYPL Engineering General](https://github.com/NYPL/engineering-general/blob/8afa65f3af28654159f11b5b1ac91dde5812153e/security/secrets.md) for more details.
 

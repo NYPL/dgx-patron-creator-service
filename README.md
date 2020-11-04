@@ -8,10 +8,6 @@ For more information regarding the business logic surrounding card creation, che
 
 This app serves the following endpoints:
 
-- `POST /api/v0.1/patrons`
-- `POST /api/v0.1/validations/username`
-- `POST /api/v0.1/validations/address`
-- `POST /api/v0.2/patrons`
 - `POST /api/v0.3/validations/username`
 - `POST /api/v0.3/validations/address`
 - `POST /api/v0.3/patrons`
@@ -19,11 +15,18 @@ This app serves the following endpoints:
 - `POST /api/v0.3/patrons/dependents`
 - `GET /docs/patron-creator`
 
+The following endpoints are deprecated:
+
+- `POST /api/v0.1/patrons`
+- `POST /api/v0.1/validations/username`
+- `POST /api/v0.1/validations/address`
+- `POST /api/v0.2/patrons`
+
 See also [PatronService](https://github.com/NYPL-discovery/patron-service), [PatronEligibilityService](https://github.com/NYPL-discovery/patron-eligibility-service), [BarcodeService](https://github.com/NYPL/barcode-service) for other patron endpoints.
 
 ## Version
 
-v0.6.0
+v0.7.5
 
 ## Technologies
 
@@ -302,11 +305,9 @@ Run `npm test` to run the unit tests.
 
 ### Integration tests
 
-Use `npm start` to run the app in one window. This is required to run the integration tests. The integration tests uses a local server the QA instance of Card Creator and the Patron Kinesis stream in the NYPL AWS Sandbox environment.
+Run `NODE_ENV=production npm start` in one window to run the app locally in production mode. This is required to run the integration tests. The integration tests will hit the production ILS server to run against tests.
 
-Note: there are no integration tests for v0.3 endpoints yet.
-
-Use `INTEGRATION_TESTS=true npm test` in a second window to run all the tests. Check the server to ensure that you see the message "Published to stream successfully!" to verify that the integration test exercised the Kinesis stream.
+Run `INTEGRATION_TESTS=true npm test` in a second window to run all the tests including the integration tests. Check the server to ensure that you see the message "Published to stream successfully!" to verify that the integration test exercised the Kinesis stream.
 
 ## Deployment
 

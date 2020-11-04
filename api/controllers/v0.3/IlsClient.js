@@ -147,7 +147,7 @@ const IlsClient = (args) => {
 
     const address = formatAddress(patron.address);
     addresses.push(address);
-    if (patron.worksInCity()) {
+    if (patron.worksInNYCity()) {
       const workAddress = formatAddress(patron.workAddress, true);
       addresses.push(workAddress);
     }
@@ -510,6 +510,8 @@ IlsClient.PTYPE_TO_TEXT = {
 IlsClient.CAN_CREATE_DEPENDENTS = [
   IlsClient.ADULT_METRO_PTYPE,
   IlsClient.ADULT_NYS_PTYPE,
+  IlsClient.WEB_DIGITAL_NON_METRO,
+  IlsClient.WEB_DIGITAL_METRO,
   IlsClient.SENIOR_METRO_PTYPE,
   IlsClient.SENIOR_NYS_PTYPE,
   IlsClient.DISABLED_METRO_NY_PTYPE,

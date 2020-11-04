@@ -17,15 +17,15 @@ const AddressValidationAPI = (args = {}) => {
   const RESPONSES = {
     unrecognized_address: {
       type: UNRECOGNIZED_ADDRESS_TYPE,
-      title: "Unrecognized address.",
+      title: "Unrecognized address",
     },
     alternate_addresses: {
       type: ALTERNATE_ADDRESSES_TYPE,
-      title: "Alternate addresses have been identified.",
+      title: "Alternate addresses have been identified",
     },
     valid_address: {
       type: VALID_ADDRESS_TYPE,
-      title: "Valid address.",
+      title: "Valid address",
     },
   };
 

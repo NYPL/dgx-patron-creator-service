@@ -1,20 +1,11 @@
+/* eslint-disable jest/no-disabled-tests */
 const Policy = require("../../../../api/models/v0.3/modelPolicy");
-const { Card } = require("../../../../api/models/v0.3/modelCard");
+const Card = require("../../../../api/models/v0.3/modelCard");
 const Address = require("../../../../api/models/v0.3/modelAddress");
 
 describe("Policy", () => {
-  it("should return the three valid types", () => {
-    const policy = Policy();
-
-    expect(policy.validTypes).toEqual([
-      "simplye",
-      "webApplicant",
-      "simplyeJuvenile",
-    ]);
-  });
-
   describe("SimplyE", () => {
-    const policy = Policy();
+    const policy = Policy({ policyType: "simplye" });
 
     it("returns the default simplye policy and related values", () => {
       expect(policy.policyType).toEqual("simplye");
@@ -27,139 +18,13 @@ describe("Policy", () => {
       expect(Object.keys(policy.policyField("ptype"))).toEqual([
         "default",
         "metro",
-        "digitalTemporary",
-        "digitalNonMetro",
-        "digitalMetro",
       ]);
-      expect(policy.policyField("requiredFields")).toEqual([
-        "email",
-        "barcode",
-        "ageGate",
-      ]);
-      expect(Object.keys(policy.policyField("serviceArea"))).toEqual([
-        "city",
-        "county",
-        "state",
-      ]);
+      expect(policy.policyField("requiredFields")).toEqual(["ageGate"]);
       expect(policy.policyField("minimumAge")).toEqual(13);
     });
 
-    it("verifies that `email` and `barcode` are required fields", () => {
-      expect(policy.isRequiredField("email")).toEqual(true);
-      expect(policy.isRequiredField("barcode")).toEqual(true);
+    it("verifies that `ageGate` is a required field", () => {
       expect(policy.isRequiredField("ageGate")).toEqual(true);
-    });
-
-    it("returns the ptype for patrons in the metro", () => {
-      // Metro residents have a city of "New York" or can also have counties
-      // of Richmond, Queens, New York, Kings, and the Bronx.
-      const metroAddress = new Address({
-        line1: "476th 5th Ave",
-        city: "New York",
-        state: "New York",
-        zip: "10018",
-      });
-      // Card = Patron
-      const metroCard = new Card({
-        name: "some name",
-        username: "username",
-        address: metroAddress,
-        pin: "1234",
-        // TODO: This cyclical dependancy seems unnecessary but will update later.
-        policy,
-      });
-      const metroAddress2 = new Address({
-        line1: "some address",
-        state: "New York",
-        county: "Queens",
-        zip: "11368",
-      });
-      const metroCard2 = new Card({
-        name: "some name",
-        username: "username",
-        address: metroAddress2,
-        pin: "1234",
-        policy,
-      });
-      const simplyePtype = policy.ilsPolicies.simplye.ptype;
-      const metroPtype = simplyePtype.metro.id;
-
-      let ptype = policy.determinePtype(metroCard);
-      expect(ptype).toEqual(metroPtype);
-      expect(ptype).toEqual(2);
-
-      ptype = policy.determinePtype(metroCard2);
-      expect(ptype).toEqual(metroPtype);
-      expect(ptype).toEqual(2);
-    });
-
-    it("returns the ptype for patrons in the state", () => {
-      const stateAddress = new Address({
-        line1: "Some address",
-        city: "Albany",
-        state: "New York",
-        zip: "10018",
-      });
-      const stateCard = new Card({
-        name: "some name",
-        username: "username",
-        address: stateAddress,
-        pin: "1234",
-        policy,
-      });
-
-      const simplyePtype = policy.ilsPolicies.simplye.ptype;
-      const nysPtype = simplyePtype.default.id;
-
-      const ptype = policy.determinePtype(stateCard);
-      expect(ptype).toEqual(nysPtype);
-      expect(ptype).toEqual(3);
-    });
-
-    it("sets up the correct expiration dates", () => {
-      const ptypes = policy.ilsPolicies.simplye.ptype;
-      const nonMetroPtype = ptypes.default.id;
-      const metroPtype = ptypes.metro.id;
-      const digitalTemporary = ptypes.digitalTemporary.id;
-      const digitalNonMetro = ptypes.digitalNonMetro.id;
-      const digitalMetro = ptypes.digitalMetro.id;
-
-      // Check the Non-metro ptype first:
-      let exptime = policy.getExpirationPoliciesForPtype(nonMetroPtype);
-
-      // The standard time is 3 years or 1095 days.
-      expect(exptime.standard).toEqual(1095);
-      // The temporary time is 30 days.
-      expect(exptime.temporary).toEqual(30);
-
-      // Check the metro ptype next:
-      exptime = policy.getExpirationPoliciesForPtype(metroPtype);
-
-      // The standard time is 3 years or 1095 days.
-      expect(exptime.standard).toEqual(1095);
-      // The temporary time is 30 days.
-      expect(exptime.temporary).toEqual(30);
-
-      // Check the digital temporary ptype next:
-      exptime = policy.getExpirationPoliciesForPtype(digitalTemporary);
-
-      // The standard and temporary time is 90 days.
-      expect(exptime.standard).toEqual(90);
-      expect(exptime.temporary).toEqual(90);
-
-      // Check the metro ptype next:
-      exptime = policy.getExpirationPoliciesForPtype(digitalNonMetro);
-
-      // The standard and temporary time is 1 year or 365 days.
-      expect(exptime.standard).toEqual(365);
-      expect(exptime.temporary).toEqual(365);
-
-      // Check the metro ptype next:
-      exptime = policy.getExpirationPoliciesForPtype(digitalMetro);
-
-      // The standard and temporary time is 3 years or 1095 days.
-      expect(exptime.standard).toEqual(1095);
-      expect(exptime.temporary).toEqual(1095);
     });
   });
 
@@ -174,61 +39,120 @@ describe("Policy", () => {
 
       // Values found in IlsClient:
       expect(policy.policyField("agency")).toEqual("198");
-      expect(Object.keys(policy.policyField("ptype"))).toEqual(["default"]);
-      expect(policy.policyField("requiredFields")).toEqual([
-        "email",
-        "barcode",
-        "birthdate",
+      expect(Object.keys(policy.policyField("ptype"))).toEqual([
+        "default",
+        "digitalTemporary",
+        "digitalNonMetro",
+        "digitalMetro",
       ]);
-      expect(Object.keys(policy.policyField("serviceArea"))).toEqual([
-        "city",
-        "county",
-        "state",
-      ]);
+      expect(policy.policyField("requiredFields")).toEqual(["birthdate"]);
       expect(policy.policyField("minimumAge")).toEqual(13);
     });
 
-    it("verifies that `email`, `barcode`, and `birthdate` are required fields", () => {
-      expect(policy.isRequiredField("email")).toEqual(true);
-      expect(policy.isRequiredField("barcode")).toEqual(true);
+    it("verifies that `birthdate` is a required field", () => {
       expect(policy.isRequiredField("birthdate")).toEqual(true);
       expect(policy.isRequiredField("ageGate")).toEqual(false);
-    });
-
-    it("always returns the default web ptype for web applications", () => {
-      const address = new Address({
-        line1: "476th 5th Ave",
-        city: "New York City",
-        state: "New York",
-        zip: "10018",
-      });
-      // Card = Patron
-      const card = new Card({
-        name: "some name",
-        username: "username",
-        address,
-        pin: "1234",
-      });
-      const webApplicantPtype = policy.ilsPolicies.webApplicant.ptype;
-      const webPtypeID = webApplicantPtype.default.id;
-
-      const ptype = policy.determinePtype(card);
-      expect(ptype).toEqual(webPtypeID);
-
-      // The ptype value is '1':
-      expect(ptype).toEqual(1);
     });
 
     it("sets up the correct expiration dates", () => {
       const ptypes = policy.ilsPolicies.webApplicant.ptype;
       const webApplicantPtype = ptypes.default.id;
+      const digitalTemporary = ptypes.digitalTemporary.id;
+      const digitalNonMetro = ptypes.digitalNonMetro.id;
+      const digitalMetro = ptypes.digitalMetro.id;
 
-      const exptime = policy.getExpirationPoliciesForPtype(webApplicantPtype);
+      let exptime = policy.getExpirationPoliciesForPtype(webApplicantPtype);
+      // The standard time is 90 days.
+      expect(exptime).toEqual(90);
 
+      // Check the digital temporary ptype next:
+      exptime = policy.getExpirationPoliciesForPtype(digitalTemporary);
+      // The standard time is 90 days.
+      expect(exptime).toEqual(90);
+
+      // Check the metro ptype next:
+      exptime = policy.getExpirationPoliciesForPtype(digitalNonMetro);
+      // The standard time is 1 year or 365 days.
+      expect(exptime).toEqual(365);
+
+      // Check the metro ptype next:
+      exptime = policy.getExpirationPoliciesForPtype(digitalMetro);
       // The standard time is 3 years or 1095 days.
-      expect(exptime.standard).toEqual(1095);
-      // The temporary time is 90 days.
-      expect(exptime.temporary).toEqual(90);
+      expect(exptime).toEqual(1095);
+    });
+
+    it("returns the ptype for patrons in the metro", () => {
+      // Metro residents have a city of "New York" or can also have counties
+      // of Richmond, Queens, New York, Kings, and the Bronx.
+      const metroAddress = new Address({
+        line1: "476th 5th Ave",
+        city: "New York",
+        state: "NY",
+        zip: "10018",
+        isResidential: true,
+        hasBeenValidated: true,
+      });
+      const metroCard = new Card({
+        name: "some name",
+        username: "username",
+        address: metroAddress,
+        pin: "1234",
+        location: "nyc",
+        policy,
+      });
+      const metroAddress2 = new Address({
+        line1: "some address",
+        city: "Queens",
+        county: "Queens",
+        state: "NY",
+        zip: "11368",
+        isResidential: true,
+        hasBeenValidated: true,
+      });
+      const metroCard2 = new Card({
+        name: "some name",
+        username: "username",
+        address: metroAddress2,
+        pin: "1234",
+        location: "nyc",
+        policy,
+      });
+      const webApplicant = policy.ilsPolicies.webApplicant.ptype;
+      const digitalMetro = webApplicant.digitalMetro.id;
+
+      let ptype = policy.determinePtype(metroCard);
+      expect(ptype).toEqual(digitalMetro);
+      expect(ptype).toEqual(9);
+
+      ptype = policy.determinePtype(metroCard2);
+      expect(ptype).toEqual(digitalMetro);
+      expect(ptype).toEqual(9);
+    });
+
+    it("returns the ptype for nonMetro patron", () => {
+      const stateAddress = new Address({
+        line1: "Some address",
+        city: "Albany",
+        state: "NY",
+        zip: "10018",
+        isResidential: true,
+        hasBeenValidated: true,
+      });
+      const stateCard = new Card({
+        name: "some name",
+        username: "username",
+        address: stateAddress,
+        pin: "1234",
+        location: "nys",
+        policy,
+      });
+
+      const webApplicant = policy.ilsPolicies.webApplicant.ptype;
+      const digitalNonMetro = webApplicant.digitalNonMetro.id;
+
+      const ptype = policy.determinePtype(stateCard);
+      expect(ptype).toEqual(digitalNonMetro);
+      expect(ptype).toEqual(8);
     });
   });
 
@@ -244,27 +168,14 @@ describe("Policy", () => {
       // Values found in IlsClient:
       expect(policy.policyField("agency")).toEqual("202");
       expect(Object.keys(policy.policyField("ptype"))).toEqual(["default"]);
-      expect(policy.policyField("requiredFields")).toEqual([
-        "email",
-        "barcode",
-      ]);
-      expect(Object.keys(policy.policyField("serviceArea"))).toEqual([
-        "city",
-        "county",
-        "state",
-      ]);
-    });
-
-    it("verifies that `email`, `barcode`, and `birthdate` are required fields", () => {
-      expect(policy.isRequiredField("email")).toEqual(true);
-      expect(policy.isRequiredField("barcode")).toEqual(true);
+      expect(policy.policyField("requiredFields")).toEqual([]);
     });
 
     it("always returns the default ptype for simplye juvenile accounts", () => {
       const address = new Address({
         line1: "476th 5th Ave",
         city: "New York City",
-        state: "New York",
+        state: "NY",
         zip: "10018",
       });
       const card = new Card({
@@ -290,8 +201,8 @@ describe("Policy", () => {
       const exptime = policy.getExpirationPoliciesForPtype(juvenilePType);
 
       // Both the standard and temporary time is 3 years or 1095 days.
-      expect(exptime.standard).toEqual(1095);
-      expect(exptime.temporary).toEqual(1095);
+      expect(exptime).toEqual(1095);
+      expect(exptime).toEqual(1095);
     });
   });
 });

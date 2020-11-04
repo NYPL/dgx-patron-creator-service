@@ -38,7 +38,6 @@ class BarcodesDb {
         logger.debug("database table 'barcodes' created");
       }
     } catch (error) {
-      console.log(error);
       if (error.message === 'relation "barcodes" already exists') {
         logger.error("database table barcodes already exists, continuing");
       }
