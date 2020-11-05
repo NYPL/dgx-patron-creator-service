@@ -133,11 +133,10 @@ const Policy = (args) => {
     if (isSimplyEApplicant || !isWebApplicant || !card) {
       return;
     }
-
-    // TODO: Verify this - a card is denied if the user doesn't have an address
-    // in the US or their geolocation is empty.
+    // Currently, patrons outside the US or if the location couldn't be
+    // verified, get a temporary card.
     if (!card.livesInUS() || card.location === "") {
-      return;
+      return ptype.digitalTemporary.id;
     }
 
     // We now assume the policy is "webApplicant".

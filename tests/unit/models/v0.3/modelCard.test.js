@@ -945,20 +945,6 @@ describe("Card", () => {
       expect(simplye.ptype).toEqual(4);
     });
 
-    it("does not set the ptype for patrons who live outside the US", () => {
-      const simplye = new Card({
-        ...basicCard,
-        address: new Address({
-          city: "Berlin",
-          state: "",
-        }),
-        location: "",
-        policy: Policy({ policyType: "webApplicant" }),
-      });
-      simplye.setPtype();
-      expect(simplye.ptype).toEqual(undefined);
-    });
-
     it("sets the ptype for patrons who live in NYC", () => {
       const cardLivesInNYC = new Card({
         ...basicCard,
@@ -1011,6 +997,20 @@ describe("Card", () => {
       });
       cardOutsideNYS.setPtype();
       expect(cardOutsideNYS.ptype).toEqual(7);
+    });
+
+    it("sets a temporary ptype for patrons who live outside the US", () => {
+      const card = new Card({
+        ...basicCard,
+        address: new Address({
+          city: "Berlin",
+          state: "",
+        }),
+        location: "",
+        policy: Policy({ policyType: "webApplicant" }),
+      });
+      card.setPtype();
+      expect(card.ptype).toEqual(7);
     });
   });
 
