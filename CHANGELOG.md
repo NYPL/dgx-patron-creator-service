@@ -8,6 +8,7 @@
 - Updated the IlsClient so it handles token creation rather than having the `endpoints` file generate tokens for authenticated calls. Now the token is private in that class rather than global in the app.
 - Updated integration tests for the v0.3 API endpoints.
 - Removed code for v0.1 and v0.2 endpoints and returned a deprecated note for those endpoints.
+- Updated Swagger documentation to reflect updated valid responses and error problem detail responses.
 
 #### Added
 

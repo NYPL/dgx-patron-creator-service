@@ -8,12 +8,12 @@ For more information regarding the business logic surrounding card creation, che
 
 This app serves the following endpoints:
 
+- `GET /docs/patron-creator`
 - `POST /api/v0.3/validations/username`
 - `POST /api/v0.3/validations/address`
 - `POST /api/v0.3/patrons`
 - `GET /api/v0.3/patrons/dependent-eligiblity`
 - `POST /api/v0.3/patrons/dependents`
-- `GET /docs/patron-creator`
 
 The following endpoints are deprecated:
 
@@ -106,10 +106,9 @@ Example request:
     "line1": "1111 1st St.",
     "city": "Woodside",
     "state": "NY",
-    "zip": "11377"
-  },
-  "isWorkAddress": false,
-  "policyType": "simplye"
+    "zip": "11377",
+    "isResidential": true,
+  }
 }
 ```
 
@@ -117,9 +116,11 @@ Example response:
 
 ```javascript
 {
+  "status": 200,
   "type": "valid-address",
+  "title": "Valid address",
   "cardType": "standard",
-  "message": "The library card will be a standard library card.",
+  "detail": "The library card will be a standard library card.",
   "address": {
     "address": {
     "line1": "1111 1st St.",
@@ -127,14 +128,16 @@ Example response:
     "city": "Woodside",
     "state": "NY",
     "zip": "11377-1234",
-    "isResidential": true
+    "isResidential": true,
+    "hasBeenValidated": true,
   },
   "originalAddress": {
     "address": {
     "line1": "1111 1st St.",
     "city": "Woodside",
     "state": "NY",
-    "zip": "11377"
+    "zip": "11377",
+    "isResidential": true,
   },
 }
 ```
@@ -216,11 +219,15 @@ Example responses:
 }
 ```
 
+Note: although we want to return a `detail` property, some clients expect the `message` property so that message is duplicated for now.
+
 ```javascript
 {
   "status": 400,
   "type": "not-eligible-card",
+  "title": "Not Eligible Card",
   "message": "You have reached the limit of dependent cards you can receive via online application."
+  "detail": "You have reached the limit of dependent cards you can receive via online application."
 }
 ```
 
@@ -289,7 +296,7 @@ Example of responses:
 }
 ```
 
-## JSON Documentation
+## JSON and YAML Swagger Documentation
 
 Visit `/docs/patrons-validations` for the JSON version of this service's swagger documentation.
 
