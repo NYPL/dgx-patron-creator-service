@@ -50,7 +50,7 @@ $ npm install
 
 You need credentials for making successful API calls to NYPL's ILS, Service Objects, and for using AWS Kinesis to stream patron data.
 
-A local Postgres database needs to be set up and environment variables can be set in the configuration files in the `/config` directory.
+A local Postgres database named `barcodes` needs to be set up and other environment variables can be set in the configuration files in the `/config` directory.
 
 All the credentials are stored in the configuration files in the `/config` directory but you do need a personal AWS account under NYPL's account in order to be able to decrypt those values locally.
 
@@ -309,6 +309,26 @@ Whenever endpoints are updated, the corresponding Swagger documentation MUST be 
 ### Unit tests
 
 Run `npm test` to run the unit tests.
+
+There are unit tests for the postgres database integration. Create a postgres database called `barcodes_test` and fill out the `DB_*_TEST` fields in `/config/deploy_development.env`:
+
+```
+DB_USER_TEST=
+DB_HOST_TEST=
+DB_DATABASE_TEST=barcodes_test
+DB_PASSWORD_TEST=
+DB_PORT_TEST=5432
+```
+
+Example:
+
+```
+DB_USER_TEST=database_user
+DB_HOST_TEST=localhost
+DB_DATABASE_TEST=barcodes_test
+DB_PASSWORD_TEST=database_password
+DB_PORT_TEST=5432
+```
 
 ### Integration tests
 

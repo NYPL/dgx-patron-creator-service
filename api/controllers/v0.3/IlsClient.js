@@ -11,9 +11,10 @@ const encode = require("../../helpers/encode");
  * Helper class to setup API calls to the ILS. This class assumes that all the
  * patron data has already been validated. All this does is format the data
  * for API requests to the ILS.
+ * @param {object} props
  */
-const IlsClient = (args) => {
-  const { createUrl, findUrl, tokenUrl, ilsClientKey, ilsClientSecret } = args;
+const IlsClient = (props) => {
+  const { createUrl, findUrl, tokenUrl, ilsClientKey, ilsClientSecret } = props;
   let ilsToken;
   let ilsTokenTimestamp;
   const timeNow = new Date();
@@ -40,7 +41,6 @@ const IlsClient = (args) => {
    *   ],
    *   "type": "h"
    * }
-   *
    * @param {Address object} address
    * @param {boolean} isWorkAddress
    */
@@ -58,7 +58,6 @@ const IlsClient = (args) => {
    * formatPatronName
    * Format the patron's name so that it is last name and then first name
    * and in all caps. If it's a single name, just return it in all caps.
-   *
    * @param {string} name
    */
   const formatPatronName = (name) => {
@@ -104,7 +103,6 @@ const IlsClient = (args) => {
    *
    * This merges any existing values in the "patronCodes" object and
    * returns it.
-   *
    * @param {boolean} ecommunicationsPrefValue
    * @param {object} patronCodes
    */
@@ -133,7 +131,6 @@ const IlsClient = (args) => {
    *   birthDate: '1988-01-01',
    *   homeLibraryCode: 'eb',
    * }
-   *
    * @param {Card object} patron
    */
   const formatPatronData = (patron) => {
@@ -204,7 +201,6 @@ const IlsClient = (args) => {
    * Returns the response from the ILS or an error.
    * Note: the newly created patron's id is in the response object in
    *  `response.data.link`.
-   *
    * @param {Card object} patron
    */
   const createPatron = async (patron) => {
@@ -249,13 +245,12 @@ const IlsClient = (args) => {
   };
 
   /**
-   * updatePatron(patron)
+   * updatePatron
    * First checks if the patron has met all the requirements before calling the
    * ILS API. If the patron is valid, format the data as the ILS expects it.
    * Returns the response from the ILS or an error.
    * Note: the newly created patron's id is in the response object in
    *  `response.data.link`.
-   *
    * @param {Card object} patron
    * @param {object} updatedFields
    */
@@ -299,13 +294,12 @@ const IlsClient = (args) => {
   };
 
   /**
-   * getPatronFromBarcodeOrUsername(barcodeOrUsername, isBarcode)
+   * getPatronFromBarcodeOrUsername
    * Hits the /find endpoint in the ILS and returns a patron data object
    * or an error.
    *
    * The barcode field tag is denoted as 'b' and the username field tag is
    * denoted as 'u'.
-   *
    * @param {string} barcodeOrUsername
    * @param {boolean} isBarcode
    */
@@ -338,7 +332,7 @@ const IlsClient = (args) => {
   };
 
   /**
-   * available(barcodeOrUsername, isBarcode)
+   * available
    * Makes a call to the ILS to get a patron data object through the
    * `getPatronFromBarcodeOrUsername` function. A 200 response means that the
    * username or barcode was found and is therefore not available. A 404
@@ -346,9 +340,8 @@ const IlsClient = (args) => {
    * therefore available. A 409 response means that the ILS found a duplicate
    * and so the username or barcode is unavailable. These are the responses
    * from the ILS at the moment.
-   *
    * @param {string} barcodeOrUsername
-   * @param {boolean}} isBarcode
+   * @param {boolean} isBarcode
    */
   const available = async (barcodeOrUsername, isBarcode = true) => {
     const fieldType = isBarcode ? "barcode" : "username";

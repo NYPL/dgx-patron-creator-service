@@ -14,32 +14,32 @@ const {
  * A card class to create proper Card data structure and validations
  * on that data.
  *
- * @param {object} args - Object consisting of the name string,
+ * @param {object} props - Object consisting of the name string,
  *  address Address object, username string, pin string, email string,
  *  birthdate string, workAddress Address object, ecommunicationsPref string,
  *  and policy Policy object.
  */
 class Card {
-  constructor(args) {
-    this.name = args.name;
-    this.address = this.getOrCreateAddress(args.address);
-    this.workAddress = this.getOrCreateAddress(args.workAddress);
-    this.location = args.location || "";
-    this.username = args.username;
-    this.usernameHasBeenValidated = !!args.usernameHasBeenValidated;
-    this.pin = args.pin;
-    this.email = args.email;
-    this.birthdate = normalizedBirthdate(args.birthdate);
-    this.ageGate = strToBool(args.ageGate);
-    this.ecommunicationsPref = !!args.ecommunicationsPref;
-    this.policy = args.policy;
-    this.varFields = args.varFields || {};
+  constructor(props) {
+    this.name = props.name;
+    this.address = this.getOrCreateAddress(props.address);
+    this.workAddress = this.getOrCreateAddress(props.workAddress);
+    this.location = props.location || "";
+    this.username = props.username;
+    this.usernameHasBeenValidated = !!props.usernameHasBeenValidated;
+    this.pin = props.pin;
+    this.email = props.email;
+    this.birthdate = normalizedBirthdate(props.birthdate);
+    this.ageGate = strToBool(props.ageGate);
+    this.ecommunicationsPref = !!props.ecommunicationsPref;
+    this.policy = props.policy;
+    this.varFields = props.varFields || {};
     // SimplyE will always set the home library to the `eb` code. Eventually,
     // the web app will pass a `homeLibraryCode` parameter with a patron's
     // home library. For now, `eb` is hardcoded.
-    this.homeLibraryCode = args.homeLibraryCode || "eb";
-    this.acceptTerms = strToBool(args.acceptTerms);
-    this.ilsClient = args.ilsClient;
+    this.homeLibraryCode = props.homeLibraryCode || "eb";
+    this.acceptTerms = strToBool(props.acceptTerms);
+    this.ilsClient = props.ilsClient;
 
     this.errors = {};
 
@@ -54,10 +54,11 @@ class Card {
   }
 
   /**
-   * getOrCreateAddress(address)
+   * getOrCreateAddress
    * If the address argument is an Address object, then return it. Otherwise,
    * create a new Addres object with the argument object.
-   * @param {object} address
+   * @param {object} address Object containing address fields or an instance
+   *  of the Address class.
    */
   getOrCreateAddress(address) {
     if (!address) {
@@ -67,7 +68,7 @@ class Card {
   }
 
   /**
-   * validate()
+   * validate
    * Runs simple validations to make sure that the arguments are present and
    * passes the needed requirements, and once those pass, then validates the
    * card's address and username against the ILS.
@@ -145,7 +146,7 @@ class Card {
   }
 
   /**
-   * checkValidUsername()
+   * checkValidUsername
    * Check if the username is available. If it available (true) or
    * not available (false), return that value. Otherwise, the username
    * hasn't been checked so check its availability against the
@@ -153,9 +154,7 @@ class Card {
    * call the ILS API if it already received a value.
    */
   async checkValidUsername() {
-    const { responses, validate } = UsernameValidationApi({
-      ilsClient: this.ilsClient,
-    });
+    const { responses, validate } = UsernameValidationApi(this.ilsClient);
     let userNameResponse;
 
     // If the username has already been validated using
@@ -175,9 +174,8 @@ class Card {
   }
 
   /**
-   * requiredByPolicy(field)
+   * requiredByPolicy
    * Checks if the field is required in the current policy.
-   *
    * @param {string} field
    */
   requiredByPolicy(field) {
@@ -185,7 +183,7 @@ class Card {
   }
 
   /**
-   * livesInNYCity()
+   * livesInNYCity
    * Checks if the card has a home address in NYC.
    */
   livesInNYCity() {
@@ -193,7 +191,7 @@ class Card {
   }
 
   /**
-   * worksInNYCity()
+   * worksInNYCity
    * Checks if the card has a work address in NYC.
    */
   worksInNYCity() {
@@ -201,7 +199,7 @@ class Card {
   }
 
   /**
-   * livesInNYState()
+   * livesInNYState
    * Checks if the card has a home address in NYS. Note, we don't need to check
    * that the card has a work address in NYS.
    */
@@ -226,7 +224,7 @@ class Card {
   }
 
   /**
-   * addressHasBeenValidated()
+   * addressHasBeenValidated
    * Checks if the card's home address has been validated by Service Objects.
    */
   addressHasBeenValidated() {
@@ -234,7 +232,7 @@ class Card {
   }
 
   /**
-   * addressIsResidential()
+   * addressIsResidential
    * Checks if the card's home address is residential.
    */
   addressIsResidential() {
@@ -242,7 +240,7 @@ class Card {
   }
 
   /**
-   * validForIls()
+   * validForIls
    * Checks if the current card is valid and has a ptype.
    */
   validForIls() {
@@ -250,7 +248,7 @@ class Card {
   }
 
   /**
-   * setBarcode()
+   * setBarcode
    * Sets this card's barcode to the next available barcode in the ILS.
    */
   async setBarcode() {
@@ -266,7 +264,7 @@ class Card {
       throw new DatabaseError("No barcode can be generated for this ptype.");
     }
 
-    const barcode = new Barcode({ ilsClient: this.ilsClient });
+    const barcode = new Barcode(this.ilsClient);
     // Let's try to generate a barcode.
     this.barcode = await barcode.getNextAvailableBarcode(barcodeStartSequence);
 
@@ -280,19 +278,19 @@ class Card {
   }
 
   /**
-   * freeBarcode()
+   * freeBarcode
    * Sets the current barcode's `used` value to false, possibly because
    * creating a patron in the ILS failed and the barcode is now free to use.
    */
   async freeBarcode() {
-    const barcode = new Barcode({ ilsClient: this.ilsClient });
+    const barcode = new Barcode(this.ilsClient);
     await barcode.freeBarcode(this.barcode);
 
     this.barcode = "";
   }
 
   /**
-   * setPtype()
+   * setPtype
    * Sets the ptype for the current card based on the current policy.
    */
   setPtype() {
@@ -300,7 +298,7 @@ class Card {
   }
 
   /**
-   * setAgency()
+   * setAgency
    * Sets the agency for the current card based on the current policy.
    */
   setAgency() {
@@ -308,7 +306,7 @@ class Card {
   }
 
   /**
-   * getExpirationTime()
+   * getExpirationTime
    * Get the number of days that the current card is set to expired
    * based on the current policy.
    */
@@ -317,7 +315,7 @@ class Card {
   }
 
   /**
-   * setExpirationDate()
+   * setExpirationDate
    * Set's the expiration date for the account based on the current policy and
    * whether the card is temporary or not. The card validation must be
    * executed before this function to check whether the card is temporary or
@@ -339,7 +337,7 @@ class Card {
   }
 
   /**
-   * setPatronId(data)
+   * setPatronId
    * Parses the id from the response `link` string from the ILS, and sets
    * it on `this.patronId`.
    * @param {object} data
@@ -384,7 +382,7 @@ class Card {
   }
 
   /**
-   * details()
+   * details
    * Returns a simple object with all the card's current values.
    */
   details() {
@@ -423,7 +421,7 @@ class Card {
   }
 
   /**
-   * validateAddress(addressType)
+   * validateAddress
    * Returns the card object with updated validated address or errors based
    * on policy and Service Objects verification.
    *

@@ -12,22 +12,24 @@ const {
 /**
  * Creates objects with proper address structure and validates
  * the data against the AddressValidationAPI.
+ * @param {object} props Object with address data.
+ * @param {string} soLicenseKey Service Objects license key.
  */
 class Address {
-  constructor(args = {}, soLicenseKey = "") {
+  constructor(props = {}, soLicenseKey = "") {
     this.address = {
-      line1: args.line1 || "",
-      line2: args.line2 || "",
-      city: args.city || "",
-      county: args.county || "",
-      state: args.state || "",
-      zip: args.zip || "",
-      isResidential: strToBool(args.isResidential),
+      line1: props.line1 || "",
+      line2: props.line2 || "",
+      city: props.city || "",
+      county: props.county || "",
+      state: props.state || "",
+      zip: props.zip || "",
+      isResidential: strToBool(props.isResidential),
     };
     this.errors = {};
     this.soLicenseKey = soLicenseKey;
     // Set in the API call or through the request body.
-    this.hasBeenValidated = strToBool(args.hasBeenValidated);
+    this.hasBeenValidated = strToBool(props.hasBeenValidated);
   }
 
   /**
@@ -58,7 +60,7 @@ class Address {
   }
 
   /**
-   * toString()
+   * toString
    * Helper function to convert the address values into a
    * two-line addres string.
    */
@@ -70,7 +72,7 @@ class Address {
   }
 
   /**
-   * validate(isWorkAddress)
+   * validate
    * Simple validation to make sure the address length is the proper length. If
    * it is, it then validates the address in Service Objects.
    */
@@ -109,9 +111,7 @@ class Address {
 
     // Get the `validate` function from the class that makes the API call
     // to Service Objects.
-    const { validate } = AddressValidationAPI({
-      soLicenseKey: this.soLicenseKey,
-    });
+    const { validate } = AddressValidationAPI(this.soLicenseKey);
     const validatedAddress = await validate(this.address);
 
     if (validatedAddress.type === "valid-address") {

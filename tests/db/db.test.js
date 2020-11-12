@@ -1,5 +1,4 @@
 /* eslint-disable */
-
 const BarcodeDb = require("../../db");
 
 // If Travis is not running the tests, use the local environment variables.

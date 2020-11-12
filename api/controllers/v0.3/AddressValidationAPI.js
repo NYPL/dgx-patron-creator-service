@@ -1,18 +1,16 @@
-/* eslint-disable */
 const ServiceObjectsClient = require("./ServiceObjectsClient");
 const { SONoLicenseKeyError } = require("../../helpers/errors");
 const { strToBool } = require("../../helpers/utils");
 
 /**
  * A class that uses Service Objects to validate addresses.
+ * @param {string} soLicenseKey License key for the Service Objects API.
  */
-const AddressValidationAPI = (args = {}) => {
-  const soLicenseKey = args["soLicenseKey"];
-
+const AddressValidationAPI = (soLicenseKey) => {
   const ALTERNATE_ADDRESSES_TYPE = "alternate-addresses";
   const UNRECOGNIZED_ADDRESS_TYPE = "unrecognized-address";
   const VALID_ADDRESS_TYPE = "valid-address";
-  const { validateAddress } = ServiceObjectsClient({ soLicenseKey });
+  const { validateAddress } = ServiceObjectsClient(soLicenseKey);
 
   const RESPONSES = {
     unrecognized_address: {
@@ -30,7 +28,7 @@ const AddressValidationAPI = (args = {}) => {
   };
 
   /**
-   * validate(address)
+   * validate
    * Calls the Service Objects client to validate an address and returns a
    * response with the type of address it is, even if SO is not callable.
    * @param {Object} address
@@ -60,11 +58,11 @@ const AddressValidationAPI = (args = {}) => {
   };
 
   /**
-   * createAddressFromResponse(address)
+   * createAddressFromResponse
    * Returns an address object based on the validated address data returned
    * from Service Objects. This is to make it easier to create Address
    * instances by updating the key values.
-   * @param {object} address
+   * @param {object} address Address object from Service Objects.
    */
   const createAddressFromResponse = (address) => {
     if (!address) {
@@ -85,7 +83,7 @@ const AddressValidationAPI = (args = {}) => {
   };
 
   /**
-   * alternateAddressesResponse(addresses)
+   * alternateAddressesResponse
    * Combines all alternate addresses into a response.
    * @param {Array} addresses - Array of address objects
    */
@@ -97,7 +95,7 @@ const AddressValidationAPI = (args = {}) => {
   };
 
   /**
-   * parseResponse(addressParam, originalAddress)
+   * parseResponse
    * If there are alternate addresses, then a response with those addresses
    * is returned. Otherwise, there's only one address and it's used to find
    * the policy needed for the correct account type. A response for that

@@ -41,33 +41,6 @@ describe("Address", () => {
         state: "NY",
       });
     });
-
-    it("returns an error if the two address lines are too long", async () => {
-      const address = new Address(
-        {
-          line1:
-            "some very long line to throw a validation error for the address",
-          line2:
-            "continuing the very long address line for the error more text",
-          city: "New York City",
-          state: "NY",
-          zip: "10018",
-        },
-        "soLicenseKey"
-      );
-      const response = await address.validate();
-      const addressLength =
-        address.address.line1.length + address.address.line2.length;
-      expect(response).toEqual({
-        error: {
-          line1:
-            "Address lines must be less than 100 characters combined. The address is currently at 124 characters.",
-        },
-      });
-      expect(address.errors).toEqual({
-        line1: `Address lines must be less than 100 characters combined. The address is currently at ${addressLength} characters.`,
-      });
-    });
   });
 
   describe("class methods", () => {
@@ -77,6 +50,10 @@ describe("Address", () => {
           line1: "street address",
           state: "",
         });
+        const stateIsTwoChars = new Address({
+          line1: "476 5th Ave",
+          state: "New York",
+        });
         const addressInUS = new Address({
           line1: "476 5th Ave",
           city: "New York",
@@ -85,6 +62,7 @@ describe("Address", () => {
         });
 
         expect(addressNotUS.inUS()).toEqual(false);
+        expect(stateIsTwoChars.inUS()).toEqual(false);
         expect(addressInUS.inUS()).toEqual(true);
       });
     });
@@ -115,9 +93,14 @@ describe("Address", () => {
           line1: "street address",
           city: "New York",
         });
+        const addressQueens = new Address({
+          line1: "street address",
+          city: "Queens",
+        });
 
         expect(addressNotNYC.inNYCity()).toEqual(false);
         expect(addressNYC.inNYCity()).toEqual(true);
+        expect(addressQueens.inNYCity()).toEqual(true);
       });
 
       it("should return true if they are in an NYC county and false otherwise", () => {
@@ -159,6 +142,54 @@ describe("Address", () => {
         await expect(address.validate()).rejects.toThrow(
           "No SO license key passed in validate."
         );
+      });
+      it("returns an error any required fields are missing", async () => {
+        const address = new Address(
+          {
+            line1: "",
+            city: "New York",
+          },
+          "soLicenseKey"
+        );
+        const response = await address.validate();
+        expect(response).toEqual({
+          error: {
+            line1: "line1 cannot be empty",
+            state: "state cannot be empty",
+            zip: "zip cannot be empty",
+          },
+        });
+        expect(address.errors).toEqual({
+          line1: "line1 cannot be empty",
+          state: "state cannot be empty",
+          zip: "zip cannot be empty",
+        });
+      });
+      it("returns an error if the two address lines are too long", async () => {
+        const address = new Address(
+          {
+            line1:
+              "some very long line to throw a validation error for the address",
+            line2:
+              "continuing the very long address line for the error more text",
+            city: "New York City",
+            state: "NY",
+            zip: "10018",
+          },
+          "soLicenseKey"
+        );
+        const response = await address.validate();
+        const addressLength =
+          address.address.line1.length + address.address.line2.length;
+        expect(response).toEqual({
+          error: {
+            line1:
+              "Address lines must be less than 100 characters combined. The address is currently at 124 characters.",
+          },
+        });
+        expect(address.errors).toEqual({
+          line1: `Address lines must be less than 100 characters combined. The address is currently at ${addressLength} characters.`,
+        });
       });
       it("should return the current address if it already has been validated", async () => {
         const mockAPI = jest.fn(() =>

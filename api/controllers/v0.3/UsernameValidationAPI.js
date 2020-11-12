@@ -3,8 +3,7 @@ const { NoILSClient, BadUsername } = require("../../helpers/errors");
 /**
  * A class that validates usernames against the ILS.
  */
-const UsernameValidationAPI = (args) => {
-  const ilsClient = args.ilsClient;
+const UsernameValidationAPI = (ilsClient) => {
   const USERNAME_PATTERN = /^[a-zA-Z0-9]{5,25}$/;
   const AVAILABLE_USERNAME_TYPE = "available-username";
   const UNAVAILABLE_USERNAME_TYPE = "unavailable-username";
@@ -30,7 +29,7 @@ const UsernameValidationAPI = (args) => {
   };
 
   /**
-   * usernameAvailable(username)
+   * usernameAvailable
    * Calls the ILS API to check username availability. Returns true or false if
    * the call was successful. The `ilsClient.available` function takes care of
    * error handling. If no ILS Client is passed, an error is thrown before
@@ -52,7 +51,7 @@ const UsernameValidationAPI = (args) => {
   };
 
   /**
-   * validate(username)
+   * validate
    * First checks to see if the passed username is not blank and passes the
    * validation pattern and throws an invalid error if it doesn't. if it passes,
    * a call is made to the ILS to check for its availability and returns an

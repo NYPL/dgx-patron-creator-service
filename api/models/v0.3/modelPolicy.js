@@ -3,36 +3,31 @@ const IlsClient = require("../../controllers/v0.3/IlsClient");
 /**
  * Creates a policy object to find out what type of card is allowed for a
  * given card and their location.
- *
- * @param {object} args - Object consisting of the policy type. The `policyType`
- *  is expected to be either "simplye", "webApplicant", "simplyeJuvenile".
+ * @param {object} props - Object consisting of the policy type. The
+ *  `policyType` is expected to be either "simplye", "webApplicant",
+ *  or "simplyeJuvenile".
  */
-const Policy = (args) => {
+const Policy = (props) => {
   const DEFAULT_POLICY_TYPE = "webApplicant";
   const policyType =
-    args && args.policyType ? args.policyType : DEFAULT_POLICY_TYPE;
+    props && props.policyType ? props.policyType : DEFAULT_POLICY_TYPE;
   const getExpirationPoliciesForPtype = (ptype) => {
     let expTime;
     switch (ptype) {
-      case IlsClient.WEB_DIGITAL_TEMPORARY:
-        expTime = IlsClient.WEB_APPLICANT_EXPIRATION_TIME;
-        break;
+      // One year.
       case IlsClient.WEB_DIGITAL_NON_METRO:
         expTime = IlsClient.ONE_YEAR_STANDARD_EXPIRATION_TIME;
         break;
+      // Three years.
       case IlsClient.WEB_DIGITAL_METRO:
-        expTime = IlsClient.STANDARD_EXPIRATION_TIME;
-        break;
-      case IlsClient.WEB_APPLICANT_PTYPE:
-        expTime = IlsClient.WEB_APPLICANT_EXPIRATION_TIME;
-        break;
       case IlsClient.SIMPLYE_JUVENILE:
-        expTime = IlsClient.STANDARD_EXPIRATION_TIME;
-        break;
       case IlsClient.SIMPLYE_METRO_PTYPE:
       case IlsClient.SIMPLYE_NON_METRO_PTYPE:
         expTime = IlsClient.STANDARD_EXPIRATION_TIME;
         break;
+      // 90 days.
+      case IlsClient.WEB_APPLICANT_PTYPE:
+      case IlsClient.WEB_DIGITAL_TEMPORARY:
       default:
         expTime = IlsClient.WEB_APPLICANT_EXPIRATION_TIME;
         break;
@@ -97,15 +92,13 @@ const Policy = (args) => {
   /**
    * policyField
    * Returns the field in the current policy object.
-   *
    * @param {string} field
    */
   const policyField = (field) => policy[field];
 
   /**
-   * isRequiredField(field)
+   * isRequiredField
    * Checks if the field is part of the requiredFields for the current policy.
-   *
    * @param {string} field
    */
   const isRequiredField = (field) =>
@@ -115,7 +108,6 @@ const Policy = (args) => {
    * determinePtype
    * Determines the ptype for a card account based on the policy type and the
    * card's location and address.
-   *
    * @param {Card object} card
    */
   const determinePtype = (card) => {

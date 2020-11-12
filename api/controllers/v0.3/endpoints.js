@@ -182,7 +182,7 @@ async function setupCreateDependent(req, res) {
  * @param {HTTP response} res
  */
 async function checkUsername(req, res) {
-  const { validate } = UsernameValidationAPI({ ilsClient });
+  const { validate } = UsernameValidationAPI(ilsClient);
   let usernameResponse;
   let status;
   try {
@@ -404,7 +404,7 @@ async function createPatron(req, res) {
  * @param {HTTP response} res
  */
 async function checkDependentEligibility(req, res) {
-  const { isPatronEligible } = DependentAccountAPI({ ilsClient });
+  const { isPatronEligible } = DependentAccountAPI(ilsClient);
   let response;
   let status;
   const options = {
@@ -435,9 +435,7 @@ async function createDependent(req, res) {
     getAlreadyFetchedParentPatron,
     updateParentWithDependent,
     formatAddressForILS,
-  } = DependentAccountAPI({
-    ilsClient,
-  });
+  } = DependentAccountAPI(ilsClient);
   let isEligible;
   let parentPatron;
   let response;
