@@ -874,10 +874,6 @@
           "type": "string",
           "example": "available-username"
         },
-        "cardType": {
-          "type": "string",
-          "example": "standard"
-        },
         "message": {
           "type": "string",
           "example": "This username is available."
@@ -942,14 +938,6 @@
         "title": {
           "type": "string",
           "example": "Valid address"
-        },
-        "cardType": {
-          "type": "string",
-          "example": "standard"
-        },
-        "detail": {
-          "type": "string",
-          "example": "The library card will be a standard library card."
         },
         "address": {
           "$ref": "#/definitions/AddressModelValidatedV03"
@@ -1085,10 +1073,6 @@
         "detail": {
           "type": "object",
           "example": "Usernames should be 5-25 characters, letters or numbers only. Please revise your username."
-        },
-        "cardType": {
-          "type": "object",
-          "example": null
         }
       }
     },
@@ -1097,10 +1081,6 @@
         "status": {
           "type": "number",
           "example": 400
-        },
-        "cardType": {
-          "type": "string",
-          "example": null
         },
         "type": {
           "type": "string",
@@ -1131,10 +1111,6 @@
         "status": {
           "type": "number",
           "example": 400
-        },
-        "cardType": {
-          "type": "string",
-          "example": null
         },
         "type": {
           "type": "string",

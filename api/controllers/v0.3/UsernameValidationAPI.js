@@ -12,24 +12,21 @@ const UsernameValidationAPI = (ilsClient) => {
   const RESPONSES = {
     invalid: {
       type: INVALID_USERNAME_TYPE,
-      cardType: null,
       message:
         "Usernames should be 5-25 characters, letters or numbers only. Please revise your username.",
     },
     unavailable: {
       type: UNAVAILABLE_USERNAME_TYPE,
-      cardType: null,
       message: "This username is unavailable. Please try another.",
     },
     available: {
       type: AVAILABLE_USERNAME_TYPE,
-      cardType: "standard",
       message: "This username is available.",
     },
   };
 
   /**
-   * usernameAvailable
+   * checkAvailabilityInILS
    * Calls the ILS API to check username availability. Returns true or false if
    * the call was successful. The `ilsClient.available` function takes care of
    * error handling. If no ILS Client is passed, an error is thrown before
@@ -37,7 +34,7 @@ const UsernameValidationAPI = (ilsClient) => {
    *
    * @param {string} username
    */
-  const usernameAvailable = async (username) => {
+  const checkAvailabilityInILS = async (username) => {
     const isBarcode = false;
     let available = false;
 
@@ -64,7 +61,7 @@ const UsernameValidationAPI = (ilsClient) => {
       const invalid = RESPONSES.invalid;
       throw new BadUsername(invalid);
     } else {
-      const available = await usernameAvailable(username);
+      const available = await checkAvailabilityInILS(username);
       if (!available) {
         const unavailable = RESPONSES.unavailable;
         throw new BadUsername(unavailable);
@@ -77,7 +74,7 @@ const UsernameValidationAPI = (ilsClient) => {
     validate,
     responses: RESPONSES,
     // used for testing
-    usernameAvailable,
+    checkAvailabilityInILS,
   };
 };
 

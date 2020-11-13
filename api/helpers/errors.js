@@ -199,13 +199,12 @@ class NotEligibleCard extends ProblemDetail {
 }
 
 class BadUsername extends ProblemDetail {
-  constructor({ type, message, cardType }) {
+  constructor({ type, message }) {
     super();
     this.status = 400;
     this.type = type;
     this.title = "Bad Username";
     this.message = message;
-    this.cardType = cardType;
     // To support older versions of API where client expect these values:
     this.name = this.title;
     // A client error object displays `detail` rather than `message` to follow

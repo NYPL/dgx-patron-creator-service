@@ -189,10 +189,7 @@ async function checkUsername(req, res) {
     usernameResponse = await validate(req.body.username);
     status = 200;
   } catch (error) {
-    usernameResponse = {
-      ...collectErrorResponseData(error),
-      cardType: error.cardType || null,
-    };
+    usernameResponse = collectErrorResponseData(error);
     status = usernameResponse.status;
   }
 
@@ -218,7 +215,6 @@ async function checkAddress(req, res) {
       validatedAddress = {
         ...validatedAddress,
         originalAddress: address.address,
-        cardType: null,
       };
       if (!validatedAddress.type) {
         const invalidError = new InvalidRequest("Address validation error");
@@ -227,8 +223,6 @@ async function checkAddress(req, res) {
           ...collectErrorResponseData(invalidError),
         };
       }
-    } else {
-      policyResponse = Card.RESPONSES.standardCard;
     }
 
     if (validatedAddress.addresses && validatedAddress.addresses.length !== 0) {
@@ -238,9 +232,9 @@ async function checkAddress(req, res) {
     }
 
     addressResponse = {
+      status: validatedAddress.status || 200,
       ...validatedAddress,
       ...policyResponse,
-      status: validatedAddress.status || 200,
     };
   } catch (error) {
     addressResponse = collectErrorResponseData(error);
@@ -266,18 +260,10 @@ async function checkAddress(req, res) {
  */
 async function createPatron(req, res) {
   let address = req.body.address
-    ? new Address(
-        req.body.address,
-        soLicenseKey,
-        req.body.address.hasBeenValidated
-      )
+    ? new Address(req.body.address, soLicenseKey)
     : undefined;
   let workAddress = req.body.workAddress
-    ? new Address(
-        req.body.workAddress,
-        soLicenseKey,
-        req.body.workAddress.hasBeenValidated
-      )
+    ? new Address(req.body.workAddress, soLicenseKey)
     : undefined;
 
   // The default and only allowed policty type will be "webApplicant" since we
@@ -462,7 +448,7 @@ async function createDependent(req, res) {
       error: error.message,
     };
     // There was an error so just return the error and don't continue.
-    renderResponse(req, res, response.status, response);
+    return renderResponse(req, res, response.status, response);
   }
 
   if (isEligible.eligible) {
@@ -479,6 +465,9 @@ async function createDependent(req, res) {
     fieldTag: "x",
     content: `DEPENDENT OF ${req.body.barcode}`,
   };
+  // The parent's address is assumed to have already been validated so no
+  // need to run it against validation again. No need for the SO license key
+  // since it won't be validated.
   let address = new Address({
     ...formattedAddress,
     hasBeenValidated: true,
