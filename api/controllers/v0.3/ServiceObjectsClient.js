@@ -1,4 +1,3 @@
-/* eslint-disable */
 const axios = require("axios");
 const {
   SOAuthorizationError,
@@ -11,14 +10,14 @@ const logger = require("../../helpers/Logger");
 /**
  * Helper class that calls Service Objects to validate addresses.
  */
-const ServiceObjectsClient = (args = {}) => {
-  const soLicenseKey = args.soLicenseKey || "";
+const ServiceObjectsClient = (soLicenseKey = "") => {
   const baseUrl = "https://ws.serviceobjects.com/";
+  // eslint-disable-next-line no-unused-vars
   const backupUrl = "https://wsbackup.serviceobjects.com/";
   const endpoint = "AV3/api.svc/GetBestMatchesJSON";
 
   /**
-   * generateParamString(args)
+   * generateParamString
    * Generates a string to be used as the parameter string for a url. The
    * object's key and value pair will be turned into a url parameter:
    * { key: "value" } => "&key=value"
@@ -33,7 +32,7 @@ const ServiceObjectsClient = (args = {}) => {
   };
 
   /**
-   * createAddressObjforSO(address)
+   * createAddressObjforSO
    * Convert the address to an object with the keys that Service Objects
    * understands, along with the license key.
    * @param {object} address
@@ -48,7 +47,7 @@ const ServiceObjectsClient = (args = {}) => {
   });
 
   /**
-   * validateAddress(address)
+   * validateAddress
    * This generates the full URL to call Service Objects. It either receives
    * a validated address response or an error and those are handled in the
    * `then` clause. Otherwise, errors are thrown and handled.
@@ -113,7 +112,7 @@ const ServiceObjectsClient = (args = {}) => {
   };
 
   /**
-   * throwValidErrorType(error)
+   * throwValidErrorType
    * Parse the error object that is returned from Service Objects and throw
    * the specific type of error. Specific errors that are being caught are
    * "Domain Specific Errors" and "Authorization" errors. The error object

@@ -30,7 +30,7 @@ describe("Barcode", () => {
       available: () => "available mock function",
     }));
 
-    const barcode = new Barcode({ ilsClient: IlsClient() });
+    const barcode = new Barcode(IlsClient());
 
     expect(barcode.ilsClient).toBeDefined();
     expect(barcode.db).toBeDefined();
@@ -42,14 +42,14 @@ describe("Barcode", () => {
   // and returns a barcode that _is_ available.
   describe("getNextAvailableBarcode", () => {
     it("returns undefined if no barcode start sequence was passed", async () => {
-      const barcode = new Barcode({});
+      const barcode = new Barcode();
       await expect(barcode.getNextAvailableBarcode()).resolves.toEqual(
         undefined
       );
     });
 
     it("returns undefined if it can't get a barcode", async () => {
-      const barcode = new Barcode({});
+      const barcode = new Barcode();
 
       barcode.nextAvailableFromDB = jest
         .fn()
@@ -64,7 +64,7 @@ describe("Barcode", () => {
     });
 
     it("returns an available barcode", async () => {
-      const barcode = new Barcode({});
+      const barcode = new Barcode();
 
       barcode.nextAvailableFromDB = jest
         .fn()
@@ -82,21 +82,21 @@ describe("Barcode", () => {
 
   describe("nextLuhnValidCode", () => {
     it("should return undefined if the barcode is not 14 digits", () => {
-      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcode = new Barcode(IlsClient());
 
       const nextBarcode = barcode.nextLuhnValidCode("1234");
       expect(nextBarcode).toBeUndefined();
     });
 
     it("should get the next available barcode", () => {
-      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcode = new Barcode(IlsClient());
 
       const nextBarcode = barcode.nextLuhnValidCode("28888855432452");
       expect(nextBarcode).toEqual("28888855432460");
     });
 
     it("should take a number to get the next nth Luhn-valid code", () => {
-      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcode = new Barcode(IlsClient());
 
       const nextBarcode = barcode.nextLuhnValidCode("28888855432452", 100);
       expect(nextBarcode).toEqual("28888855433450");
@@ -105,7 +105,7 @@ describe("Barcode", () => {
 
   describe("nextAvailableFromDB", () => {
     it("should return undefined if no barcode start sequence was passed", async () => {
-      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcode = new Barcode(IlsClient());
       const nextBarcode = await barcode.nextAvailableFromDB();
 
       expect(nextBarcode.barcode).toEqual(undefined);
@@ -113,7 +113,7 @@ describe("Barcode", () => {
     });
 
     it("should get the first used barcode from the database", async () => {
-      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcode = new Barcode(IlsClient());
       const querySpy = jest.spyOn(barcode.db, "query");
       const luhnSpy = jest.spyOn(barcode, "nextLuhnValidCode");
       const barcodeStartSeq = "288";
@@ -139,7 +139,7 @@ describe("Barcode", () => {
     });
 
     it("should get an unused barcode from the database", async () => {
-      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcode = new Barcode(IlsClient());
 
       // Let's manually add a barcode in the database but set it to unused.
       // The `nextAvailableFromDB` function should pick this up.
@@ -163,7 +163,7 @@ describe("Barcode", () => {
     });
 
     it("should not get a barcode if there are none with the start sequence", async () => {
-      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcode = new Barcode(IlsClient());
       const querySpy = jest.spyOn(barcode.db, "query");
       const barcodeStartSeq = "23333";
       const nextBarcode = await barcode.nextAvailableFromDB(barcodeStartSeq);
@@ -194,7 +194,7 @@ describe("Barcode", () => {
       }));
       const ilsClient = IlsClient();
       const ilsSpy = jest.spyOn(ilsClient, "available");
-      const barcode = new Barcode({ ilsClient });
+      const barcode = new Barcode(ilsClient);
       // Mocking that we return the same barcode because it's not important for
       // this test. In reality, a new barcode would be generated to hit the
       // ILS for availability.
@@ -225,7 +225,7 @@ describe("Barcode", () => {
       IlsClient.mockImplementation(() => ({
         available: () => true,
       }));
-      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcode = new Barcode(IlsClient());
       const addBarcodeSpy = jest.spyOn(barcode, "addBarcode");
       const testBarcode = "98765";
 
@@ -250,7 +250,7 @@ describe("Barcode", () => {
       IlsClient.mockImplementation(() => ({
         available: () => true,
       }));
-      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcode = new Barcode(IlsClient());
       const testBarcode = "9876543";
       const nextBarcode = "9876542";
       barcode.addBarcode = jest
@@ -283,7 +283,7 @@ describe("Barcode", () => {
       IlsClient.mockImplementation(() => ({
         available: () => true,
       }));
-      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcode = new Barcode(IlsClient());
       const markUsedSpy = jest.spyOn(barcode, "markUsed");
       const testBarcode = "987654";
 
@@ -318,7 +318,7 @@ describe("Barcode", () => {
       IlsClient.mockImplementation(() => ({
         available: () => true,
       }));
-      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcode = new Barcode(IlsClient());
       const testBarcode = "9876543";
       const nextBarcode = "9876542";
       barcode.markUsed = jest
@@ -355,7 +355,7 @@ describe("Barcode", () => {
 
   describe("markUsed", () => {
     it("updates an existing barcode to used=true", async () => {
-      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcode = new Barcode(IlsClient());
       const barcodeNum = "999999999";
 
       // Insert a barcode and set it to used=false.
@@ -375,7 +375,7 @@ describe("Barcode", () => {
     });
 
     it("updates an existing barcode to used=false", async () => {
-      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcode = new Barcode(IlsClient());
       const barcodeNum = "999999998";
 
       // Insert a barcode and set it to used=true.
@@ -395,7 +395,7 @@ describe("Barcode", () => {
     });
 
     it("fails to update an existing barcode to used=false", async () => {
-      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcode = new Barcode(IlsClient());
       const barcodeNum = "999999997";
 
       // Insert a barcode and set it to used=false.
@@ -413,7 +413,7 @@ describe("Barcode", () => {
     });
 
     it("fails to update an existing barcode to used=true", async () => {
-      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcode = new Barcode(IlsClient());
       const barcodeNum = "999999996";
 
       // Insert a barcode and set it to used=true.
@@ -433,7 +433,7 @@ describe("Barcode", () => {
 
   describe("freeBarcode", () => {
     it("should call the markUsed function always setting the barcode to false", async () => {
-      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcode = new Barcode(IlsClient());
       // We don't want to test `markUsed` since it was already tested,
       // just that `freeBarcode` always calls `markUsed` with the
       // barcode and "used" set to false.
@@ -452,7 +452,7 @@ describe("Barcode", () => {
 
   describe("addBarcode", () => {
     it("successfully inserts a barcode into the database", async () => {
-      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcode = new Barcode(IlsClient());
       const querySpy = jest.spyOn(barcode.db, "query");
 
       const addedBarcode = await barcode.addBarcode("123456");
@@ -466,7 +466,7 @@ describe("Barcode", () => {
     });
 
     it("tries but fails to insert a barcode into the database because it already exists", async () => {
-      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcode = new Barcode(IlsClient());
       const querySpy = jest.spyOn(barcode.db, "query");
 
       // This insertion was successful.
@@ -486,7 +486,7 @@ describe("Barcode", () => {
     });
 
     it("tries but fails to insert a barcode into the database", async () => {
-      const barcode = new Barcode({ ilsClient: IlsClient() });
+      const barcode = new Barcode(IlsClient());
       // Mock that the database is down or there's some other error:
       const querySpy = jest
         .spyOn(barcode.db, "query")

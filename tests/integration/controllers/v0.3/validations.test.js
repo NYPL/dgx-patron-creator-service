@@ -26,7 +26,6 @@ if (process.env.INTEGRATION_TESTS === "true") {
 
       expect(response.status).toEqual(200);
       expect(response.data.type).toEqual("available-username");
-      expect(response.data.cardType).toEqual("standard");
       expect(response.data.message).toEqual("This username is available.");
     });
 
@@ -45,7 +44,6 @@ if (process.env.INTEGRATION_TESTS === "true") {
       expect(error.detail).toEqual(
         "This username is unavailable. Please try another."
       );
-      expect(error.cardType).toEqual(null);
     });
 
     test("should return an invalid username response", async () => {
@@ -63,7 +61,6 @@ if (process.env.INTEGRATION_TESTS === "true") {
       expect(error.detail).toEqual(
         "Usernames should be 5-25 characters, letters or numbers only. Please revise your username."
       );
-      expect(error.cardType).toEqual(null);
     });
   });
 
@@ -87,8 +84,6 @@ if (process.env.INTEGRATION_TESTS === "true") {
         status: 200,
         type: "valid-address",
         title: "Valid address",
-        cardType: "standard",
-        detail: "The library card will be a standard library card.",
         address: {
           ...data.address,
           line2: "",
@@ -134,7 +129,6 @@ if (process.env.INTEGRATION_TESTS === "true") {
           line2: "",
           county: "",
         },
-        cardType: null,
         status: 400,
         type: "invalid-request",
         title: "Invalid Request",

@@ -1,4 +1,3 @@
-/* eslint-disable jest/no-disabled-tests */
 const Card = require("../../../../api/models/v0.3/modelCard");
 const Policy = require("../../../../api/models/v0.3/modelPolicy");
 const Address = require("../../../../api/models/v0.3/modelAddress");
@@ -30,7 +29,6 @@ const basicCard = {
   ),
   username: "username",
   pin: "1234",
-  // required for web applicants
   email: "test@test.com",
   birthdate: "01/01/1988",
   acceptTerms: true,
@@ -40,17 +38,14 @@ const basicCard = {
 // UsernameValidationAPI constants
 const available = {
   type: "available-username",
-  cardType: "standard",
   message: "This username is available",
 };
 const unavailable = {
   type: "unavailable-username",
-  cardType: null,
   message: "This username is unavailable. Please try another.",
 };
 const invalid = {
   type: "invalid-username",
-  cardType: null,
   message:
     "Usernames should be 5-25 characters, letters or numbers only. Please revise your username.",
 };
@@ -66,12 +61,13 @@ describe("Card", () => {
   describe("Init", () => {
     it("should set homeLibraryCard to 'eb' by default", () => {
       // `basicCard` does not have a homeLibraryCard value.
-      let card = new Card(basicCard);
+      const card = new Card(basicCard);
 
       expect(card.homeLibraryCode).toEqual("eb");
+    });
 
-      // but if you set one, it'll be used
-      card = new Card({
+    it("should update homeLibraryCard to the value passed", () => {
+      const card = new Card({
         name: "First Last",
         address: new Address(
           { line1: "476th 5th Ave.", city: "New York" },
@@ -90,7 +86,7 @@ describe("Card", () => {
   });
 
   describe("validate", () => {
-    it("should fail if the terms of condition flag is not set to true", async () => {
+    it("should fail if the terms and conditions flag is not set to true", async () => {
       const cardNoAcceptTerms = new Card({});
       await expect(cardNoAcceptTerms.validate()).rejects.toThrow(
         "The terms and conditions were not accepted."
@@ -204,12 +200,13 @@ describe("Card", () => {
       expect(response).toEqual({ valid: true, errors: {} });
     });
 
-    it("should fail if there are no name, username, pin, or address values", async () => {
+    it("should fail if there are no name, username, pin, address, and email values", async () => {
       const cardNoName = new Card({
         name: "",
         username: "username",
         pin: "1234",
         address: {},
+        email: "test@test.com",
         acceptTerms: true,
       });
       const cardNoUsername = new Card({
@@ -217,6 +214,7 @@ describe("Card", () => {
         username: "",
         pin: "1234",
         address: {},
+        email: "test@test.com",
         acceptTerms: true,
       });
       const cardNoPin = new Card({
@@ -224,6 +222,7 @@ describe("Card", () => {
         username: "username",
         pin: "",
         address: {},
+        email: "test@test.com",
         acceptTerms: true,
       });
       const cardNoAddress = new Card({
@@ -231,6 +230,15 @@ describe("Card", () => {
         username: "username",
         pin: "1234",
         address: undefined,
+        email: "test@test.com",
+        acceptTerms: true,
+      });
+      const cardNoEmail = new Card({
+        name: "name",
+        username: "username",
+        pin: "1234",
+        address: undefined,
+        email: "",
         acceptTerms: true,
       });
 
@@ -244,6 +252,9 @@ describe("Card", () => {
         "'name', 'address', 'username', 'pin', and 'email' are all required fields."
       );
       await expect(cardNoAddress.validate()).rejects.toThrow(
+        "'name', 'address', 'username', 'pin', and 'email' are all required fields."
+      );
+      await expect(cardNoEmail.validate()).rejects.toThrow(
         "'name', 'address', 'username', 'pin', and 'email' are all required fields."
       );
     });
@@ -300,44 +311,23 @@ describe("Card", () => {
       });
     });
 
-    it("should fail for simplye policies without an email", async () => {
-      const cardNoEmail = new Card({
-        ...basicCard,
-        email: undefined,
-        policy: Policy({ policyType: "simplye" }),
-      });
-
-      await expect(cardNoEmail.validate()).rejects.toThrow(
-        "'name', 'address', 'username', 'pin', and 'email' are all required fields."
-      );
-    });
-    it("should fail for webApplicant policies without a birthdate or email", async () => {
-      const cardNoEmail = new Card({
-        ...basicCard,
-        email: undefined,
-        policy: Policy({ policyType: "webApplicant" }),
-      });
+    it("should fail for webApplicant policies without a birthdate", async () => {
       const cardNoBirthdate = new Card({
         ...basicCard,
         birthdate: undefined,
         policy: Policy({ policyType: "webApplicant" }),
       });
 
-      await expect(cardNoEmail.validate()).rejects.toThrow(
-        "'name', 'address', 'username', 'pin', and 'email' are all required fields."
-      );
       await expect(cardNoBirthdate.validate()).rejects.toThrow(
         "'birthdate' is a required field."
       );
     });
 
-    // Internally, `card.validate` calls `CardValidator.validate` which is
-    // tested in-depth above.
     it("should return a validated card", async () => {
       const card = new Card({
         ...basicCard,
         email: "email@email.com",
-        policy: Policy({ policyType: "simplye" }),
+        policy: Policy({ policyType: "webApplicant" }),
       });
       const mockAddressValidate = jest.fn().mockReturnValue({
         address: {
@@ -448,19 +438,6 @@ describe("Card", () => {
       });
     });
 
-    it("should fail if there is no home address", async () => {
-      const card = new Card({
-        ...basicCard,
-        address: undefined,
-        email: "test@email.com",
-        policy: Policy({ policyType: "simplye" }),
-      });
-
-      await expect(card.validate()).rejects.toThrow(
-        "'name', 'address', 'username', 'pin', and 'email' are all required fields."
-      );
-    });
-
     it("should return a valid response and update internal values", async () => {
       const card = new Card({
         ...basicCard,
@@ -502,32 +479,6 @@ describe("Card", () => {
         currentDay + policyDays
       );
       expect(card.expirationDate).toEqual(expirationDate);
-    });
-  });
-
-  describe("getOrCreateAddress", () => {
-    const soLicenseKey = "soLicenseKey";
-    const rawAddress = {
-      line1: "476 5th Avenue",
-      city: "Woodside",
-      state: "NY",
-      zip: "10018",
-    };
-    const address = new Address(rawAddress, soLicenseKey);
-    const card = new Card(basicCard);
-
-    it("should returned undefined if no arguments were passed", () => {
-      expect(card.getOrCreateAddress()).toEqual(undefined);
-    });
-
-    it("create a new Address object is an Address instance isn't passed", () => {
-      const addressInstance = card.getOrCreateAddress(rawAddress);
-      expect(addressInstance instanceof Address).toEqual(true);
-    });
-
-    it("if an existing Address object is passed, just return it", () => {
-      const addressInstance = card.getOrCreateAddress(address);
-      expect(addressInstance).toEqual(address);
     });
   });
 
@@ -690,7 +641,7 @@ describe("Card", () => {
       "soLicenseKey"
     );
 
-    it("returns false for web applications without a work address", () => {
+    it("returns false for webApplicants if there is no work address or it's not in NYC or true if it is in NYC", () => {
       let card = new Card({
         ...basicCard,
         policy: webApplicant,
@@ -712,25 +663,21 @@ describe("Card", () => {
       expect(card.worksInNYCity()).toEqual(true);
     });
 
-    it("returns false because there is no work address", () => {
-      const card = new Card({
+    it("returns false for simplye if there is no work address or it's not in NYC or true if it is in NYC", () => {
+      let card = new Card({
         ...basicCard,
         policy: simplyePolicy,
       });
       expect(card.worksInNYCity()).toEqual(false);
-    });
 
-    it("returns false if there is a work address but not in the city", () => {
-      const card = new Card({
+      card = new Card({
         ...basicCard,
         workAddress: workAddressNotInNYCity,
         policy: simplyePolicy,
       });
       expect(card.worksInNYCity()).toEqual(false);
-    });
 
-    it("returns true if there is a work address and it is in the city", () => {
-      const card = new Card({
+      card = new Card({
         ...basicCard,
         workAddress: workAddressInNYCity,
         policy: simplyePolicy,
@@ -746,40 +693,36 @@ describe("Card", () => {
     const addressNotNY = new Address({ state: "NJ" }, "soLicenseKey");
     const addressNY = new Address({ state: "NY" }, "soLicenseKey");
 
-    it("returns false for web applicants if they are not in NY state", () => {
-      const cardNotNY = new Card({
-        ...basicCard,
-        address: addressNotNY,
-        policy: webApplicant,
-      });
-      const cardNY = new Card({
-        ...basicCard,
-        address: addressNY,
-        policy: webApplicant,
-      });
-
-      expect(cardNotNY.livesInNYState()).toEqual(false);
-      expect(cardNY.livesInNYState()).toEqual(true);
-    });
-
-    it("returns false for simplye applicants if they are not in NY state", () => {
-      const cardNotNY = new Card({
+    it("returns false if they are not in NY state", () => {
+      const cardNotNYSimplye = new Card({
         ...basicCard,
         address: addressNotNY,
         policy: simplyePolicy,
       });
+      const cardNotNYWebApplicant = new Card({
+        ...basicCard,
+        address: addressNotNY,
+        policy: webApplicant,
+      });
 
-      expect(cardNotNY.livesInNYState()).toEqual(false);
+      expect(cardNotNYSimplye.livesInNYState()).toEqual(false);
+      expect(cardNotNYWebApplicant.livesInNYState()).toEqual(false);
     });
 
     it("returns true if they are in NY state", () => {
-      const cardNY = new Card({
+      const cardNYSimplye = new Card({
         ...basicCard,
         address: addressNY,
         policy: simplyePolicy,
       });
+      const cardNYWebApplicant = new Card({
+        ...basicCard,
+        address: addressNY,
+        policy: webApplicant,
+      });
 
-      expect(cardNY.livesInNYState()).toEqual(true);
+      expect(cardNYSimplye.livesInNYState()).toEqual(true);
+      expect(cardNYWebApplicant.livesInNYState()).toEqual(true);
     });
   });
 
@@ -865,9 +808,9 @@ describe("Card", () => {
     });
 
     it("should set the barcode in the card object for the specific ptype", async () => {
-      const mockNextBarcode = jest.fn(() => "1234");
+      const mockNextBarcode = jest.fn((val) => `${val}1234`);
       Barcode.mockImplementation(() => ({
-        getNextAvailableBarcode: mockNextBarcode,
+        getNextAvailableBarcode: (val) => mockNextBarcode(val),
       }));
 
       const cardWith5s = new Card(basicCard);
@@ -878,14 +821,14 @@ describe("Card", () => {
       await cardWith5s.setBarcode();
 
       expect(mockNextBarcode).toHaveBeenCalledWith("25555");
-      expect(cardWith5s.barcode).toEqual("1234");
+      expect(cardWith5s.barcode).toEqual("255551234");
 
       // For simplyeJuvenile accounts.
       cardWith8s.ptype = 4;
       await cardWith8s.setBarcode();
 
       expect(mockNextBarcode).toHaveBeenCalledWith("288888");
-      expect(cardWith8s.barcode).toEqual("1234");
+      expect(cardWith8s.barcode).toEqual("2888881234");
     });
 
     it("should throw an error if a barcode could not be generated", async () => {
@@ -925,8 +868,6 @@ describe("Card", () => {
   });
 
   describe("setPtype", () => {
-    const webApplicant = Policy({ policyType: "webApplicant" });
-
     it("does not set a ptype for simplye applicants (for now)", () => {
       const simplye = new Card({
         ...basicCard,
@@ -955,7 +896,7 @@ describe("Card", () => {
           hasBeenValidated: true,
         }),
         location: "nyc",
-        policy: webApplicant,
+        policy: Policy({ policyType: "webApplicant" }),
       });
       cardLivesInNYC.setPtype();
       expect(cardLivesInNYC.ptype).toEqual(9);
@@ -977,7 +918,7 @@ describe("Card", () => {
           hasBeenValidated: true,
         }),
         location: "nys",
-        policy: webApplicant,
+        policy: Policy({ policyType: "webApplicant" }),
       });
       cardWorksInNYC.setPtype();
       expect(cardWorksInNYC.ptype).toEqual(8);
@@ -993,7 +934,7 @@ describe("Card", () => {
           hasBeenValidated: true,
         }),
         location: "us",
-        policy: webApplicant,
+        policy: Policy({ policyType: "webApplicant" }),
       });
       cardOutsideNYS.setPtype();
       expect(cardOutsideNYS.ptype).toEqual(7);
@@ -1081,42 +1022,12 @@ describe("Card", () => {
   });
 
   describe("setExpirationDate", () => {
-    const simplyeCard = new Card({
-      ...basicCard,
-      policy: Policy({ policyType: "simplye" }),
-    });
-    const webCard = new Card({
+    const card = new Card({
       ...basicCard,
       policy: Policy({ policyType: "webApplicant" }),
     });
 
-    it("should set the temporary expiration date to 30 days for simplye policy", () => {
-      const today = new Date(2020, 6, 1);
-      const expirationDate = new Date(2020, 6, 1 + 30);
-      const spy = jest
-        .spyOn(global, "Date")
-        .mockReturnValueOnce(today)
-        .mockReturnValueOnce(expirationDate);
-
-      simplyeCard.setExpirationDate();
-      expect(simplyeCard.expirationDate).toEqual(expirationDate);
-      spy.mockRestore();
-    });
-
-    it("should set the standard expiration date to 3 years for simplye policy", () => {
-      const today = new Date(2020, 6, 1);
-      const expirationDate = new Date(2023, 7, 1);
-      const spy = jest
-        .spyOn(global, "Date")
-        .mockReturnValue(today)
-        .mockReturnValue(expirationDate);
-
-      simplyeCard.setExpirationDate();
-      expect(simplyeCard.expirationDate).toEqual(expirationDate);
-      spy.mockRestore();
-    });
-
-    it("should set the temporary expiration date to 90 days for webApplicant policy", () => {
+    it("should set the expiration date to 90 days for ptypes 1 and 7", () => {
       const today = new Date(2020, 6, 1);
       const expirationDate = new Date(2020, 9, 1);
       const spy = jest
@@ -1124,21 +1035,50 @@ describe("Card", () => {
         .mockReturnValue(today)
         .mockReturnValue(expirationDate);
 
-      webCard.setExpirationDate();
-      expect(webCard.expirationDate).toEqual(expirationDate);
+      card.ptype = 1;
+      card.setExpirationDate();
+      expect(card.expirationDate).toEqual(expirationDate);
+
+      card.ptype = 7;
+      card.setExpirationDate();
+      expect(card.expirationDate).toEqual(expirationDate);
       spy.mockRestore();
     });
 
-    it("should set the standard expiration date to 90 years for webApplicant policy", () => {
+    it("should set the expiration date to 1 year for ptypes 8", () => {
       const today = new Date(2020, 6, 1);
-      const expirationDate = new Date(2023, 9, 1);
+      const expirationDate = new Date(2021, 6, 1);
       const spy = jest
         .spyOn(global, "Date")
         .mockReturnValue(today)
         .mockReturnValue(expirationDate);
 
-      webCard.setExpirationDate();
-      expect(webCard.expirationDate).toEqual(expirationDate);
+      card.ptype = 8;
+      card.setExpirationDate();
+      expect(card.expirationDate).toEqual(expirationDate);
+      spy.mockRestore();
+    });
+
+    it("should set the expiration date to 3 years for ptypes 2, 3, 4, and 9", () => {
+      const today = new Date(2020, 6, 1);
+      const expirationDate = new Date(2023, 6, 1);
+      const spy = jest
+        .spyOn(global, "Date")
+        .mockReturnValue(today)
+        .mockReturnValue(expirationDate);
+
+      card.ptype = 2;
+      card.setExpirationDate();
+      expect(card.expirationDate).toEqual(expirationDate);
+      card.ptype = 3;
+      card.setExpirationDate();
+      expect(card.expirationDate).toEqual(expirationDate);
+      card.ptype = 4;
+      card.setExpirationDate();
+      expect(card.expirationDate).toEqual(expirationDate);
+      card.ptype = 9;
+      card.setExpirationDate();
+      expect(card.expirationDate).toEqual(expirationDate);
       spy.mockRestore();
     });
   });
@@ -1159,9 +1099,6 @@ describe("Card", () => {
         link:
           "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/1234",
       };
-
-      card.setPatronId();
-      expect(card.patronId).toEqual(undefined);
 
       card.setPatronId(data);
       expect(card.patronId).toEqual(1234);
@@ -1185,9 +1122,12 @@ describe("Card", () => {
       );
     });
 
-    it("attempts to create a barcode for web applicants", async () => {
+    it("attempts to create a barcode", async () => {
       IlsClient.mockImplementation(() => ({
         createPatron: () => Promise.resolve({ data: { link: "some patron" } }),
+      }));
+      Barcode.mockImplementation(() => ({
+        getNextAvailableBarcode: () => "1234",
       }));
       const card = new Card({
         ...basicCard,
@@ -1198,39 +1138,13 @@ describe("Card", () => {
 
       // Mocking this. Normally, we'd call .validate()
       card.valid = true;
-      card.setPtype();
-
-      // Set up a spy for card.setBarcode() which shouldn't be called.
-      const spy = jest.spyOn(card, "setBarcode");
-
-      await card.createIlsPatron();
-      expect(spy).toHaveBeenCalled();
-    });
-
-    it("attempts to create a barcode for simplye applicants", async () => {
-      IlsClient.mockImplementation(() => ({
-        createPatron: () => Promise.resolve({ data: { link: "some patron" } }),
-      }));
-      // Mocking that a barcode fails to be generated
-      Barcode.mockImplementation(() => ({
-        getNextAvailableBarcode: () => "1234",
-      }));
-      const card = new Card({
-        ...basicCard,
-        policy: Policy({ policyType: "simplye" }),
-        ilsClient: IlsClient({}),
-      });
-
-      // Mocking this. Normally, we'd call `card.validate()`.
-      card.valid = true;
       card.ptype = 9;
 
-      // Set up a spy for card.setBarcode() which shouldn't be called.
       const spy = jest.spyOn(card, "setBarcode");
 
       await card.createIlsPatron();
-      expect(card.barcode).toEqual("1234");
       expect(spy).toHaveBeenCalled();
+      expect(card.barcode).toEqual("1234");
     });
 
     it("attempts to create a barcode but fails!", async () => {
@@ -1257,7 +1171,7 @@ describe("Card", () => {
       );
     });
 
-    it("attempts to create a patron but fails", async () => {
+    it("attempts to create a patron but fails - ILS is down", async () => {
       const integrationError = new ILSIntegrationError(
         "The ILS could not be requested when attempting to create a patron."
       );
@@ -1267,7 +1181,6 @@ describe("Card", () => {
           throw integrationError;
         },
       }));
-      // Mocking that a barcode fails to be generated
       Barcode.mockImplementation(() => ({
         getNextAvailableBarcode: () => "1234",
         freeBarcode: () => true,
@@ -1282,10 +1195,15 @@ describe("Card", () => {
       card.valid = true;
       card.ptype = 9;
 
-      const spy = jest.spyOn(card, "freeBarcode");
+      const spySetBarcode = jest.spyOn(card, "setBarcode");
+      const spyFreeBarcode = jest.spyOn(card, "freeBarcode");
 
       await expect(card.createIlsPatron()).rejects.toEqual(integrationError);
-      expect(spy).toHaveBeenCalled();
+      // A barcode is set.
+      expect(spySetBarcode).toHaveBeenCalled();
+      // But since creating the patron failed, set that generated barcode as
+      // available in the database.
+      expect(spyFreeBarcode).toHaveBeenCalled();
     });
 
     it("creates a patron", async () => {
@@ -1298,7 +1216,6 @@ describe("Card", () => {
           },
         }),
       }));
-      // Mocking that a barcode fails to be generated
       Barcode.mockImplementation(() => ({
         getNextAvailableBarcode: () => "1234",
         freeBarcode: () => true,
@@ -1314,16 +1231,15 @@ describe("Card", () => {
       card.ptype = 9;
 
       const spy = jest.spyOn(card, "freeBarcode");
-
       const data = await card.createIlsPatron();
-
+      // Everything was successful so the barcode is set to "used" in
+      // the database.
       expect(spy).not.toHaveBeenCalled();
       expect(data.status).toEqual(200);
       expect(data.data).toEqual({ link: "ils-response-url" });
     });
   });
 
-  // Mock values for now
   describe("details", () => {
     const card = new Card({
       ...basicCard,
@@ -1347,7 +1263,6 @@ describe("Card", () => {
     });
 
     it("adds the patron ID if it was created", () => {
-      // mocked for now
       card.patronId = "456789";
       const details = card.details();
 
@@ -1355,45 +1270,6 @@ describe("Card", () => {
       expect(details.username).toEqual("username");
       expect(details.pin).toEqual("1234");
       expect(details.patronId).toEqual("456789");
-    });
-  });
-
-  describe("validateBirthdate", () => {
-    it("returns no errors if the policy does not require it", () => {
-      const card = new Card({
-        ...basicCard,
-        policy: Policy({ policyType: "simplyeJuvenile" }),
-      });
-
-      card.validateBirthdate();
-
-      expect(card.errors).toEqual({});
-    });
-
-    it("returns an error if the policy requires it and the birthdate is not valid", () => {
-      // Only the "webApplicant" policy type requires a birthdate
-      const card = new Card({
-        ...basicCard,
-        birthdate: "01/01/2014",
-        policy: Policy({ policyType: "webApplicant" }),
-      });
-
-      card.validateBirthdate();
-
-      expect(card.errors).toEqual({
-        birthdate: "Date of birth is below the minimum age of 13.",
-      });
-    });
-
-    it("returns no error if the birth date is valid", () => {
-      const card = new Card({
-        ...basicCard,
-        policy: Policy({ policyType: "webApplicant" }),
-      });
-
-      card.validateBirthdate();
-
-      expect(card.errors).toEqual({});
     });
   });
 
@@ -1419,7 +1295,7 @@ describe("Card", () => {
           { citY: "New York", state: "NY" },
           "soLicenseKey"
         ),
-        policy: Policy({ policyType: "simplye" }),
+        policy: Policy({ policyType: "webApplicant" }),
       });
       const validateAddressSpy = jest.spyOn(card, "validateAddress");
 
@@ -1433,7 +1309,7 @@ describe("Card", () => {
 
   describe("validateAddress", () => {
     it("should not call `address.validate` if the address has been validated", async () => {
-      const validAddress = {
+      const validatedAddress = {
         name: "First Last",
         address: new Address(
           { line1: "476th 5th Ave.", city: "New York", hasBeenValidated: true },
@@ -1445,7 +1321,7 @@ describe("Card", () => {
         birthdate: "01/01/1988",
       };
       const card = new Card({
-        ...validAddress,
+        ...validatedAddress,
         policy: Policy(),
       });
 
@@ -1478,8 +1354,6 @@ describe("Card", () => {
       await expect(card.validateAddress("address")).rejects.toThrow(
         "Something happened in SO."
       );
-      // For the rest of the tests, since the `hasBeenValidated` flag is false,
-      // we expect the `address.validate` function to be called.
       expect(mockValidate).toHaveBeenCalled();
 
       // Resetting or clearing the mock isn't working so restoring it this way:
@@ -1679,6 +1553,7 @@ describe("Card", () => {
       expect(card.address.hasBeenValidated).toEqual(false);
       expect(card.errors).toEqual({
         address: {
+          cardType: null,
           detail:
             "The entered address is ambiguous and will not result in a library card.",
           addresses: [
@@ -1705,6 +1580,45 @@ describe("Card", () => {
           ],
         },
       });
+    });
+  });
+
+  describe("validateBirthdate", () => {
+    it("returns no errors if the policy does not require it", () => {
+      const card = new Card({
+        ...basicCard,
+        policy: Policy({ policyType: "simplyeJuvenile" }),
+      });
+
+      card.validateBirthdate();
+
+      expect(card.errors).toEqual({});
+    });
+
+    it("returns an error if the policy requires it and the birthdate is not valid", () => {
+      // Only the "webApplicant" policy type requires a birthdate
+      const card = new Card({
+        ...basicCard,
+        birthdate: "01/01/2014",
+        policy: Policy({ policyType: "webApplicant" }),
+      });
+
+      card.validateBirthdate();
+
+      expect(card.errors).toEqual({
+        birthdate: "Date of birth is below the minimum age of 13.",
+      });
+    });
+
+    it("returns no error if the birth date is valid", () => {
+      const card = new Card({
+        ...basicCard,
+        policy: Policy({ policyType: "webApplicant" }),
+      });
+
+      card.validateBirthdate();
+
+      expect(card.errors).toEqual({});
     });
   });
 });

@@ -1,4 +1,3 @@
-/* eslint-disable */
 const DependentAccountAPI = require("../../../../api/controllers/v0.3/DependentAccountAPI");
 const IlsClient = require("../../../../api/controllers/v0.3/IlsClient");
 const { PatronNotFound } = require("../../../../api/helpers/errors");
@@ -16,7 +15,7 @@ const exampleVarFieldsMultipleDependents = [
     content: "DEPENDENTS 12333333333334,12333333333335,12333333333336",
   },
 ];
-
+const mockIlsClient = {};
 const mockedSuccessfulResponse = {
   status: 200,
   data: {
@@ -81,6 +80,36 @@ const mockedILSIntegrationError = {
     },
   },
 };
+// Since we are mocking the IlsClient class, we have to recreate the
+// constants and array of valid p-types that can create dependents.
+IlsClient.ADULT_METRO_PTYPE = 10;
+IlsClient.ADULT_NYS_PTYPE = 11;
+IlsClient.SENIOR_METRO_PTYPE = 20;
+IlsClient.SENIOR_NYS_PTYPE = 21;
+IlsClient.DISABLED_METRO_NY_PTYPE = 101;
+IlsClient.HOMEBOUND_NYC_PTYPE = 101;
+IlsClient.SIMPLYE_METRO_PTYPE = 2;
+IlsClient.SIMPLYE_NON_METRO_PTYPE = 3;
+IlsClient.WEB_DIGITAL_NON_METRO = 8;
+IlsClient.WEB_DIGITAL_METRO = 9;
+IlsClient.TEEN_METRO_PTYPE = 50;
+IlsClient.TEEN_NYS_PTYPE = 51;
+IlsClient.MARLI_PTYPE = 81;
+IlsClient.CAN_CREATE_DEPENDENTS = [
+  IlsClient.ADULT_METRO_PTYPE,
+  IlsClient.ADULT_NYS_PTYPE,
+  IlsClient.WEB_DIGITAL_NON_METRO,
+  IlsClient.WEB_DIGITAL_METRO,
+  IlsClient.SENIOR_METRO_PTYPE,
+  IlsClient.SENIOR_NYS_PTYPE,
+  IlsClient.DISABLED_METRO_NY_PTYPE,
+  IlsClient.HOMEBOUND_NYC_PTYPE,
+  IlsClient.SIMPLYE_METRO_PTYPE,
+  IlsClient.SIMPLYE_NON_METRO_PTYPE,
+  IlsClient.TEEN_METRO_PTYPE,
+  IlsClient.TEEN_NYS_PTYPE,
+  IlsClient.MARLI_PTYPE,
+];
 
 describe("DependentAccountAPI", () => {
   beforeEach(() => {
@@ -92,7 +121,7 @@ describe("DependentAccountAPI", () => {
   // The functions used in `isPatronEligible` are tested separately below.
   describe("isPatronEligible", () => {
     it("fails if no IlsClient is passed", async () => {
-      const { isPatronEligible } = DependentAccountAPI({});
+      const { isPatronEligible } = DependentAccountAPI();
       const barcode = "12345678912345";
 
       await expect(isPatronEligible(barcode)).rejects.toThrow(
@@ -101,7 +130,7 @@ describe("DependentAccountAPI", () => {
     });
 
     it("returns an error if a barcode or username is not passed", async () => {
-      const { isPatronEligible } = DependentAccountAPI({ ilsClient: {} });
+      const { isPatronEligible } = DependentAccountAPI(mockIlsClient);
 
       await expect(isPatronEligible()).rejects.toThrow(
         "No barcode or username passed."
@@ -110,7 +139,7 @@ describe("DependentAccountAPI", () => {
 
     // NYC ID can be used as a barcode and that is 16 digits long.
     it("returns an error if a barcode is not 14 or 16 digits", async () => {
-      const { isPatronEligible } = DependentAccountAPI({ ilsClient: {} });
+      const { isPatronEligible } = DependentAccountAPI(mockIlsClient);
       const options = { barcode: "1234567891234", username: undefined };
 
       await expect(isPatronEligible(options)).rejects.toThrow(
@@ -119,7 +148,7 @@ describe("DependentAccountAPI", () => {
     });
 
     it("returns a not eligible error if the barcode is 7 digits for older accounts", async () => {
-      const { isPatronEligible } = DependentAccountAPI({ ilsClient: {} });
+      const { isPatronEligible } = DependentAccountAPI(mockIlsClient);
       const options = { barcode: "1234567", username: undefined };
 
       await expect(isPatronEligible(options)).rejects.toThrow(
@@ -131,9 +160,7 @@ describe("DependentAccountAPI", () => {
       IlsClient.mockImplementation(() => ({
         getPatronFromBarcodeOrUsername: () => mockedErrorResponse,
       }));
-      const { isPatronEligible } = DependentAccountAPI({
-        ilsClient: IlsClient(),
-      });
+      const { isPatronEligible } = DependentAccountAPI(IlsClient());
       let options = { barcode: "12333333333333", username: undefined };
 
       await expect(isPatronEligible(options)).rejects.toThrow(
@@ -152,9 +179,7 @@ describe("DependentAccountAPI", () => {
         getPatronFromBarcodeOrUsername: () =>
           mockedSuccessfulResponseExpiredAccount,
       }));
-      const { isPatronEligible } = DependentAccountAPI({
-        ilsClient: IlsClient(),
-      });
+      const { isPatronEligible } = DependentAccountAPI(IlsClient());
       let options = { barcode: "12333333333333", username: undefined };
 
       await expect(isPatronEligible(options)).rejects.toThrow(
@@ -172,9 +197,7 @@ describe("DependentAccountAPI", () => {
       IlsClient.mockImplementation(() => ({
         getPatronFromBarcodeOrUsername: () => mockedSuccessfulResponseBadPType,
       }));
-      const { isPatronEligible } = DependentAccountAPI({
-        ilsClient: IlsClient(),
-      });
+      const { isPatronEligible } = DependentAccountAPI(IlsClient());
       let options = { barcode: "12333333333333", username: undefined };
 
       await expect(isPatronEligible(options)).rejects.toThrow(
@@ -193,9 +216,7 @@ describe("DependentAccountAPI", () => {
         getPatronFromBarcodeOrUsername: () =>
           mockedSuccessfulResponseLimitReached,
       }));
-      const { isPatronEligible } = DependentAccountAPI({
-        ilsClient: IlsClient(),
-      });
+      const { isPatronEligible } = DependentAccountAPI(IlsClient());
       let options = { barcode: "12333333333333", username: undefined };
 
       await expect(isPatronEligible(options)).rejects.toThrow(
@@ -213,9 +234,7 @@ describe("DependentAccountAPI", () => {
       IlsClient.mockImplementation(() => ({
         getPatronFromBarcodeOrUsername: () => mockedSuccessfulResponse,
       }));
-      const { isPatronEligible } = DependentAccountAPI({
-        ilsClient: IlsClient(),
-      });
+      const { isPatronEligible } = DependentAccountAPI(IlsClient());
       let options = { barcode: "12333333333333", username: undefined };
       let response = await isPatronEligible(options);
 
@@ -234,12 +253,26 @@ describe("DependentAccountAPI", () => {
     });
   });
 
+  describe("checkAccountExpiration", () => {
+    let { checkAccountExpiration } = DependentAccountAPI(mockIlsClient);
+
+    it("returns whether a date is expired or not", () => {
+      const mockNowDate = new Date("2020-05-27");
+
+      const futureDate = new Date("2021-05-27");
+      const expiredDate = new Date("2020-04-04");
+
+      expect(checkAccountExpiration(futureDate, mockNowDate)).toEqual(false);
+      expect(checkAccountExpiration(expiredDate, mockNowDate)).toEqual(true);
+    });
+  });
+
   describe("getPatronFromILS", () => {
     const barcode = "12345678912345";
     const username = "username";
 
     it("fails if no IlsClient is passed", async () => {
-      const { getPatronFromILS } = DependentAccountAPI({});
+      const { getPatronFromILS } = DependentAccountAPI();
 
       await expect(getPatronFromILS(barcode)).rejects.toThrow(
         "ILS Client not set in the Dependent Eligibility API."
@@ -253,7 +286,7 @@ describe("DependentAccountAPI", () => {
       }));
       const ilsClient = IlsClient();
       const spy = jest.spyOn(ilsClient, "getPatronFromBarcodeOrUsername");
-      let { getPatronFromILS } = DependentAccountAPI({ ilsClient });
+      let { getPatronFromILS } = DependentAccountAPI(ilsClient);
       let options = { value: barcode, type: "barcode" };
       let isBarcode = true;
       let patron = await getPatronFromILS(options);
@@ -291,7 +324,7 @@ describe("DependentAccountAPI", () => {
       }));
       const ilsClient = IlsClient();
       const spy = jest.spyOn(ilsClient, "getPatronFromBarcodeOrUsername");
-      const { getPatronFromILS } = DependentAccountAPI({ ilsClient });
+      const { getPatronFromILS } = DependentAccountAPI(ilsClient);
       let options = { value: barcode, type: "barcode" };
       let isBarcode = true;
 
@@ -319,7 +352,7 @@ describe("DependentAccountAPI", () => {
       }));
       const ilsClient = IlsClient();
       const spy = jest.spyOn(ilsClient, "getPatronFromBarcodeOrUsername");
-      const { getPatronFromILS } = DependentAccountAPI({ ilsClient });
+      const { getPatronFromILS } = DependentAccountAPI(ilsClient);
       let options = { value: barcode, type: "barcode" };
       let isBarcode = true;
 
@@ -347,7 +380,7 @@ describe("DependentAccountAPI", () => {
       }));
       const ilsClient = IlsClient();
       const spy = jest.spyOn(ilsClient, "getPatronFromBarcodeOrUsername");
-      const { getPatronFromILS } = DependentAccountAPI({ ilsClient });
+      const { getPatronFromILS } = DependentAccountAPI(ilsClient);
       let options = { value: barcode, type: "barcode" };
       let isBarcode = true;
 
@@ -380,41 +413,8 @@ describe("DependentAccountAPI", () => {
   // SIMPLYE_NON_METRO_PTYPE: ("SimplyE Non-Metro", 3)
   // MARLI_PTYPE: ("Marli", 81)
   describe("checkPType", () => {
-    // Since we are mocking the IlsClient class, we have to recreate the
-    // constants and array of valid p-types that can create dependents.
-    IlsClient.ADULT_METRO_PTYPE = 10;
-    IlsClient.ADULT_NYS_PTYPE = 11;
-    IlsClient.SENIOR_METRO_PTYPE = 20;
-    IlsClient.SENIOR_NYS_PTYPE = 21;
-    IlsClient.DISABLED_METRO_NY_PTYPE = 101;
-    IlsClient.HOMEBOUND_NYC_PTYPE = 101;
-    IlsClient.SIMPLYE_METRO_PTYPE = 2;
-    IlsClient.SIMPLYE_NON_METRO_PTYPE = 3;
-    IlsClient.WEB_DIGITAL_TEMPORARY = 7;
-    IlsClient.WEB_DIGITAL_NON_METRO = 8;
-    IlsClient.WEB_DIGITAL_METRO = 9;
-    IlsClient.TEEN_METRO_PTYPE = 50;
-    IlsClient.TEEN_NYS_PTYPE = 51;
-    IlsClient.MARLI_PTYPE = 81;
-    IlsClient.CAN_CREATE_DEPENDENTS = [
-      IlsClient.ADULT_METRO_PTYPE,
-      IlsClient.ADULT_NYS_PTYPE,
-      IlsClient.WEB_DIGITAL_NON_METRO,
-      IlsClient.WEB_DIGITAL_METRO,
-      IlsClient.SENIOR_METRO_PTYPE,
-      IlsClient.SENIOR_NYS_PTYPE,
-      IlsClient.DISABLED_METRO_NY_PTYPE,
-      IlsClient.HOMEBOUND_NYC_PTYPE,
-      IlsClient.SIMPLYE_METRO_PTYPE,
-      IlsClient.SIMPLYE_NON_METRO_PTYPE,
-      IlsClient.TEEN_METRO_PTYPE,
-      IlsClient.TEEN_NYS_PTYPE,
-      IlsClient.MARLI_PTYPE,
-    ];
-    const ilsClient = IlsClient();
-
     it("returns false if the patron doesn't have a valid p-type", () => {
-      let { checkPType } = DependentAccountAPI({ ilsClient });
+      let { checkPType } = DependentAccountAPI(IlsClient());
       let patronType = 1; // Web Applicant
 
       let valid = checkPType(patronType);
@@ -437,7 +437,7 @@ describe("DependentAccountAPI", () => {
     });
 
     it("returns true if the patron has a valid p-type", () => {
-      let { checkPType } = DependentAccountAPI({ ilsClient });
+      let { checkPType } = DependentAccountAPI(mockIlsClient);
       let patronType = 2; // SimplyE Metro
 
       let valid = checkPType(patronType);
@@ -488,14 +488,14 @@ describe("DependentAccountAPI", () => {
     const ilsClient = IlsClient();
 
     it("returns true if there are no `varFields` object with a fieldTag of `x`", () => {
-      let { canCreateDependents } = DependentAccountAPI({ ilsClient });
+      let { canCreateDependents } = DependentAccountAPI(ilsClient);
 
       const canCreateDependentsValue = canCreateDependents(varFields);
       expect(canCreateDependentsValue).toEqual(true);
     });
 
     it("returns true if there are any `varFields` objects with a fieldTag of `x` but not with `DEPENDENTS` in the `contents`", () => {
-      let { canCreateDependents } = DependentAccountAPI({ ilsClient });
+      let { canCreateDependents } = DependentAccountAPI(ilsClient);
       // Create a copy of the varFields array.
       let xVarFields = varFields.slice();
       xVarFields.push({ fieldTag: "x", content: "content" });
@@ -512,7 +512,7 @@ describe("DependentAccountAPI", () => {
     });
 
     it("returns true if there are less than three dependents", () => {
-      let { canCreateDependents } = DependentAccountAPI({ ilsClient });
+      let { canCreateDependents } = DependentAccountAPI(ilsClient);
       let oneDependentVarFields = varFields.slice();
       // There is one barcode in `content` field.
       oneDependentVarFields.push({
@@ -535,7 +535,7 @@ describe("DependentAccountAPI", () => {
     });
 
     it("returns false if there are three dependents already", () => {
-      let { canCreateDependents } = DependentAccountAPI({ ilsClient });
+      let { canCreateDependents } = DependentAccountAPI(ilsClient);
       let reachedLimitVarFields = varFields.slice();
       // There are 3 barcodes in `content` field and the limit has been reached.
       reachedLimitVarFields.push({
@@ -550,7 +550,9 @@ describe("DependentAccountAPI", () => {
 
   describe("getAlreadyFetchedParentPatron", () => {
     it("returns undefined if `isPatronEligible` wasn't called", () => {
-      const { getAlreadyFetchedParentPatron } = DependentAccountAPI({});
+      const { getAlreadyFetchedParentPatron } = DependentAccountAPI(
+        mockIlsClient
+      );
 
       expect(getAlreadyFetchedParentPatron()).toBeUndefined();
     });
@@ -562,9 +564,7 @@ describe("DependentAccountAPI", () => {
       const {
         isPatronEligible,
         getAlreadyFetchedParentPatron,
-      } = DependentAccountAPI({
-        ilsClient: IlsClient(),
-      });
+      } = DependentAccountAPI(IlsClient());
       const options = { barcode: "12333333333333", username: undefined };
 
       await isPatronEligible(options);
@@ -583,233 +583,8 @@ describe("DependentAccountAPI", () => {
     });
   });
 
-  describe("updateParentWithDependent", () => {
-    it("fails if no IlsClient is passed", async () => {
-      const { updateParentWithDependent } = DependentAccountAPI({});
-      const parent = {};
-      const barcode = "12345678912345";
-
-      await expect(updateParentWithDependent(parent, barcode)).rejects.toThrow(
-        "ILS Client not set in the Dependent Eligibility API."
-      );
-    });
-
-    it("fails if the dependent barcode is not passed", async () => {
-      IlsClient.mockImplementation(() => ({}));
-      const { updateParentWithDependent } = DependentAccountAPI({
-        ilsClient: IlsClient(),
-      });
-      const parent = {};
-      const barcode = "";
-
-      await expect(updateParentWithDependent(parent, barcode)).rejects.toThrow(
-        "The dependent account has no barcode. Cannot update parent account."
-      );
-    });
-
-    it("throws an error because the patron couldn't be found", async () => {
-      const mockedErrorResponse = {
-        response: {
-          status: 404,
-          data: {
-            name: "Patron record not found",
-          },
-        },
-      };
-      // Darn, attempting to call the ILS to update the patron failed.
-      // It couldn't find the patron with the passed id.
-      IlsClient.mockImplementation(() => ({
-        updatePatron: () => jest.fn().mockRejectedValue(mockedErrorResponse),
-      }));
-
-      const { updateParentWithDependent } = DependentAccountAPI({
-        ilsClient: IlsClient(),
-      });
-      const parent = { id: "some id" };
-      const barcode = "12333333333333";
-
-      await expect(updateParentWithDependent(parent, barcode)).rejects.toThrow(
-        "The parent patron couldn't be updated."
-      );
-    });
-
-    it("throws an error because calling the ILS failed", async () => {
-      // The ILS just failed.
-      IlsClient.mockImplementation(() => ({
-        updatePatron: () =>
-          jest.fn().mockRejectedValue(mockedILSIntegrationError),
-      }));
-
-      const { updateParentWithDependent } = DependentAccountAPI({
-        ilsClient: IlsClient(),
-      });
-      const parent = { id: "some id" };
-      const barcode = "12333333333333";
-
-      await expect(updateParentWithDependent(parent, barcode)).rejects.toThrow(
-        "The parent patron couldn't be updated."
-      );
-    });
-
-    it("updates the patron's varField with its first dependent", async () => {
-      const mockSuccessfulUpdate = { status: 204, data: {} };
-      IlsClient.mockImplementation(() => ({
-        updatePatron: jest.fn().mockResolvedValue(mockSuccessfulUpdate),
-      }));
-      const ilsClient = IlsClient();
-      const spy = jest.spyOn(ilsClient, "updatePatron");
-      const { updateParentWithDependent } = DependentAccountAPI({ ilsClient });
-      // We are assuming that the parent patron doesn't already have any
-      // dependents, so don't add any varFields in its data object.
-      const parent = { id: "some id" };
-      const barcode = "12333333333333";
-
-      const resp = await updateParentWithDependent(parent, barcode);
-
-      const firstDependent = {
-        varFields: [{ fieldTag: "x", content: `DEPENDENTS ${barcode}` }],
-      };
-
-      expect(spy).toHaveBeenCalledWith(parent.id, firstDependent);
-      expect(resp).toEqual(mockSuccessfulUpdate);
-    });
-
-    it("updates the patron's varField with its second dependent", async () => {
-      const mockSuccessfulUpdate = { status: 204, data: {} };
-      IlsClient.mockImplementation(() => ({
-        updatePatron: jest.fn().mockResolvedValue(mockSuccessfulUpdate),
-      }));
-      const ilsClient = IlsClient();
-      const spy = jest.spyOn(ilsClient, "updatePatron");
-      const { updateParentWithDependent } = DependentAccountAPI({ ilsClient });
-      // This patron already has a dependent! So the next barcode will be
-      // added to the existing varField value for fieldTag of "x".
-      const parent = {
-        id: "some id",
-        varFields: [{ fieldTag: "x", content: "DEPENDENTS 12345" }],
-      };
-      const barcode = "12333333333333";
-
-      const resp = await updateParentWithDependent(parent, barcode);
-
-      const firstDependent = {
-        varFields: [{ fieldTag: "x", content: `DEPENDENTS 12345,${barcode}` }],
-      };
-
-      expect(spy).toHaveBeenCalledWith(parent.id, firstDependent);
-      expect(resp).toEqual(mockSuccessfulUpdate);
-    });
-
-    it("updates the patron's varField with its third dependent", async () => {
-      const mockSuccessfulUpdate = { status: 204, data: {} };
-      IlsClient.mockImplementation(() => ({
-        updatePatron: jest.fn().mockResolvedValue(mockSuccessfulUpdate),
-      }));
-      const ilsClient = IlsClient();
-      const spy = jest.spyOn(ilsClient, "updatePatron");
-      const { updateParentWithDependent } = DependentAccountAPI({ ilsClient });
-      // This patron already has a dependent! So the next barcode will be
-      // added to the existing varField value for fieldTag of "x".
-      const parent = {
-        id: "some id",
-        varFields: [
-          {
-            fieldTag: "x",
-            content: "DEPENDENTS 12333333333335,12333333333336",
-          },
-        ],
-      };
-      const barcode = "12345678912345";
-
-      const resp = await updateParentWithDependent(parent, barcode);
-
-      const firstDependent = {
-        varFields: [
-          {
-            fieldTag: "x",
-            content: `DEPENDENTS 12333333333335,12333333333336,${barcode}`,
-          },
-        ],
-      };
-
-      expect(spy).toHaveBeenCalledWith(parent.id, firstDependent);
-      expect(resp).toEqual(mockSuccessfulUpdate);
-    });
-
-    it("updates the patron's varField even if there are other existing values", async () => {
-      const mockSuccessfulUpdate = { status: 204, data: {} };
-      IlsClient.mockImplementation(() => ({
-        updatePatron: jest.fn().mockResolvedValue(mockSuccessfulUpdate),
-      }));
-      const ilsClient = IlsClient();
-      const spy = jest.spyOn(ilsClient, "updatePatron");
-      const { updateParentWithDependent } = DependentAccountAPI({ ilsClient });
-      // This patron has a varField with a fieldTag of "x" already but it
-      // doesn't contain DEPENDENTS. This is okay since it can contain
-      // anything. This is not written over but a new varField is created,
-      // which is also okay to have in the ILS.
-      const parent = {
-        id: "some id",
-        varFields: [
-          {
-            fieldTag: "x",
-            content:
-              "This contains something else that is not what is expected",
-          },
-        ],
-      };
-      const barcode = "12333333333337";
-
-      const resp = await updateParentWithDependent(parent, barcode);
-
-      const firstDependent = {
-        varFields: [{ fieldTag: "x", content: `DEPENDENTS ${barcode}` }],
-      };
-
-      expect(spy).toHaveBeenCalledWith(parent.id, firstDependent);
-      expect(resp).toEqual(mockSuccessfulUpdate);
-    });
-  });
-
-  describe("formatAddressForILS", () => {
-    let { formatAddressForILS } = DependentAccountAPI({});
-
-    it("returns an empty object if the input is wrong", () => {
-      // It expects an array of two strings since that's how the ILS
-      // formats its addresses.
-      const badAddress = { lines: ["476 5th Ave."] };
-      expect(formatAddressForILS({})).toEqual({});
-      expect(formatAddressForILS(badAddress)).toEqual({});
-    });
-
-    it("returns an object structured for the Address class", () => {
-      const address = { lines: ["476 5th Ave.", "New York, NY 10018"] };
-      expect(formatAddressForILS(address)).toEqual({
-        line1: "476 5th Ave.",
-        city: "New York",
-        state: "NY",
-        zip: "10018",
-        hasBeenValidated: true,
-      });
-    });
-  });
-
-  describe("checkAccountExpiration", () => {
-    let { checkAccountExpiration } = DependentAccountAPI({});
-
-    it("returns whether a date is expired or not", () => {
-      const mockNowDate = new Date("2020-05-27");
-
-      const futureDate = new Date("2021-05-27");
-      const expiredDate = new Date("2020-04-04");
-
-      expect(checkAccountExpiration(futureDate, mockNowDate)).toEqual(false);
-      expect(checkAccountExpiration(expiredDate, mockNowDate)).toEqual(true);
-    });
-  });
-
   describe("getVarField", () => {
-    const { getVarField } = DependentAccountAPI({});
+    const { getVarField } = DependentAccountAPI();
 
     it("returns an empty array if no params or an empty array were passed", () => {
       expect(getVarField()).toEqual([]);
@@ -848,7 +623,7 @@ describe("DependentAccountAPI", () => {
   });
 
   describe("getDependentVarField", () => {
-    const { getDependentVarField } = DependentAccountAPI({});
+    const { getDependentVarField } = DependentAccountAPI();
 
     it("returns a undefined if no param was passed", () => {
       expect(getDependentVarField()).toEqual(undefined);
@@ -886,6 +661,211 @@ describe("DependentAccountAPI", () => {
       expect(getDependentVarField(multipleXFieldTags)).toEqual({
         fieldTag: "x",
         content: "DEPENDENTS 12333333333334",
+      });
+    });
+  });
+
+  describe("updateParentWithDependent", () => {
+    it("fails if no IlsClient is passed", async () => {
+      const { updateParentWithDependent } = DependentAccountAPI();
+      const parent = {};
+      const barcode = "12345678912345";
+
+      await expect(updateParentWithDependent(parent, barcode)).rejects.toThrow(
+        "ILS Client not set in the Dependent Eligibility API."
+      );
+    });
+
+    it("fails if the dependent barcode is not passed", async () => {
+      IlsClient.mockImplementation(() => ({}));
+      const { updateParentWithDependent } = DependentAccountAPI(IlsClient());
+      const parent = {};
+      const barcode = "";
+
+      await expect(updateParentWithDependent(parent, barcode)).rejects.toThrow(
+        "The dependent account has no barcode. Cannot update parent account."
+      );
+    });
+
+    it("throws an error because the patron couldn't be found", async () => {
+      const mockedErrorResponse = {
+        response: {
+          status: 404,
+          data: {
+            name: "Patron record not found",
+          },
+        },
+      };
+      // Darn, attempting to call the ILS to update the patron failed.
+      // It couldn't find the patron with the passed id.
+      IlsClient.mockImplementation(() => ({
+        updatePatron: () => jest.fn().mockRejectedValue(mockedErrorResponse),
+      }));
+
+      const { updateParentWithDependent } = DependentAccountAPI(IlsClient());
+      const parent = { id: "some id" };
+      const barcode = "12333333333333";
+
+      await expect(updateParentWithDependent(parent, barcode)).rejects.toThrow(
+        "The parent patron couldn't be updated."
+      );
+    });
+
+    it("throws an error because calling the ILS failed", async () => {
+      // The ILS just failed.
+      IlsClient.mockImplementation(() => ({
+        updatePatron: () =>
+          jest.fn().mockRejectedValue(mockedILSIntegrationError),
+      }));
+
+      const { updateParentWithDependent } = DependentAccountAPI(IlsClient());
+      const parent = { id: "some id" };
+      const barcode = "12333333333333";
+
+      await expect(updateParentWithDependent(parent, barcode)).rejects.toThrow(
+        "The parent patron couldn't be updated."
+      );
+    });
+
+    it("updates the patron's varField with its first dependent", async () => {
+      const mockSuccessfulUpdate = { status: 204, data: {} };
+      IlsClient.mockImplementation(() => ({
+        updatePatron: jest.fn().mockResolvedValue(mockSuccessfulUpdate),
+      }));
+      const ilsClient = IlsClient();
+      const spy = jest.spyOn(ilsClient, "updatePatron");
+      const { updateParentWithDependent } = DependentAccountAPI(ilsClient);
+      // We are assuming that the parent patron doesn't already have any
+      // dependents, so don't add any varFields in its data object.
+      const parent = { id: "some id" };
+      const barcode = "12333333333333";
+
+      const resp = await updateParentWithDependent(parent, barcode);
+
+      const firstDependent = {
+        varFields: [{ fieldTag: "x", content: `DEPENDENTS ${barcode}` }],
+      };
+
+      expect(spy).toHaveBeenCalledWith(parent.id, firstDependent);
+      expect(resp).toEqual(mockSuccessfulUpdate);
+    });
+
+    it("updates the patron's varField with its second dependent", async () => {
+      const mockSuccessfulUpdate = { status: 204, data: {} };
+      IlsClient.mockImplementation(() => ({
+        updatePatron: jest.fn().mockResolvedValue(mockSuccessfulUpdate),
+      }));
+      const ilsClient = IlsClient();
+      const spy = jest.spyOn(ilsClient, "updatePatron");
+      const { updateParentWithDependent } = DependentAccountAPI(ilsClient);
+      // This patron already has a dependent! So the next barcode will be
+      // added to the existing varField value for fieldTag of "x".
+      const parent = {
+        id: "some id",
+        varFields: [{ fieldTag: "x", content: "DEPENDENTS 12345" }],
+      };
+      const barcode = "12333333333333";
+
+      const resp = await updateParentWithDependent(parent, barcode);
+
+      const firstDependent = {
+        varFields: [{ fieldTag: "x", content: `DEPENDENTS 12345,${barcode}` }],
+      };
+
+      expect(spy).toHaveBeenCalledWith(parent.id, firstDependent);
+      expect(resp).toEqual(mockSuccessfulUpdate);
+    });
+
+    it("updates the patron's varField with its third dependent", async () => {
+      const mockSuccessfulUpdate = { status: 204, data: {} };
+      IlsClient.mockImplementation(() => ({
+        updatePatron: jest.fn().mockResolvedValue(mockSuccessfulUpdate),
+      }));
+      const ilsClient = IlsClient();
+      const spy = jest.spyOn(ilsClient, "updatePatron");
+      const { updateParentWithDependent } = DependentAccountAPI(ilsClient);
+      // This patron already has a dependent! So the next barcode will be
+      // added to the existing varField value for fieldTag of "x".
+      const parent = {
+        id: "some id",
+        varFields: [
+          {
+            fieldTag: "x",
+            content: "DEPENDENTS 12333333333335,12333333333336",
+          },
+        ],
+      };
+      const barcode = "12345678912345";
+
+      const resp = await updateParentWithDependent(parent, barcode);
+
+      const firstDependent = {
+        varFields: [
+          {
+            fieldTag: "x",
+            content: `DEPENDENTS 12333333333335,12333333333336,${barcode}`,
+          },
+        ],
+      };
+
+      expect(spy).toHaveBeenCalledWith(parent.id, firstDependent);
+      expect(resp).toEqual(mockSuccessfulUpdate);
+    });
+
+    it("updates the patron's varField even if there are other existing values", async () => {
+      const mockSuccessfulUpdate = { status: 204, data: {} };
+      IlsClient.mockImplementation(() => ({
+        updatePatron: jest.fn().mockResolvedValue(mockSuccessfulUpdate),
+      }));
+      const ilsClient = IlsClient();
+      const spy = jest.spyOn(ilsClient, "updatePatron");
+      const { updateParentWithDependent } = DependentAccountAPI(ilsClient);
+      // This patron has a varField with a fieldTag of "x" already but it
+      // doesn't contain DEPENDENTS. This is okay since it can contain
+      // anything. This is not written over but a new varField is created,
+      // which is also okay to have in the ILS.
+      const parent = {
+        id: "some id",
+        varFields: [
+          {
+            fieldTag: "x",
+            content:
+              "This contains something else that is not what is expected",
+          },
+        ],
+      };
+      const barcode = "12333333333337";
+
+      const resp = await updateParentWithDependent(parent, barcode);
+
+      const firstDependent = {
+        varFields: [{ fieldTag: "x", content: `DEPENDENTS ${barcode}` }],
+      };
+
+      expect(spy).toHaveBeenCalledWith(parent.id, firstDependent);
+      expect(resp).toEqual(mockSuccessfulUpdate);
+    });
+  });
+
+  describe("formatAddressForILS", () => {
+    let { formatAddressForILS } = DependentAccountAPI();
+
+    it("returns an empty object if the input is wrong", () => {
+      // It expects an array of two strings since that's how the ILS
+      // formats its addresses.
+      const badAddress = { lines: ["476 5th Ave."] };
+      expect(formatAddressForILS({})).toEqual({});
+      expect(formatAddressForILS(badAddress)).toEqual({});
+    });
+
+    it("returns an object structured for the Address class", () => {
+      const address = { lines: ["476 5th Ave.", "New York, NY 10018"] };
+      expect(formatAddressForILS(address)).toEqual({
+        line1: "476 5th Ave.",
+        city: "New York",
+        state: "NY",
+        zip: "10018",
+        hasBeenValidated: true,
       });
     });
   });

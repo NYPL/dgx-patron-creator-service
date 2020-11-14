@@ -1,15 +1,8 @@
-/* eslint-disable semi */
-const chai = require('chai')
-const chaiAsPromised = require('chai-as-promised')
+let logger = require("../../../api/helpers/Logger");
 
-chai.use(chaiAsPromised)
-let should = chai.should()
-
-describe('Logger', () => {
-  it('should return a Winston logger', () => {
-    let Logger = require('../../../api/helpers/Logger')
-
-    expect(typeof Logger).toBe('object');
-    expect(Logger.levels).toHaveProperty('info');
-  })
-})
+describe("Logger", () => {
+  it("should return a Winston logger", () => {
+    expect(typeof logger).toBe("object");
+    expect(logger.levels).toHaveProperty("info");
+  });
+});

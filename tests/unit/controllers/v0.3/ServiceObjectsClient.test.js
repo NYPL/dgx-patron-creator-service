@@ -1,4 +1,3 @@
-/* eslint-disable */
 const ServiceObjectsClient = require("../../../../api/controllers/v0.3/ServiceObjectsClient");
 const axios = require("axios");
 const {
@@ -122,9 +121,7 @@ describe("ServiceObjectsClient", () => {
 
   describe("validateAddress", () => {
     const mockLicenseKey = "licenseKey";
-    const { validateAddress } = ServiceObjectsClient({
-      soLicenseKey: mockLicenseKey,
-    });
+    const { validateAddress } = ServiceObjectsClient(mockLicenseKey);
     const address = {
       line1: "476 5th Avenue",
       city: "New York",

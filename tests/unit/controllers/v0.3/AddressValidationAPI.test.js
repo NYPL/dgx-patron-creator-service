@@ -1,7 +1,5 @@
-/* eslint-disable */
 const AddressValidationAPI = require("../../../../api/controllers/v0.3/AddressValidationAPI");
 const ServiceObjectsClient = require("../../../../api/controllers/v0.3/ServiceObjectsClient");
-const Address = require("../../../../api/models/v0.3/modelAddress");
 const {
   SOAuthorizationError,
   SOIntegrationError,
@@ -11,20 +9,6 @@ const {
 
 jest.mock("../../../../api/controllers/v0.3/ServiceObjectsClient");
 
-const outsideNYAddress = {
-  line1: "24 Kilmer Rd #357",
-  city: "Edison",
-  state: "NJ",
-  zip: "08817",
-};
-const outsideNYresponseAddress = {
-  Address1: "24 Kilmer Rd #357",
-  Address2: "",
-  City: "Edison",
-  State: "NJ",
-  Zip: "08817",
-  IsResidential: true,
-};
 const rawAddress1 = {
   line1: "476 5th Avenue",
   city: "New York",
@@ -89,7 +73,7 @@ describe("AddressValidationAPI", () => {
           ),
       }));
 
-      const { validate } = AddressValidationAPI({ soLicenseKey });
+      const { validate } = AddressValidationAPI(soLicenseKey);
 
       const response = await validate(rawAddress1);
 
@@ -128,7 +112,7 @@ describe("AddressValidationAPI", () => {
           Promise.reject(new SOIntegrationError("something went wrong")),
       }));
 
-      const { validate } = AddressValidationAPI({ soLicenseKey });
+      const { validate } = AddressValidationAPI(soLicenseKey);
 
       // And it bubbles up to the `validate` call.
       const response = await validate(rawAddress1);
@@ -169,7 +153,7 @@ describe("AddressValidationAPI", () => {
           ),
       }));
 
-      const { validate } = AddressValidationAPI({ soLicenseKey });
+      const { validate } = AddressValidationAPI(soLicenseKey);
 
       // ...but `validate` returns a response.
       const response = await validate(rawAddress1);
@@ -189,7 +173,7 @@ describe("AddressValidationAPI", () => {
     });
 
     // Same as above but different error from SO.
-    it("returns a response with the wrong address for a domain specific error", async () => {
+    it("returns a response with missing street for a domain specific error", async () => {
       const streetNotFound = {
         Type: "Domain Specific",
         TypeCode: "4",
@@ -206,7 +190,7 @@ describe("AddressValidationAPI", () => {
           ),
       }));
 
-      const { validate } = AddressValidationAPI({ soLicenseKey });
+      const { validate } = AddressValidationAPI(soLicenseKey);
       const response = await validate(rawAddress1);
       expect(response).toEqual({
         status: 400,
@@ -229,7 +213,7 @@ describe("AddressValidationAPI", () => {
       ServiceObjectsClient.mockImplementation(() => ({
         validateAddress: () => Promise.resolve([responseAddress1]),
       }));
-      const { validate } = AddressValidationAPI({ soLicenseKey });
+      const { validate } = AddressValidationAPI(soLicenseKey);
       const response = await validate(rawAddress1);
 
       expect(response).toEqual({
@@ -334,27 +318,6 @@ describe("AddressValidationAPI", () => {
         title: "Alternate addresses have been identified",
         addresses,
         originalAddress: rawAddress1,
-      });
-    });
-
-    it("returns a 'valid-address' response but card denied if address is outside NY", () => {
-      const errors = {};
-      const response = parseResponse(
-        [outsideNYresponseAddress],
-        errors,
-        outsideNYAddress
-      );
-      const address = new Address({ ...outsideNYAddress, isResidential: true });
-
-      expect(response).toEqual({
-        type: "valid-address",
-        title: "Valid address",
-        address: {
-          ...address.address,
-          county: undefined,
-          hasBeenValidated: true,
-        },
-        originalAddress: outsideNYAddress,
       });
     });
 

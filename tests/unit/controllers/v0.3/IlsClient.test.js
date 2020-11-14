@@ -1,4 +1,3 @@
-/* eslint-disable jest/no-disabled-tests */
 const AddressValidationAPI = require("../../../../api/controllers/v0.3/AddressValidationAPI");
 const IlsClient = require("../../../../api/controllers/v0.3/IlsClient");
 const Card = require("../../../../api/models/v0.3/modelCard");
@@ -71,6 +70,71 @@ const mockedILSIntegrationError = {
 describe("IlsClient", () => {
   beforeEach(() => {
     axios.mockClear();
+  });
+
+  // The address object being sent to the ILS is in the form of:
+  // { lines: ['line 1', 'line 2'], type: 'a' }
+  describe("formatAddress", () => {
+    // The `formatAddress` method doesn't need any
+    // credentials or other props.
+    const ilsClient = IlsClient({});
+    const address = new Address(
+      {
+        line1: "476 5th Avenue",
+        city: "New York",
+        state: "NY",
+        zip: "10018",
+      },
+      "soLicenseKey"
+    );
+
+    // The primary address type is 'a'.
+    it("returns a primary address object for the ILS", () => {
+      const isWorkAddress = false;
+      const formattedAddress = ilsClient.formatAddress(address, isWorkAddress);
+
+      expect(formattedAddress.lines).toEqual([
+        "476 5TH AVENUE",
+        "NEW YORK, NY 10018",
+      ]);
+      expect(formattedAddress.type).toEqual(IlsClient.ADDRESS_FIELD_TAG);
+      expect(formattedAddress.type).toEqual("a");
+    });
+
+    // The work address type is 'h'.
+    it("returns a work address object for the ILS", () => {
+      const isWorkAddress = true;
+      const formattedAddress = ilsClient.formatAddress(address, isWorkAddress);
+
+      expect(formattedAddress.lines).toEqual([
+        "476 5TH AVENUE",
+        "NEW YORK, NY 10018",
+      ]);
+      expect(formattedAddress.type).toEqual(IlsClient.WORK_ADDRESS_FIELD_TAG);
+      expect(formattedAddress.type).toEqual("h");
+    });
+  });
+
+  // The name being sent to the ILS is in the form of:
+  // 'LASTNAME, FIRSTNAME'
+  describe("formatPatronName", () => {
+    // The `formatPatronName` method doesn't need any
+    // credentials or other props.
+    const ilsClient = IlsClient({});
+
+    it("returns an empty string if nothing was passed", () => {
+      expect(ilsClient.formatPatronName()).toEqual("");
+    });
+
+    it("returns the name in all caps if there is only one value", () => {
+      const name = "Abraham";
+      expect(ilsClient.formatPatronName(name)).toEqual("ABRAHAM");
+    });
+
+    it("returns last name and then first name in all caps", () => {
+      const name = "Abraham Lincoln";
+      expect(ilsClient.formatPatronName(name)).toEqual("LINCOLN, ABRAHAM");
+    });
   });
 
   describe("agencyField", () => {
@@ -162,32 +226,9 @@ describe("IlsClient", () => {
     });
   });
 
-  // The name being sent to the ILS is in the form of:
-  // 'LASTNAME, FIRSTNAME'
-  describe("formatPatronName", () => {
+  // The patron object being sent to the ILS.
+  describe("formatPatronData", () => {
     // The `formatPatronName` method doesn't need any
-    // credentials or other props.
-    const ilsClient = IlsClient({});
-
-    it("returns an empty string if nothing was passed", () => {
-      expect(ilsClient.formatPatronName()).toEqual("");
-    });
-
-    it("returns the name in all caps if there is only one value", () => {
-      const name = "Abraham";
-      expect(ilsClient.formatPatronName(name)).toEqual("ABRAHAM");
-    });
-
-    it("returns last name and then first name in all caps", () => {
-      const name = "Abraham Lincoln";
-      expect(ilsClient.formatPatronName(name)).toEqual("LINCOLN, ABRAHAM");
-    });
-  });
-
-  // The address object being sent to the ILS is in the form of:
-  // { lines: ['line 1', 'line 2'], type: 'a' }
-  describe("formatAddress", () => {
-    // The `formatAddress` method doesn't need any
     // credentials or other props.
     const ilsClient = IlsClient({});
     const address = new Address(
@@ -196,34 +237,371 @@ describe("IlsClient", () => {
         city: "New York",
         state: "NY",
         zip: "10018",
+        isResidential: true,
+        hasBeenValidated: true,
       },
       "soLicenseKey"
     );
-
-    // The primary address type is 'a'.
-    it("returns a primary address object for the ILS", () => {
-      const isWorkAddress = false;
-      const formattedAddress = ilsClient.formatAddress(address, isWorkAddress);
-
-      expect(formattedAddress.lines).toEqual([
-        "476 5TH AVENUE",
-        "NEW YORK, NY 10018",
-      ]);
-      expect(formattedAddress.type).toEqual(IlsClient.ADDRESS_FIELD_TAG);
-      expect(formattedAddress.type).toEqual("a");
+    const policy = Policy({ policyType: "webApplicant" });
+    const card = new Card({
+      name: "First Last test",
+      username: "username",
+      pin: "1234",
+      birthdate: "01/01/1988",
+      email: "email@gmail.com",
+      address,
+      policy,
+      location: "nyc",
+      ilsClient: IlsClient({}),
+      varFields: [{ fieldTag: "x", content: "DEPENDENT OF 1234" }],
+      acceptTerms: true,
+      ageGate: true,
     });
 
-    // The work address type is 'h'.
-    it("returns a work address object for the ILS", () => {
-      const isWorkAddress = true;
-      const formattedAddress = ilsClient.formatAddress(address, isWorkAddress);
+    it("returns an ILS-ready patron object", async () => {
+      // We want to mock that we called the ILS and it did not find a
+      // username, so it is valid and the card is valid.
+      axios.get.mockImplementationOnce(() =>
+        Promise.reject(mockedErrorResponse)
+      );
+      AddressValidationAPI.mockImplementation(() => ({
+        validate: () =>
+          Promise.resolve({
+            type: "valid-address",
+            address: {
+              line1: "476 5th Avenue",
+              city: "New York",
+              state: "NY",
+              zip: "10018",
+              isResidential: true,
+              hasBeenValidated: true,
+            },
+          }),
+      }));
 
-      expect(formattedAddress.lines).toEqual([
-        "476 5TH AVENUE",
-        "NEW YORK, NY 10018",
+      // Make sure we have a validated card.
+      await card.validate();
+
+      const formatted = ilsClient.formatPatronData(card);
+
+      expect(formatted.names).toEqual(["LAST, FIRST"]);
+      expect(formatted.pin).toEqual("1234");
+      expect(formatted.patronType).toEqual(9);
+      expect(formatted.birthDate).toEqual("1988-01-01");
+      expect(formatted.addresses).toEqual([
+        {
+          lines: ["476 5TH AVENUE", "NEW YORK, NY 10018"],
+          type: "a",
+        },
       ]);
-      expect(formattedAddress.type).toEqual(IlsClient.WORK_ADDRESS_FIELD_TAG);
-      expect(formattedAddress.type).toEqual("h");
+      // The patron is not subscribed to e-communications by default.
+      expect(formatted.patronCodes).toEqual({ pcode1: "-" });
+      // Username is special and goes in a varField
+      expect(formatted.varFields).toEqual([
+        { fieldTag: "x", content: "DEPENDENT OF 1234" },
+        { fieldTag: "u", content: "username" },
+      ]);
+      // Agency is in the fixedFields
+      expect(formatted.fixedFields).toEqual({
+        "158": {
+          label: "AGENCY",
+          value: "198",
+        },
+      });
+    });
+  });
+
+  // Creates a patron in the ILS.
+  describe("createPatron", () => {
+    const ilsClient = IlsClient({
+      createUrl,
+      tokenUrl,
+      ilsClientKey,
+      ilsClientSecret,
+    });
+    const mockedSuccessfulResponse = {
+      status: 200,
+      data: {
+        link:
+          "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/1234",
+      },
+    };
+    const address = new Address(
+      {
+        line1: "476 5th Avenue",
+        city: "New York",
+        state: "NY",
+        zip: "10018",
+        isResidential: true,
+        hasBeenValidated: true,
+      },
+      "soLicenseKey"
+    );
+    const policy = Policy({ policyType: "webApplicant" });
+    const card = new Card({
+      name: "First Last",
+      username: "username",
+      pin: "1234",
+      email: "test@test.com",
+      birthdate: "01/01/1988",
+      address,
+      policy,
+      ilsClient,
+      location: "nyc",
+      acceptTerms: true,
+      ageGate: true,
+    });
+    // Mock that the ptype was added to the card.
+    card.setPtype();
+    // Mock that the agency was added.
+    card.setAgency();
+
+    // Mocking current expiration date.
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const currentDay = now.getDate();
+    const expirationDate = new Date(
+      currentYear,
+      currentMonth,
+      currentDay + 1095
+    );
+
+    beforeAll(async () => {
+      // Mock that we got a token for authenticated requests.
+      axios.post.mockImplementationOnce(() =>
+        Promise.resolve(mockedSuccessfulTokenResponse)
+      );
+      await ilsClient.generateIlsToken();
+    });
+
+    it("fails to create a patron", async () => {
+      // We want to mock that we called the ILS and it did not find a
+      // username, so it is valid and the card is valid.
+      axios.get.mockImplementationOnce(() =>
+        Promise.reject(mockedErrorResponse)
+      );
+      await card.validate();
+
+      // Now mock the POST request to the ILS.
+      axios.post.mockImplementationOnce(() =>
+        Promise.reject(mockedErrorResponse)
+      );
+
+      const patron = await ilsClient.createPatron(card);
+      expect(patron).toEqual(mockedErrorResponse.response);
+      expect(axios.post).toHaveBeenNthCalledWith(
+        2,
+        createUrl,
+        {
+          addresses: [
+            {
+              lines: ["476 5TH AVENUE", "NEW YORK, NY 10018"],
+              type: "a",
+            },
+          ],
+          birthDate: "1988-01-01",
+          emails: ["TEST@TEST.COM"],
+          expirationDate: expirationDate.toISOString().slice(0, 10),
+          // The patron is not subscribed to e-communications by default.
+          patronCodes: { pcode1: "-" },
+          homeLibraryCode: "eb",
+          names: ["LAST, FIRST"],
+          patronType: 9,
+          pin: "1234",
+          varFields: [{ content: "username", fieldTag: "u" }],
+          fixedFields: {
+            "158": {
+              label: "AGENCY",
+              value: "198",
+            },
+          },
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${mockIlsToken}`,
+          },
+        }
+      );
+    });
+
+    it("successfully creates a patron", async () => {
+      axios.post.mockImplementationOnce(() =>
+        Promise.resolve(mockedSuccessfulResponse)
+      );
+
+      const patron = await ilsClient.createPatron(card);
+
+      expect(patron).toEqual(mockedSuccessfulResponse);
+      expect(axios.post).toHaveBeenNthCalledWith(
+        3,
+        createUrl,
+        {
+          addresses: [
+            {
+              lines: ["476 5TH AVENUE", "NEW YORK, NY 10018"],
+              type: "a",
+            },
+          ],
+          birthDate: "1988-01-01",
+          emails: ["TEST@TEST.COM"],
+          expirationDate: expirationDate.toISOString().slice(0, 10),
+          patronCodes: { pcode1: "-" },
+          homeLibraryCode: "eb",
+          names: ["LAST, FIRST"],
+          patronType: 9,
+          pin: "1234",
+          varFields: [{ content: "username", fieldTag: "u" }],
+          fixedFields: {
+            "158": {
+              label: "AGENCY",
+              value: "198",
+            },
+          },
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${mockIlsToken}`,
+          },
+        }
+      );
+    });
+
+    it("fails attemping to call the ILS", async () => {
+      axios.post.mockImplementationOnce(() =>
+        Promise.reject(mockedILSIntegrationError)
+      );
+
+      await expect(ilsClient.createPatron(card)).rejects.toEqual(
+        new ILSIntegrationError(
+          "The ILS could not be requested when attempting to create a patron."
+        )
+      );
+    });
+  });
+
+  // Updates a patron in the ILS.
+  describe("updatePatron", () => {
+    const ilsClient = IlsClient({
+      createUrl,
+      tokenUrl,
+      ilsClientKey,
+      ilsClientSecret,
+    });
+    const mockedSuccessfulResponse = {
+      status: 204,
+      data: {},
+    };
+    // The error response from the ILS when it can't find the patron in the
+    // PUT request is slightly different.
+    const mockedErrorResponse = {
+      response: {
+        status: 404,
+        data: {
+          name: "Patron record not found",
+        },
+      },
+    };
+    const patronId = "12345";
+    const updatedFields = {
+      varFields: [{ fieldTag: "x", content: "DEPENDENTS 12346" }],
+    };
+
+    beforeAll(async () => {
+      // Mock that we got a token for authenticated requests.
+      axios.post.mockImplementationOnce(() =>
+        Promise.resolve(mockedSuccessfulTokenResponse)
+      );
+      await ilsClient.generateIlsToken();
+    });
+
+    it("fails to update a patron", async () => {
+      // We want to mock that we called the ILS and it did not find
+      // the patron to update.
+      axios.put.mockImplementationOnce(() =>
+        Promise.reject(mockedErrorResponse)
+      );
+
+      await expect(
+        ilsClient.updatePatron(patronId, updatedFields)
+      ).rejects.toThrow("Patron record not found");
+      expect(axios.put).toHaveBeenCalledWith(
+        `${createUrl}${patronId}`,
+        updatedFields,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${mockIlsToken}`,
+          },
+        }
+      );
+    });
+
+    it("updates a patron", async () => {
+      axios.put.mockImplementationOnce(() =>
+        Promise.resolve(mockedSuccessfulResponse)
+      );
+
+      const response = await ilsClient.updatePatron(patronId, updatedFields);
+      expect(response).toEqual(mockedSuccessfulResponse);
+      expect(axios.put).toHaveBeenCalledWith(
+        `${createUrl}${patronId}`,
+        updatedFields,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${mockIlsToken}`,
+          },
+        }
+      );
+    });
+
+    it("should throw an error with invalid data to update", async () => {
+      // We want to mock that we called the ILS and it did not find a
+      // username, so it is valid and the card is valid.
+      axios.put.mockImplementationOnce(() =>
+        Promise.reject(mockedInvalidErrorResponse)
+      );
+
+      await expect(
+        ilsClient.updatePatron(patronId, updatedFields)
+      ).rejects.toThrow("Invalid request to ILS: Invalid JSON request");
+      expect(axios.put).toHaveBeenCalledWith(
+        `${createUrl}${patronId}`,
+        updatedFields,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${mockIlsToken}`,
+          },
+        }
+      );
+    });
+
+    it("should throw an error if hitting the ILS throws an error", async () => {
+      // We want to mock that we called the ILS and it did not find a
+      // username, so it is valid and the card is valid.
+      axios.put.mockImplementationOnce(() =>
+        Promise.reject(mockedILSIntegrationError)
+      );
+
+      await expect(
+        ilsClient.updatePatron(patronId, updatedFields)
+      ).rejects.toThrow(
+        "The ILS could not be requested when attempting to update a patron."
+      );
+      expect(axios.put).toHaveBeenCalledWith(
+        `${createUrl}${patronId}`,
+        updatedFields,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${mockIlsToken}`,
+          },
+        }
+      );
     });
   });
 
@@ -238,7 +616,6 @@ describe("IlsClient", () => {
     beforeAll(async () => {
       // Mock that we got a token for authenticated requests.
       axios.post.mockImplementationOnce(() =>
-        // eslint-disable-next-line implicit-arrow-linebreak
         Promise.resolve(mockedSuccessfulTokenResponse)
       );
       await ilsClient.generateIlsToken();
@@ -578,386 +955,6 @@ describe("IlsClient", () => {
           },
         });
       });
-    });
-  });
-
-  // The patron object being sent to the ILS.
-  describe("formatPatronData", () => {
-    // The `formatPatronName` method doesn't need any
-    // credentials or other props.
-    const ilsClient = IlsClient({});
-    const address = new Address(
-      {
-        line1: "476 5th Avenue",
-        city: "New York",
-        state: "NY",
-        zip: "10018",
-        isResidential: true,
-        hasBeenValidated: true,
-      },
-      "soLicenseKey"
-    );
-    const policy = Policy({ policyType: "webApplicant" });
-    const card = new Card({
-      name: "First Last test",
-      username: "username",
-      pin: "1234",
-      birthdate: "01/01/1988",
-      email: "email@gmail.com",
-      address,
-      policy,
-      location: "nyc",
-      ilsClient: IlsClient({}),
-      varFields: [{ fieldTag: "x", content: "DEPENDENT OF 1234" }],
-      acceptTerms: true,
-      ageGate: true,
-    });
-
-    it("returns an ILS-ready patron object", async () => {
-      // We want to mock that we called the ILS and it did not find a
-      // username, so it is valid and the card is valid.
-      axios.get.mockImplementationOnce(() =>
-        Promise.reject(mockedErrorResponse)
-      );
-      AddressValidationAPI.mockImplementation(() => ({
-        validate: () =>
-          Promise.resolve({
-            type: "valid-address",
-            address: {
-              line1: "476 5th Avenue",
-              city: "New York",
-              state: "NY",
-              zip: "10018",
-              isResidential: true,
-              hasBeenValidated: true,
-            },
-          }),
-      }));
-
-      // Make sure we have a validated card.
-      await card.validate();
-
-      const formatted = ilsClient.formatPatronData(card);
-
-      expect(formatted.names).toEqual(["LAST, FIRST"]);
-      expect(formatted.pin).toEqual("1234");
-      expect(formatted.patronType).toEqual(9);
-      expect(formatted.birthDate).toEqual("1988-01-01");
-      expect(formatted.addresses).toEqual([
-        {
-          lines: ["476 5TH AVENUE", "NEW YORK, NY 10018"],
-          type: "a",
-        },
-      ]);
-      // The patron is not subscribed to e-communications by default.
-      expect(formatted.patronCodes).toEqual({ pcode1: "-" });
-      // Username is special and goes in a varField
-      expect(formatted.varFields).toEqual([
-        { fieldTag: "x", content: "DEPENDENT OF 1234" },
-        { fieldTag: "u", content: "username" },
-      ]);
-      // Agency is in the fixedFields
-      expect(formatted.fixedFields).toEqual({
-        "158": {
-          label: "AGENCY",
-          value: "198",
-        },
-      });
-    });
-  });
-
-  // Creates a patron in the ILS.
-  describe("createPatron", () => {
-    const ilsClient = IlsClient({
-      createUrl,
-      tokenUrl,
-      ilsClientKey,
-      ilsClientSecret,
-    });
-    const mockedSuccessfulResponse = {
-      status: 200,
-      data: {
-        link:
-          "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/1234",
-      },
-    };
-    const address = new Address(
-      {
-        line1: "476 5th Avenue",
-        city: "New York",
-        state: "NY",
-        zip: "10018",
-        isResidential: true,
-        hasBeenValidated: true,
-      },
-      "soLicenseKey"
-    );
-    const policy = Policy({ policyType: "webApplicant" });
-    const card = new Card({
-      name: "First Last",
-      username: "username",
-      pin: "1234",
-      email: "test@test.com",
-      birthdate: "01/01/1988",
-      address,
-      policy,
-      ilsClient,
-      location: "nyc",
-      acceptTerms: true,
-      ageGate: true,
-    });
-    // Mock that the ptype was added to the card.
-    card.setPtype();
-    // Mock that the agency was added.
-    card.setAgency();
-
-    // Mocking current expiration date.
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-    const currentDay = now.getDate();
-    const expirationDate = new Date(
-      currentYear,
-      currentMonth,
-      currentDay + 1095
-    );
-
-    beforeAll(async () => {
-      // Mock that we got a token for authenticated requests.
-      axios.post.mockImplementationOnce(() =>
-        Promise.resolve(mockedSuccessfulTokenResponse)
-      );
-      await ilsClient.generateIlsToken();
-    });
-
-    it("fails to create a patron", async () => {
-      // We want to mock that we called the ILS and it did not find a
-      // username, so it is valid and the card is valid.
-      axios.get.mockImplementationOnce(() =>
-        Promise.reject(mockedErrorResponse)
-      );
-      // TODO need to mock AddressValidationAPI
-      await card.validate();
-
-      // Now mock the POST request to the ILS.
-      axios.post.mockImplementationOnce(() =>
-        Promise.reject(mockedErrorResponse)
-      );
-
-      const patron = await ilsClient.createPatron(card);
-      expect(patron).toEqual(mockedErrorResponse.response);
-      expect(axios.post).toHaveBeenNthCalledWith(
-        4,
-        createUrl,
-        {
-          addresses: [
-            {
-              lines: ["476 5TH AVENUE", "NEW YORK, NY 10018"],
-              type: "a",
-            },
-          ],
-          birthDate: "1988-01-01",
-          emails: ["TEST@TEST.COM"],
-          expirationDate: expirationDate.toISOString().slice(0, 10),
-          // The patron is not subscribed to e-communications by default.
-          patronCodes: { pcode1: "-" },
-          homeLibraryCode: "eb",
-          names: ["LAST, FIRST"],
-          patronType: 9,
-          pin: "1234",
-          varFields: [{ content: "username", fieldTag: "u" }],
-          fixedFields: {
-            "158": {
-              label: "AGENCY",
-              value: "198",
-            },
-          },
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${mockIlsToken}`,
-          },
-        }
-      );
-    });
-
-    it("successfully creates a patron", async () => {
-      axios.post.mockImplementationOnce(() =>
-        Promise.resolve(mockedSuccessfulResponse)
-      );
-
-      const patron = await ilsClient.createPatron(card);
-
-      expect(patron).toEqual(mockedSuccessfulResponse);
-      expect(axios.post).toHaveBeenNthCalledWith(
-        5,
-        createUrl,
-        {
-          addresses: [
-            {
-              lines: ["476 5TH AVENUE", "NEW YORK, NY 10018"],
-              type: "a",
-            },
-          ],
-          birthDate: "1988-01-01",
-          emails: ["TEST@TEST.COM"],
-          expirationDate: expirationDate.toISOString().slice(0, 10),
-          patronCodes: { pcode1: "-" },
-          homeLibraryCode: "eb",
-          names: ["LAST, FIRST"],
-          patronType: 9,
-          pin: "1234",
-          varFields: [{ content: "username", fieldTag: "u" }],
-          fixedFields: {
-            "158": {
-              label: "AGENCY",
-              value: "198",
-            },
-          },
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${mockIlsToken}`,
-          },
-        }
-      );
-    });
-
-    it("fails attemping to call the ILS", async () => {
-      axios.post.mockImplementationOnce(() =>
-        Promise.reject(mockedILSIntegrationError)
-      );
-
-      await expect(ilsClient.createPatron(card)).rejects.toEqual(
-        new ILSIntegrationError(
-          "The ILS could not be requested when attempting to create a patron."
-        )
-      );
-    });
-  });
-
-  // Updates a patron in the ILS.
-  describe("updatePatron", () => {
-    const ilsClient = IlsClient({
-      createUrl,
-      tokenUrl,
-      ilsClientKey,
-      ilsClientSecret,
-    });
-    const mockedSuccessfulResponse = {
-      status: 204,
-      data: {},
-    };
-    // The error response from the ILS when it can't find the patron in the
-    // PUT request is slightly different.
-    const mockedErrorResponse = {
-      response: {
-        status: 404,
-        data: {
-          name: "Patron record not found",
-        },
-      },
-    };
-    const patronId = "12345";
-    const updatedFields = {
-      varFields: [{ fieldTag: "x", content: "DEPENDENTS 12346" }],
-    };
-
-    beforeAll(async () => {
-      // Mock that we got a token for authenticated requests.
-      axios.post.mockImplementationOnce(() =>
-        Promise.resolve(mockedSuccessfulTokenResponse)
-      );
-      await ilsClient.generateIlsToken();
-    });
-
-    it("fails to update a patron", async () => {
-      // We want to mock that we called the ILS and it did not find
-      // the patron to update.
-      axios.put.mockImplementationOnce(() =>
-        Promise.reject(mockedErrorResponse)
-      );
-
-      await expect(
-        ilsClient.updatePatron(patronId, updatedFields)
-      ).rejects.toThrow("Patron record not found");
-      expect(axios.put).toHaveBeenCalledWith(
-        `${createUrl}${patronId}`,
-        updatedFields,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${mockIlsToken}`,
-          },
-        }
-      );
-    });
-
-    it("updates a patron", async () => {
-      axios.put.mockImplementationOnce(() =>
-        Promise.resolve(mockedSuccessfulResponse)
-      );
-
-      const response = await ilsClient.updatePatron(patronId, updatedFields);
-      expect(response).toEqual(mockedSuccessfulResponse);
-      expect(axios.put).toHaveBeenCalledWith(
-        `${createUrl}${patronId}`,
-        updatedFields,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${mockIlsToken}`,
-          },
-        }
-      );
-    });
-
-    it("should throw an error with invalid data to update", async () => {
-      // We want to mock that we called the ILS and it did not find a
-      // username, so it is valid and the card is valid.
-      axios.put.mockImplementationOnce(() =>
-        Promise.reject(mockedInvalidErrorResponse)
-      );
-
-      await expect(
-        ilsClient.updatePatron(patronId, updatedFields)
-      ).rejects.toThrow("Invalid request to ILS: Invalid JSON request");
-      expect(axios.put).toHaveBeenCalledWith(
-        `${createUrl}${patronId}`,
-        updatedFields,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${mockIlsToken}`,
-          },
-        }
-      );
-    });
-
-    it("should throw an error if hitting the ILS throws an error", async () => {
-      // We want to mock that we called the ILS and it did not find a
-      // username, so it is valid and the card is valid.
-      axios.put.mockImplementationOnce(() =>
-        Promise.reject(mockedILSIntegrationError)
-      );
-
-      await expect(
-        ilsClient.updatePatron(patronId, updatedFields)
-      ).rejects.toThrow(
-        "The ILS could not be requested when attempting to update a patron."
-      );
-      expect(axios.put).toHaveBeenCalledWith(
-        `${createUrl}${patronId}`,
-        updatedFields,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${mockIlsToken}`,
-          },
-        }
-      );
     });
   });
 

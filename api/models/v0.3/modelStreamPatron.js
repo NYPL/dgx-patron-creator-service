@@ -1,10 +1,10 @@
 // These are default values to publish to the stream
 const defaultData = {
-  id: '',
+  id: "",
   names: [],
   barcodes: [],
-  expirationDate: '',
-  birthDate: '',
+  expirationDate: "",
+  birthDate: "",
   emails: [],
   pin: null,
   patronType: null,

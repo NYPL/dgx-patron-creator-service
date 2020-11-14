@@ -1,4 +1,3 @@
-/* eslint-disable */
 const BarcodeDb = require("../../../db");
 const luhn = require("../../helpers/luhnValidations");
 const { DatabaseError } = require("../../helpers/errors");
@@ -6,10 +5,12 @@ const logger = require("../../helpers/Logger");
 
 /**
  * Creates Barcode objects.
+ * @param ilsClient Object instance of the IlsClient class used to call the ILS
+ *  and verify a barcode's availability.
  */
 class Barcode {
-  constructor(args) {
-    this.ilsClient = args["ilsClient"];
+  constructor(ilsClient) {
+    this.ilsClient = ilsClient;
     // This will return the instance of the class that's
     // already connected to the database.
     this.db = BarcodeDb();
@@ -21,6 +22,8 @@ class Barcode {
    * database and verifies it's available in the ILS. If it is, return it. The
    * barcode start sequence tells it what sequence to generate a new barcode
    * from (for different p-types).
+   * @param {string} barcodeStartSequence String of numbers the barcode should
+   *  start with.
    */
   async getNextAvailableBarcode(barcodeStartSequence) {
     if (!barcodeStartSequence) {
@@ -54,10 +57,11 @@ class Barcode {
   }
 
   /**
-   * nextLuhnValidCode(barcode)
+   * nextLuhnValidCode
    * Return the next Luhn-valid barcode.
    *
-   * @param {string} barcode
+   * @param {string} barcode Base barcode used for the new valid barcode.
+   * @param {string} addition Number to add to the new valid Luhn number.
    */
   nextLuhnValidCode(barcode, addition = 1) {
     if (!barcode || barcode.length !== 14) {
@@ -80,6 +84,7 @@ class Barcode {
    * the highest value barcode as a reference to generate a new barcode using
    * the `nextLuhnValidCode` method. The `barcodeStartSequence` tells the query
    * what sequence the new barcode should begin with.
+   * * @param {string} barcodeStartSequence String of numbers the barcode should
    */
   async nextAvailableFromDB(barcodeStartSequence) {
     let barcode;
@@ -116,7 +121,7 @@ class Barcode {
   }
 
   /**
-   * availableInIls(barcode, newBarcode, tries)
+   * availableInIls
    * Check the current barcode's availability in the ILS. It will try the
    * next barcode in the sequence until an available one is found (based on
    * the amount of tries). If the barcode is available, return it but also
@@ -210,7 +215,7 @@ class Barcode {
   }
 
   /**
-   * markUsed(barcode, used)
+   * markUsed
    * Set a barcode to used or unused in the database.
    * @param {string} barcode
    * @param {boolean} used
@@ -241,7 +246,7 @@ class Barcode {
   }
 
   /**
-   * freeBarcode(barcode)
+   * freeBarcode
    * Set an existing barcode to unused.
    * @param {string} barcode
    */
@@ -250,7 +255,7 @@ class Barcode {
   }
 
   /**
-   * addBarcode(barcode, used)
+   * addBarcode
    * Add a new barcode to the database and set used to true or false (default).
    * @param {string} barcode
    * @param {boolean} used
@@ -271,7 +276,7 @@ class Barcode {
   }
 
   /**
-   * release()
+   * release
    * Close the pool connection to the database.
    */
   async release() {

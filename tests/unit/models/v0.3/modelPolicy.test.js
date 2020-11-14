@@ -1,37 +1,12 @@
-/* eslint-disable jest/no-disabled-tests */
 const Policy = require("../../../../api/models/v0.3/modelPolicy");
 const Card = require("../../../../api/models/v0.3/modelCard");
 const Address = require("../../../../api/models/v0.3/modelAddress");
 
 describe("Policy", () => {
-  describe("SimplyE", () => {
-    const policy = Policy({ policyType: "simplye" });
-
-    it("returns the default simplye policy and related values", () => {
-      expect(policy.policyType).toEqual("simplye");
-
-      // returns the full policy in `.policy`
-      expect(policy.policy).toEqual(policy.ilsPolicies.simplye);
-
-      // Values found in IlsClient:
-      expect(policy.policyField("agency")).toEqual("202");
-      expect(Object.keys(policy.policyField("ptype"))).toEqual([
-        "default",
-        "metro",
-      ]);
-      expect(policy.policyField("requiredFields")).toEqual(["ageGate"]);
-      expect(policy.policyField("minimumAge")).toEqual(13);
-    });
-
-    it("verifies that `ageGate` is a required field", () => {
-      expect(policy.isRequiredField("ageGate")).toEqual(true);
-    });
-  });
-
   describe("Web Applicant", () => {
-    const policy = Policy({ policyType: "webApplicant" });
+    const policy = Policy();
 
-    it("returns a web applicant policy and policyType", () => {
+    it("returns the default webApplicant policy and policyType", () => {
       expect(policy.policyType).toEqual("webApplicant");
 
       // returns the full policy in `.policy`
@@ -49,12 +24,12 @@ describe("Policy", () => {
       expect(policy.policyField("minimumAge")).toEqual(13);
     });
 
-    it("verifies that `birthdate` is a required field", () => {
+    it("verifies that `birthdate` is a required field and not ageGate", () => {
       expect(policy.isRequiredField("birthdate")).toEqual(true);
       expect(policy.isRequiredField("ageGate")).toEqual(false);
     });
 
-    it("sets up the correct expiration dates", () => {
+    it("sets up the correct expiration time in days", () => {
       const ptypes = policy.ilsPolicies.webApplicant.ptype;
       const webApplicantPtype = ptypes.default.id;
       const digitalTemporary = ptypes.digitalTemporary.id;
@@ -189,7 +164,6 @@ describe("Policy", () => {
 
       const ptype = policy.determinePtype(card);
       expect(ptype).toEqual(juvenilePType);
-
       // The ptype value is '4':
       expect(ptype).toEqual(4);
     });
@@ -199,9 +173,45 @@ describe("Policy", () => {
       const juvenilePType = ptypes.default.id;
 
       const exptime = policy.getExpirationPoliciesForPtype(juvenilePType);
-
-      // Both the standard and temporary time is 3 years or 1095 days.
+      // The standard time is 3 years or 1095 days.
       expect(exptime).toEqual(1095);
+    });
+  });
+
+  describe("SimplyE", () => {
+    const policy = Policy({ policyType: "simplye" });
+
+    it("returns the simplye policy and related values", () => {
+      expect(policy.policyType).toEqual("simplye");
+
+      // returns the full policy in `.policy`
+      expect(policy.policy).toEqual(policy.ilsPolicies.simplye);
+
+      // Values found in IlsClient:
+      expect(policy.policyField("agency")).toEqual("202");
+      expect(Object.keys(policy.policyField("ptype"))).toEqual([
+        "default",
+        "metro",
+      ]);
+      expect(policy.policyField("requiredFields")).toEqual(["ageGate"]);
+      expect(policy.policyField("minimumAge")).toEqual(13);
+    });
+
+    it("verifies that `ageGate` is a required field", () => {
+      expect(policy.isRequiredField("ageGate")).toEqual(true);
+    });
+
+    it("sets up the correct expiration dates", () => {
+      const ptypes = policy.ilsPolicies.simplye.ptype;
+      const nonMetro = ptypes.default.id;
+      const metro = ptypes.metro.id;
+
+      let exptime = policy.getExpirationPoliciesForPtype(nonMetro);
+      // The standard time is 3 years or 1095 days.
+      expect(exptime).toEqual(1095);
+
+      exptime = policy.getExpirationPoliciesForPtype(metro);
+      // The standard time is 3 years or 1095 days.
       expect(exptime).toEqual(1095);
     });
   });

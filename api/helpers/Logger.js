@@ -1,8 +1,6 @@
-const winston = require('winston');
+const winston = require("winston");
 
-const {
-  combine, timestamp, printf, colorize,
-} = winston.format;
+const { combine, timestamp, printf, colorize } = winston.format;
 const { File, Console } = winston.transports;
 
 // Set default NYPL agreed upon log levels
@@ -22,24 +20,24 @@ const nyplLogLevels = {
 
 const getLogLevelCode = (levelString) => {
   switch (levelString) {
-    case 'emergency':
+    case "emergency":
       return 0;
-    case 'alert':
+    case "alert":
       return 1;
-    case 'critical':
+    case "critical":
       return 2;
-    case 'error':
+    case "error":
       return 3;
-    case 'warning':
+    case "warning":
       return 4;
-    case 'notice':
+    case "notice":
       return 5;
-    case 'info':
+    case "info":
       return 6;
-    case 'debug':
+    case "debug":
       return 7;
     default:
-      return 'n/a';
+      return "n/a";
   }
 };
 
@@ -55,7 +53,7 @@ const nyplFormat = printf((options) => {
     level: options.level.toUpperCase(),
     message: options.message.toString(),
     // This is specific to this app to make searching easy.
-    appTag: 'dgx-patron-creator-service',
+    appTag: "dgx-patron-creator-service",
   };
 
   if (process.pid) {
@@ -70,7 +68,7 @@ const nyplFormat = printf((options) => {
 });
 // The transport function that logs to a file.
 const fileTransport = new File({
-  filename: './log/dgx-patron-creator-service.log',
+  filename: "./log/dgx-patron-creator-service.log",
   handleExceptions: true,
   maxsize: 5242880, // 5MB
   maxFiles: 5,
@@ -84,13 +82,13 @@ const consoleTransport = new Console({
     nyplFormat,
     colorize({
       all: true,
-    }),
+    })
   ),
 });
 
 const loggerTransports = [consoleTransport];
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== "test") {
   loggerTransports.push(fileTransport);
 }
 
@@ -105,11 +103,11 @@ const logger = CreateLogger({
 });
 
 // Set the logger output level to one specified in the environment config.
-if (process.env.NODE_ENV === 'test') {
+if (process.env.NODE_ENV === "test") {
   // Console logs from tests can be disruptive.
-  logger.level = 'none';
+  logger.level = "none";
 } else {
-  logger.level = process.env.LOG_LEVEL || 'debug';
+  logger.level = process.env.LOG_LEVEL || "debug";
 }
 
 module.exports = logger;

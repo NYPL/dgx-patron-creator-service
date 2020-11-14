@@ -1,4 +1,3 @@
-/* eslint-disable */
 const {
   NoILSClient,
   ILSIntegrationError,
@@ -19,18 +18,17 @@ const DEPENDENT_LIMIT = 3;
  * A class with the main purpose to check a patron's eligibility to create
  * dependent juvenile cards and to update a patron account with the information
  * of the dependent juvenile cards.
+ * @param {object} ilsClient IlsClient instance object.
  */
-const DependentAccountAPI = (args) => {
-  const ilsClient = args["ilsClient"];
+const DependentAccountAPI = (ilsClient) => {
   let parentPatronData;
 
   /**
-   * isPatronEligible(options)
+   * isPatronEligible
    * The main function of this class. It gets a patron data object from the ILS
    * and it verifies it has the correct p-type. If it does, then it checks if
    * it can create another dependent account. It returns a response stating
    * whether the patron is eligible or not and a description if they are not.
-   *
    * @param {object} options
    */
   const isPatronEligible = async (options) => {
@@ -108,9 +106,8 @@ const DependentAccountAPI = (args) => {
   };
 
   /**
-   * checkAccountExpiration(expirationDate)
+   * checkAccountExpiration
    * Returns true if the account is expired or false otherwise.
-   *
    * @param {string} expirationDate
    * @param {Date} now
    */
@@ -120,11 +117,10 @@ const DependentAccountAPI = (args) => {
   };
 
   /**
-   * getPatronFromILS(options)
+   * getPatronFromILS
    * This calls the ILS to get a patron data object from a barcode or username.
    * Returns an error if the patron couldn't be found or there was an error
    * with the ILS.
-   *
    * @param {object} options - Object containing a type and value to get a
    *  patron from the ILS. Examples:
    *  { type: "barcode", value: "123456789123456" }
@@ -162,17 +158,16 @@ const DependentAccountAPI = (args) => {
   };
 
   /**
-   * checkPType(patronType)
+   * checkPType
    * Checks if the input p-type is an eligible p-type that can create
    * dependent accounts in the ILS.
-   *
    * @param {number} patronType
    */
   const checkPType = (patronType) =>
     IlsClient.CAN_CREATE_DEPENDENTS.includes(patronType);
 
   /**
-   * canCreateDependents(varFields)
+   * canCreateDependents
    * This function assumes that the patron has an eligible p-type and can
    * therefore create dependent accounts. Dependent accounts are found in the
    * `varFields` array of a patron data object, in an object with a
@@ -187,7 +182,6 @@ const DependentAccountAPI = (args) => {
    * if it is found but it has other content, then we assume they don't have
    * any dependents. The patron already has an eligible p-type so they can
    * create dependents.
-   *
    * @param {array} varFields
    */
   const canCreateDependents = (varFields) => {
@@ -245,11 +239,10 @@ const DependentAccountAPI = (args) => {
   };
 
   /**
-   * getVarField(varFields, fieldTag)
+   * getVarField
    * Returns all the varField objects in the varFields array with a specific
    * `fieldTag` value. Currently, the default `fieldTag` value is `"x"` since
    * that's the note field we will most often use.
-   *
    * @param {array} varFields
    * @param {string} fieldTag
    */
@@ -262,7 +255,7 @@ const DependentAccountAPI = (args) => {
   };
 
   /**
-   * getDependentVarField(varFields)
+   * getDependentVarField
    * Get the varFields object that has a `fieldTag` value of "x" and a `content`
    * value that includes the string "DEPENDENTS ..."". The `content` property
    * can include up to three dependent barcodes. If no object is found, or if
@@ -270,7 +263,6 @@ const DependentAccountAPI = (args) => {
    * in the `content` property, then return undefined. Otherwise, return the
    * object which can look like:
    * { fieldTag: "x", content: "DEPENDENTS y,y,y" }
-   *
    * @param {array} varFields
    */
   const getDependentVarField = (varFields = []) => {
@@ -298,13 +290,12 @@ const DependentAccountAPI = (args) => {
   };
 
   /**
-   * updateParentWithDependent(parent, dependentBarcode)
+   * updateParentWithDependent
    * This updates the field object in the varFields array for a patron. It
    * specifically will add an object with a `fieldTag` of 'x' and a `content`
    * of a list of dependent's barcodes. It does the logic to update any
    * existing string to add a barcode if any exist already. The response
    * doesn't return anything so if the status is `204`, then it was successful.
-   *
    * @param {object} parent
    * @param {string} dependentBarcode
    */
@@ -357,13 +348,12 @@ const DependentAccountAPI = (args) => {
   };
 
   /**
-   * formatAddressForILS(address)
+   * formatAddressForILS
    * A dependent account has the same address as its parent account. The address
    * just needs to be converted into an object for the purposes of creating
    * a new Address object to run validations for the new dependent. Since
    * the address is from the parent, it has already been validated and that's
    * added to this new object.
-   *
    * @param {object} address
    */
   const formatAddressForILS = (address) => {
