@@ -87,7 +87,6 @@ Example response:
 ```javascript
 {
   "type": "username-available",
-  "cardType": "standard",
   "message": "This username is available."
 }
 ```
@@ -119,8 +118,6 @@ Example response:
   "status": 200,
   "type": "valid-address",
   "title": "Valid address",
-  "cardType": "standard",
-  "detail": "The library card will be a standard library card.",
   "address": {
     "address": {
     "line1": "1111 1st St.",

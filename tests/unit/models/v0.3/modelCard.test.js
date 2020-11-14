@@ -38,17 +38,14 @@ const basicCard = {
 // UsernameValidationAPI constants
 const available = {
   type: "available-username",
-  cardType: "standard",
   message: "This username is available",
 };
 const unavailable = {
   type: "unavailable-username",
-  cardType: null,
   message: "This username is unavailable. Please try another.",
 };
 const invalid = {
   type: "invalid-username",
-  cardType: null,
   message:
     "Usernames should be 5-25 characters, letters or numbers only. Please revise your username.",
 };
@@ -85,31 +82,6 @@ describe("Card", () => {
       });
 
       expect(card.homeLibraryCode).toEqual("aa");
-    });
-  });
-
-  describe("getOrCreateAddress", () => {
-    const rawAddress = {
-      line1: "476 5th Avenue",
-      city: "Woodside",
-      state: "NY",
-      zip: "10018",
-    };
-    const address = new Address(rawAddress, "soLicenseKey");
-    const card = new Card(basicCard);
-
-    it("should returned undefined if no arguments were passed", () => {
-      expect(card.getOrCreateAddress()).toEqual(undefined);
-    });
-
-    it("create a new Address object is an Address instance isn't passed", () => {
-      const addressInstance = card.getOrCreateAddress(rawAddress);
-      expect(addressInstance instanceof Address).toEqual(true);
-    });
-
-    it("if an existing Address object is passed, just return it", () => {
-      const addressInstance = card.getOrCreateAddress(address);
-      expect(addressInstance).toEqual(address);
     });
   });
 
@@ -1581,6 +1553,7 @@ describe("Card", () => {
       expect(card.address.hasBeenValidated).toEqual(false);
       expect(card.errors).toEqual({
         address: {
+          cardType: null,
           detail:
             "The entered address is ambiguous and will not result in a library card.",
           addresses: [

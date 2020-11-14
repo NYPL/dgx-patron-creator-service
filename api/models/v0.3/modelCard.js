@@ -1,4 +1,4 @@
-const UsernameValidationApi = require("../../controllers/v0.3/UsernameValidationAPI");
+const UsernameValidationAPI = require("../../controllers/v0.3/UsernameValidationAPI");
 const Address = require("./modelAddress");
 const Barcode = require("./modelBarcode");
 const { strToBool, normalizedBirthdate } = require("../../helpers/utils");
@@ -22,8 +22,8 @@ const {
 class Card {
   constructor(props) {
     this.name = props.name;
-    this.address = this.getOrCreateAddress(props.address);
-    this.workAddress = this.getOrCreateAddress(props.workAddress);
+    this.address = props.address;
+    this.workAddress = props.workAddress;
     this.location = props.location || "";
     this.username = props.username;
     this.usernameHasBeenValidated = !!props.usernameHasBeenValidated;
@@ -50,21 +50,6 @@ class Card {
     this.expirationDate = undefined;
     this.agency = undefined;
     this.valid = false;
-    this.cardType = {};
-  }
-
-  /**
-   * getOrCreateAddress
-   * If the address argument is an Address object, then return it. Otherwise,
-   * create a new Addres object with the argument object.
-   * @param {object} address Object containing address fields or an instance
-   *  of the Address class.
-   */
-  getOrCreateAddress(address) {
-    if (!address) {
-      return;
-    }
-    return address instanceof Address ? address : new Address(address);
   }
 
   /**
@@ -154,7 +139,7 @@ class Card {
    * call the ILS API if it already received a value.
    */
   async checkValidUsername() {
-    const { responses, validate } = UsernameValidationApi(this.ilsClient);
+    const { responses, validate } = UsernameValidationAPI(this.ilsClient);
     let userNameResponse;
 
     // If the username has already been validated using
@@ -443,17 +428,14 @@ class Card {
     if (addressResponse.address) {
       // The validated address from SO is not an Address object, so create it:
       const address = new Address(
-        {
-          ...addressResponse.address,
-          hasBeenValidated: addressResponse.address.hasBeenValidated,
-        },
+        { ...addressResponse.address },
         this[addressType].soLicenseKey
       );
       // Reset the card's address type input to the validated version.
       this[addressType] = address;
     } else if (addressResponse.addresses) {
       this.errors[addressType] = {
-        detail: Card.RESPONSES.cardDeniedMultipleAddresses.detail,
+        ...Card.RESPONSES.cardDeniedMultipleAddresses,
         addresses: addressResponse.addresses,
       };
     }
@@ -484,23 +466,10 @@ class Card {
 }
 
 Card.RESPONSES = {
-  cardDenied: {
-    cardType: null,
-    detail:
-      "Library cards are only available for residents of New York State or students and commuters working in New York City.",
-  },
   cardDeniedMultipleAddresses: {
     cardType: null,
     detail:
       "The entered address is ambiguous and will not result in a library card.",
-  },
-  temporaryCard: {
-    cardType: "temporary",
-    detail: "The library card will be a temporary library card.",
-  },
-  standardCard: {
-    cardType: "standard",
-    detail: "The library card will be a standard library card.",
   },
 };
 
