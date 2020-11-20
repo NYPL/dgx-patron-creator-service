@@ -39,8 +39,8 @@ paths:
     post:
       tags:
         - patrons
-      summary: Create a Patron - Deprecated
-      description: Deprecated endpoint. Please see https://github.com/NYPL/dgx-patron-creator-service/wiki for more information. The request parameter in this example will be kept but the response will always return a 400 deprecated note.
+      summary: Create a Patron
+      description: Create a new patron account via the ILS.
       operationId: patrons_creatorV02
       parameters:
         - name: patron_data
@@ -50,10 +50,18 @@ paths:
           schema:
             $ref: '#/definitions/PatronsCreatorDataV02'
       responses:
+        '201':
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/PatronsCreatorResponseV02'
         '400':
           description: Bad request
           schema:
-            $ref: '#/definitions/400ErrorResponseDeprecated'
+            $ref: '#/definitions/400ErrorResponseV02'
+        '500':
+          description: Generic server error
+          schema:
+            $ref: '#/definitions/500ErrorResponseV02'
       security:
         - api_auth:
             - 'openid write:patron offline_access api'
@@ -335,6 +343,84 @@ definitions:
       zip:
         type: string
         example: '10018'
+  PatronsCreatorResponseV02:
+    type: object
+    properties:
+      data:
+        $ref: '#/definitions/PatronsCreatorResponseModelV02'
+      count:
+        type: number
+        example: 1
+  PatronsCreatorResponseModelV02:
+    required:
+      - names
+      - patronType
+    properties:
+      id:
+        type: integer
+        example: 7212911
+      names:
+        type: array
+        items:
+          type: string
+        example:
+          - 'TestLastName, TestFirstName'
+      barcodes:
+        type: array
+        items:
+          type: string
+        example:
+          - barcode_2018_07_19_328pm
+      pin:
+        type: string
+        example: '1111'
+      expirationDate:
+        type: string
+        example: '2019-01-01'
+      birthDate:
+        type: string
+        example: '1978-01-01'
+      emails:
+        type: array
+        items:
+          type: string
+        example:
+          - test_email_2018_07_19_238_a@test.com
+          - test_email_2018_07_19_238_b@test.com
+      patronType:
+        type: number
+        example: 151
+      patronCodes:
+        type: object
+        example:
+          pcode1: s
+          pcode2: f
+          pcode3: 5
+          pcode4: 100
+      blockInfo:
+        type: string
+        example:
+          code: '-'
+      addresses:
+        type: array
+        items:
+          type: object
+        example:
+          - lines:
+              - ADDRESS LINE 1
+              - ADDRESS LINE 2
+            type: a
+      type:
+        type: string
+        example:
+          code: a
+      phones:
+        type: array
+        items:
+          type: object
+        example:
+          - number: 917-123-4567
+            type: t
   PatronsCreatorDataV02:
     required:
       - names
@@ -680,6 +766,20 @@ definitions:
       deatil:
         type: string
         example: "This endpoint is deprecated. Use the v0.3 endpoints and find more information on https://github.com/NYPL/dgx-patron-creator-service/wiki"
+  400ErrorResponseV02:
+    properties:
+      status_code_from_ils:
+        type: number
+        example: 400
+      type:
+        type: string
+        example: invalid-request
+      message:
+        type: string
+        example: No data
+      detail:
+        type: object
+        example: {}
   400ErrorResponseV03:
     properties:
       status:
@@ -793,6 +893,20 @@ definitions:
       detail:
         type: string
         example: You have reached the limit of dependent cards you can receive via online application.
+  500ErrorResponseV02:
+    properties:
+      status_code_from_ils:
+        type: number
+        example: 500
+      type:
+        type: string
+        example: internal-server-error
+      message:
+        type: string
+        example: Internal server error
+      detail:
+        type: object
+        example: {}
   500ErrorResponseCreatePatronV03:
     properties:
       status:

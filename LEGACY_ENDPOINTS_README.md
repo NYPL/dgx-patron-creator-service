@@ -1,6 +1,6 @@
-# Deprecated v0.1 & v0.2 Endpoints
+# Deprecated v0.1 Endpoints
 
-This README is for the app version under `0.4.0` and for endpoints `/v0.1` and `/v0.2`. These endpoints are deprecated as the v0.1 endpoints depended on the NYPL Simplified Card Creator API which will be deprecated, and as the v0.2 endpoint was a proof-of-concept, not used in production, and used an older ILS API version.
+This README is for the app version under `0.4.0` and for endpoint `/v0.1`. These endpoints are deprecated as the v0.1 endpoints depended on the NYPL Simplified Card Creator API which will be deprecated.
 
 For the v0.1 endpoints, the Library Card app form on NYPL's website will fire a POST request to the service after it has been submitted. The service will then take the information and fire another POST request to NYPL Simplified's Card Creator API. Finally, it will return the results based on the response from the Card Creator API.
 
@@ -166,7 +166,3 @@ A successful JSON response example:
   }
 }
 ```
-
-#### 4. v0.2 Create a Patron `/api/v0.2/patrons` - POST
-
-This endpoint uses the ILS to create a patron but was set up a POC and not used in production.

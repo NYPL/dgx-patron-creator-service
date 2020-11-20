@@ -9,6 +9,7 @@ For more information regarding the business logic surrounding card creation, che
 This app serves the following endpoints:
 
 - `GET /docs/patron-creator`
+- `POST /api/v0.2/patrons`
 - `POST /api/v0.3/validations/username`
 - `POST /api/v0.3/validations/address`
 - `POST /api/v0.3/patrons`
@@ -20,7 +21,6 @@ The following endpoints are deprecated:
 - `POST /api/v0.1/patrons`
 - `POST /api/v0.1/validations/username`
 - `POST /api/v0.1/validations/address`
-- `POST /api/v0.2/patrons`
 
 See also [PatronService](https://github.com/NYPL-discovery/patron-service), [PatronEligibilityService](https://github.com/NYPL-discovery/patron-eligibility-service), [BarcodeService](https://github.com/NYPL/barcode-service) for other patron endpoints.
 
@@ -65,6 +65,12 @@ $ NODE_ENV=development npm start
 ```
 
 The server will run on _localhost:3001_ using development environment variables. Switch to `qa` or `production` for the other environments which will use the respective configuration files in the `/config` directory.
+
+## v0.2 API Routes
+
+#### 1. Create a Patron `/api/v0.2/patrons` - POST
+
+This endpoint uses the ILS to create a patron. More documentation will be written soon.
 
 ## v0.3 API Routes
 

@@ -26,7 +26,7 @@ class Card {
     this.workAddress = props.workAddress;
     this.location = props.location || "";
     this.username = props.username;
-    this.usernameHasBeenValidated = !!props.usernameHasBeenValidated;
+    this.usernameHasBeenValidated = strToBool(props.usernameHasBeenValidated);
     this.pin = props.pin;
     this.email = props.email;
     this.birthdate = normalizedBirthdate(props.birthdate);

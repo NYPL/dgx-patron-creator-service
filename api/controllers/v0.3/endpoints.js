@@ -282,7 +282,7 @@ async function createPatron(req, res) {
     location: req.body.location,
     workAddress: workAddress,
     username: req.body.username, // from req
-    usernameHasBeenValidated: !!req.body.usernameHasBeenValidated,
+    usernameHasBeenValidated: req.body.usernameHasBeenValidated,
     pin: req.body.pin, // from req
     email: req.body.email, // from req
     birthdate: req.body.birthdate, // from req

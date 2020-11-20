@@ -4,6 +4,7 @@ const awsDecrypt = require("./config/awsDecrypt");
 
 // Import controllers
 const apiDoc = require("./api/controllers/apiDoc.js");
+const createPatronV0_2 = require("./api/controllers/v0.2/createPatron.js");
 const createPatronV0_3 = require("./api/controllers/v0.3/endpoints.js");
 
 const BarcodeDb = require("./db");
@@ -91,6 +92,54 @@ function deprecatedEndpoint(req, res) {
   });
 }
 
+/**
+ * v2Error(err, req)
+ * Format the response for errors on v0.2 routes
+ *
+ * @param {error object} err
+ * @param {HTTP request} req
+ */
+// eslint-disable-next-line no-unused-vars
+function v2Error(err, req) {
+  return {
+    status_code_from_card_ils: null,
+    status: err.status,
+    type: "invalid-request",
+    message: `Request body: ${err.body}`,
+    detail: "The patron creator did not forward the request to the ILS.",
+  };
+}
+
+/**
+ * errorHandler
+ * Rendering the error response if the request to this service fails.
+ * We need "next" here as the forth argument following the Express's convention
+ * @param {error object} err
+ * @param {HTTP request} req
+ * @param {HTTP response} res
+ */
+function errorHandler(err, req, res, next) {
+  console.error(
+    `status_code: ${err.status}, ` +
+      // eslint-disable-next-line quotes
+      'type: "invalid-request", ' +
+      // eslint-disable-next-line prettier/prettier
+      +`message: "Request body: ${err.body}"`
+  );
+  let jsonError;
+
+  if (req.url.includes("v0.2")) {
+    jsonError = v2Error(err, req);
+  }
+
+  res.status(err.status).json(jsonError);
+
+  next();
+}
+
+// Error handling
+app.use(errorHandler);
+
 const router = express.Router();
 
 // This route will make a request for swaggerDoc.json
@@ -103,7 +152,8 @@ app.use("/api", router);
 router.route("/v0.1/patrons/").post(deprecatedEndpoint);
 router.route("/v0.1/validations/username").post(deprecatedEndpoint);
 router.route("/v0.1/validations/address").post(deprecatedEndpoint);
-router.route("/v0.2/patrons/").post(deprecatedEndpoint);
+// New validation will be part of the `patrons` endpoint.
+router.route("/v0.2/patrons/").post(createPatronV0_2.createPatron);
 
 // The new validation endpoints.
 router.route("/v0.3/validations/username").post(createPatronV0_3.checkUsername);
