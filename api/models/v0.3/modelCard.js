@@ -375,6 +375,7 @@ class Card {
       barcode: this.barcode,
       username: this.username,
       pin: this.pin,
+      ptype: this.ptype,
     };
 
     if (this.patronId) {
