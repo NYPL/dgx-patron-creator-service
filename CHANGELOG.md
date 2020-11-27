@@ -1,5 +1,11 @@
 ## Change Log
 
+### v0.7.6
+
+#### Fixed
+
+- Fixed an issue with the strToBool function.
+
 ### v0.7.5
 
 #### Updated

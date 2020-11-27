@@ -5,7 +5,7 @@
  * @param {string} str
  */
 const strToBool = (str) => {
-  if (!str) {
+  if (str === null || str === undefined || typeof str === "object") {
     return false;
   }
 
