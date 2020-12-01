@@ -105,7 +105,7 @@ async function setupEndpoint(endpointFn, req, res) {
   // generate a new token.
   if (!ilsClient.hasIlsToken() || ilsClient.isTokenExpired()) {
     try {
-      ilsClient.generateIlsToken();
+      await ilsClient.generateIlsToken();
     } catch (ilsError) {
       const errorResponseData = collectErrorResponseData(ilsError);
       renderResponse(req, res, errorResponseData.status, errorResponseData);

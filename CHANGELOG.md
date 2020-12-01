@@ -1,5 +1,12 @@
 ## Change Log
 
+### v0.7.7
+
+#### Fixed
+
+- Fixed a race condition when generating an ILS token.
+- Updated ptype logic to return a temporary ptype of 7 for devices in NYS but home addresses outside of NYS.
+
 ### v0.7.6
 
 #### Fixed

@@ -128,8 +128,9 @@ const Policy = (props) => {
     if (isSimplyEApplicant || !isWebApplicant || !card) {
       return;
     }
-    // Currently, patrons outside the US or if the location couldn't be
-    // verified, get a temporary card.
+
+    // Currently, patrons get a temporary card if they live outside the US or
+    // if their location couldn't be verified.
     if (!card.livesInUS() || card.location === "") {
       return ptype.digitalTemporary.id;
     }
@@ -151,11 +152,11 @@ const Policy = (props) => {
       return ptype.digitalMetro.id;
     }
 
-    // The user is in NYS and has a home address in NYS but not in NYC. They
+    // The user is in NYS and has a home address in NYS. They
     // also don't have a work address in NYC. Also, there were no errors
     // validating against Service Objects.
     if (
-      card.location === "nys" &&
+      (card.location === "nyc" || card.location === "nys") &&
       !card.livesInNYCity() &&
       card.livesInNYState() &&
       !card.worksInNYCity() &&
@@ -165,18 +166,30 @@ const Policy = (props) => {
       return ptype.digitalNonMetro.id;
     }
 
+    // The user is in NYS but has a home address outside of NYS. Also, there
+    // were no errors validating against Service Objects.
+    if (
+      (card.location === "nyc" || card.location === "nys") &&
+      card.livesInUS() &&
+      card.addressIsResidential() &&
+      card.addressHasBeenValidated()
+    ) {
+      return ptype.digitalTemporary.id;
+    }
+
     // The user is in the United States but not in NYS. They have an address
     // in the US or they have a work address in the US. Or, if the address was
     // not validated.
     if (
       (card.location === "us" && (card.livesInUS || card.worksInUS())) ||
-      !card.addressHasBeenValidated()
+      !card.addressHasBeenValidated() ||
+      card.worksInUS()
     ) {
       return ptype.digitalTemporary.id;
     }
 
-    // If nothing matches, don't assign a ptype.
-    return;
+    // If nothing matches, return a temporary ptype.
+    return ptype.digitalTemporary.id;
   };
 
   return {
