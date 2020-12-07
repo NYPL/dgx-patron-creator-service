@@ -45,6 +45,32 @@ const envVariableNames = [
 ];
 
 /**
+ * checkIlsToken
+ * check to see if the ILS token is available or if it is expired. If either is
+ * true, then request a new one. If there was an issue, return an error. Returns
+ * an array [boolean, message] with information if the ILS token generation
+ * call was successful or not.
+ */
+async function checkIlsToken(req, res) {
+  // If the ilsClient has no token or the token is expired, then
+  // generate a new token.
+  if (!ilsClient.hasIlsToken() || ilsClient.isTokenExpired()) {
+    try {
+      await ilsClient.generateIlsToken();
+      return [false, null];
+    } catch (ilsError) {
+      const errorResponseData = collectErrorResponseData(ilsError);
+      return [
+        true,
+        renderResponse(req, res, errorResponseData.status, errorResponseData),
+      ];
+    }
+  }
+
+  return [false, null];
+}
+
+/**
  * setupEndpoint(endpointFn, req, res)
  * The setup function for every endpoint that checks for environment variables,
  * decrypts the ILS client key and secret and stores it in the local cache,
@@ -86,7 +112,12 @@ async function setupEndpoint(endpointFn, req, res) {
       "The ILS client key and/or secret, or the Service Objects license key were not decrypted"
     );
     const errorResponseData = collectErrorResponseData(kmsError);
-    renderResponse(req, res, errorResponseData.status, errorResponseData);
+    return renderResponse(
+      req,
+      res,
+      errorResponseData.status,
+      errorResponseData
+    );
   }
 
   // Only one instance of the IlsClient class is needed, so create it if
@@ -101,15 +132,9 @@ async function setupEndpoint(endpointFn, req, res) {
       ilsClientSecret,
     });
 
-  // If the ilsClient has no token or the token is expired, then
-  // generate a new token.
-  if (!ilsClient.hasIlsToken() || ilsClient.isTokenExpired()) {
-    try {
-      await ilsClient.generateIlsToken();
-    } catch (ilsError) {
-      const errorResponseData = collectErrorResponseData(ilsError);
-      renderResponse(req, res, errorResponseData.status, errorResponseData);
-    }
+  const [tokenError, tokenErrorMessage] = await checkIlsToken(req, res);
+  if (tokenError) {
+    return tokenErrorMessage;
   }
 
   // Finally, call the specific function needed for the route that was called.
@@ -182,6 +207,12 @@ async function setupCreateDependent(req, res) {
  * @param {HTTP response} res
  */
 async function checkUsername(req, res) {
+  // Make sure we have a token. Nothing happens if there is a token.
+  const [tokenError, tokenErrorMessage] = await checkIlsToken(req, res);
+  if (tokenError) {
+    return tokenErrorMessage;
+  }
+
   const { validate } = UsernameValidationAPI(ilsClient);
   let usernameResponse;
   let status;
@@ -193,7 +224,7 @@ async function checkUsername(req, res) {
     status = usernameResponse.status;
   }
 
-  renderResponse(req, res, status, usernameResponse);
+  return renderResponse(req, res, status, usernameResponse);
 }
 
 /**
@@ -203,6 +234,12 @@ async function checkUsername(req, res) {
  * @param {HTTP response} res
  */
 async function checkAddress(req, res) {
+  // Make sure we have a token. Nothing happens if there is a token.
+  const [tokenError, tokenErrorMessage] = await checkIlsToken(req, res);
+  if (tokenError) {
+    return tokenErrorMessage;
+  }
+
   let addressResponse;
   try {
     const address = new Address(req.body.address, soLicenseKey);
@@ -240,7 +277,7 @@ async function checkAddress(req, res) {
     addressResponse = collectErrorResponseData(error);
   }
 
-  renderResponse(req, res, addressResponse.status, addressResponse);
+  return renderResponse(req, res, addressResponse.status, addressResponse);
 }
 
 /**
@@ -259,6 +296,12 @@ async function checkAddress(req, res) {
  * @param {HTTP response} res
  */
 async function createPatron(req, res) {
+  // Make sure we have a token. Nothing happens if there is a token.
+  const [tokenError, tokenErrorMessage] = await checkIlsToken(req, res);
+  if (tokenError) {
+    return tokenErrorMessage;
+  }
+
   let address = req.body.address
     ? new Address(req.body.address, soLicenseKey)
     : undefined;
@@ -380,7 +423,7 @@ async function createPatron(req, res) {
 
   // Whether or not the patron data was streamed to Kinesis, return the
   // correct response or the error response.
-  renderResponse(req, res, response.status, response);
+  return renderResponse(req, res, response.status, response);
 }
 
 /**
@@ -390,6 +433,12 @@ async function createPatron(req, res) {
  * @param {HTTP response} res
  */
 async function checkDependentEligibility(req, res) {
+  // Make sure we have a token. Nothing happens if there is a token.
+  const [tokenError, tokenErrorMessage] = await checkIlsToken(req, res);
+  if (tokenError) {
+    return tokenErrorMessage;
+  }
+
   const { isPatronEligible } = DependentAccountAPI(ilsClient);
   let response;
   let status;
@@ -406,7 +455,7 @@ async function checkDependentEligibility(req, res) {
     status = response.status;
   }
 
-  renderResponse(req, res, status, { status, ...response });
+  return renderResponse(req, res, status, { status, ...response });
 }
 
 /**
@@ -416,6 +465,12 @@ async function checkDependentEligibility(req, res) {
  * @param {HTTP response} res
  */
 async function createDependent(req, res) {
+  // Make sure we have a token. Nothing happens if there is a token.
+  const [tokenError, tokenErrorMessage] = await checkIlsToken(req, res);
+  if (tokenError) {
+    return tokenErrorMessage;
+  }
+
   const {
     isPatronEligible,
     getAlreadyFetchedParentPatron,
@@ -436,7 +491,7 @@ async function createDependent(req, res) {
         "No name, firstName, or lastName was passed for the child."
       )
     );
-    renderResponse(req, res, noNameError.status, noNameError);
+    return renderResponse(req, res, noNameError.status, noNameError);
   }
 
   // Check that the patron is eligible to create dependent accounts.
@@ -589,7 +644,7 @@ async function createDependent(req, res) {
     }
   }
 
-  renderResponse(req, res, response.status, response);
+  return renderResponse(req, res, response.status, response);
 }
 
 // Note: we are returning a function that calls the setup function with the
