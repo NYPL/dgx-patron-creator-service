@@ -66,6 +66,8 @@ async function checkIlsToken(req, res) {
       ];
     }
   }
+
+  return [false, null];
 }
 
 /**
