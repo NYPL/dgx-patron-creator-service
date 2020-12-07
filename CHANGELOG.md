@@ -1,5 +1,12 @@
 ## Change Log
 
+### v0.7.8
+
+#### Updated
+
+- Added more ILS Token checks to make sure there is a token in order to call the ILS API before making any calls.
+- Updated the ILS Token expiration date logic.
+
 ### v0.7.7
 
 #### Fixed

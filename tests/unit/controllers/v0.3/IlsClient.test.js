@@ -1038,15 +1038,23 @@ describe("IlsClient", () => {
     });
 
     it("returns true if the token has expired", async () => {
-      const today = new Date(2020, 10, 15);
-      const expirationDate = new Date(2020, 10, 14);
+      const todayNotExpired = new Date("2020-12-07T15:58:47.933Z");
+      const todayExpired = new Date("2020-12-07T17:58:14.849Z");
+      const expirationDate = new Date("2020-12-07T15:56:47.933Z");
       // We are mocking when the Date class gets called.
       const spy = jest
         .spyOn(global, "Date")
-        // This gets called when the ilsClient instance is created.
-        .mockReturnValueOnce(today)
-        // This gets called when creating a timestamp but we are
-        // intentionally expiring it to test the function.
+        // First call Date is for the current time. This is within the hour of
+        // the token expiration date so this will return not expired.
+        .mockReturnValueOnce(todayNotExpired)
+        // The second Date call for the first `isTokenExpired` call.
+        .mockReturnValueOnce(expirationDate)
+        // First Date call for the second `isTokenExpired` call. This is two
+        // hours later so we expect it to be expired.
+        .mockReturnValueOnce(todayExpired)
+        // The second Date call for the second `isTokenExpired` call. This
+        // should return true since the current time is more than one hour
+        // past this expiration date.
         .mockReturnValueOnce(expirationDate);
       const ilsClient = IlsClient({ tokenUrl, ilsClientKey, ilsClientSecret });
 
