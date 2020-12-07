@@ -17,7 +17,6 @@ const IlsClient = (props) => {
   const { createUrl, findUrl, tokenUrl, ilsClientKey, ilsClientSecret } = props;
   let ilsToken;
   let ilsTokenTimestamp;
-  const timeNow = new Date();
   // We need the `id`, `patronType`, `varFields`, `addresses`, `emails`, and
   // `expirationDate` fields from the patron object (`id` is returned by
   // default), so those fields are added at the end of the endpoint request.
@@ -26,8 +25,10 @@ const IlsClient = (props) => {
 
   const hasIlsToken = () => !!ilsToken;
   // 3540000 = 59 minutes; tokens are for 60 minutes
-  const isTokenExpired = () =>
-    !!(ilsTokenTimestamp && timeNow - ilsTokenTimestamp > 3540000);
+  const isTokenExpired = () => {
+    const timeNow = new Date();
+    return !!(ilsTokenTimestamp && timeNow - ilsTokenTimestamp > 3540000);
+  };
 
   /**
    * formatAddress
