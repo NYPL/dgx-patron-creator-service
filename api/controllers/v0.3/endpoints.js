@@ -47,7 +47,9 @@ const envVariableNames = [
 /**
  * checkIlsToken
  * check to see if the ILS token is available or if it is expired. If either is
- * true, then request a new one. If there was an issue, return an error.
+ * true, then request a new one. If there was an issue, return an error. Returns
+ * an array [boolean, message] with information if the ILS token generation
+ * call was successful or not.
  */
 async function checkIlsToken(req, res) {
   // If the ilsClient has no token or the token is expired, then
@@ -55,14 +57,13 @@ async function checkIlsToken(req, res) {
   if (!ilsClient.hasIlsToken() || ilsClient.isTokenExpired()) {
     try {
       await ilsClient.generateIlsToken();
+      return [false, null];
     } catch (ilsError) {
       const errorResponseData = collectErrorResponseData(ilsError);
-      return renderResponse(
-        req,
-        res,
-        errorResponseData.status,
-        errorResponseData
-      );
+      return [
+        true,
+        renderResponse(req, res, errorResponseData.status, errorResponseData),
+      ];
     }
   }
 }
@@ -129,7 +130,10 @@ async function setupEndpoint(endpointFn, req, res) {
       ilsClientSecret,
     });
 
-  await checkIlsToken(req, res);
+  const [tokenError, tokenErrorMessage] = await checkIlsToken(req, res);
+  if (tokenError) {
+    return tokenErrorMessage;
+  }
 
   // Finally, call the specific function needed for the route that was called.
   // Check the bottom of the file for the specific route to function mapping.
@@ -202,7 +206,10 @@ async function setupCreateDependent(req, res) {
  */
 async function checkUsername(req, res) {
   // Make sure we have a token. Nothing happens if there is a token.
-  await checkIlsToken(req, res);
+  const [tokenError, tokenErrorMessage] = await checkIlsToken(req, res);
+  if (tokenError) {
+    return tokenErrorMessage;
+  }
 
   const { validate } = UsernameValidationAPI(ilsClient);
   let usernameResponse;
@@ -226,7 +233,11 @@ async function checkUsername(req, res) {
  */
 async function checkAddress(req, res) {
   // Make sure we have a token. Nothing happens if there is a token.
-  await checkIlsToken(req, res);
+  const [tokenError, tokenErrorMessage] = await checkIlsToken(req, res);
+  if (tokenError) {
+    return tokenErrorMessage;
+  }
+
   let addressResponse;
   try {
     const address = new Address(req.body.address, soLicenseKey);
@@ -284,7 +295,10 @@ async function checkAddress(req, res) {
  */
 async function createPatron(req, res) {
   // Make sure we have a token. Nothing happens if there is a token.
-  await checkIlsToken(req, res);
+  const [tokenError, tokenErrorMessage] = await checkIlsToken(req, res);
+  if (tokenError) {
+    return tokenErrorMessage;
+  }
 
   let address = req.body.address
     ? new Address(req.body.address, soLicenseKey)
@@ -418,7 +432,10 @@ async function createPatron(req, res) {
  */
 async function checkDependentEligibility(req, res) {
   // Make sure we have a token. Nothing happens if there is a token.
-  await checkIlsToken(req, res);
+  const [tokenError, tokenErrorMessage] = await checkIlsToken(req, res);
+  if (tokenError) {
+    return tokenErrorMessage;
+  }
 
   const { isPatronEligible } = DependentAccountAPI(ilsClient);
   let response;
@@ -447,7 +464,10 @@ async function checkDependentEligibility(req, res) {
  */
 async function createDependent(req, res) {
   // Make sure we have a token. Nothing happens if there is a token.
-  await checkIlsToken(req, res);
+  const [tokenError, tokenErrorMessage] = await checkIlsToken(req, res);
+  if (tokenError) {
+    return tokenErrorMessage;
+  }
 
   const {
     isPatronEligible,
