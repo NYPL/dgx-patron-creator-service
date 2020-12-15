@@ -197,7 +197,7 @@ class Card {
    * Checks if the card has a home address in the US.
    */
   livesInUS() {
-    return this.address.inUS();
+    return !!(this.address && this.address.inUS());
   }
 
   /**
@@ -205,7 +205,7 @@ class Card {
    * Checks if the card has an work address in the US.
    */
   worksInUS() {
-    return this.workAddress.inUS();
+    return !!(this.workAddress && this.workAddress.inUS());
   }
 
   /**
