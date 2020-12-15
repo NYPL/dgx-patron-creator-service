@@ -1,5 +1,11 @@
 ## Change Log
 
+### v0.7.9
+
+#### Fixed
+
+- Fixed issue with `inUs` not being callable if there is no work address.
+
 ### v0.7.8
 
 #### Updated

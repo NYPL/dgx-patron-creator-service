@@ -50,11 +50,11 @@ function errorResponseDataWithTag(routeTag) {
     );
 
     const response = {
-      status: status || null,
+      status: status || 500,
       type: type || "",
       title: title || "",
       // The internal error `message` gets displayed as `detail`.
-      detail: message || "",
+      detail: message || "Something went wrong - no message passed.",
     };
 
     if (name) {
