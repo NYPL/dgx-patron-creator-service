@@ -23,7 +23,7 @@ deploy:
   skip_cleanup: true
   script: npm run deploy-qa
   on:
-    branch: qa
+    branch: qa-vpc
 - provider: script
   skip_cleanup: true
   script: npm run deploy-production
