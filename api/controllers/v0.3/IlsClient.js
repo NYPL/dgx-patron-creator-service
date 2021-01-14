@@ -57,8 +57,13 @@ const IlsClient = (props) => {
 
   /**
    * formatPatronName
-   * Format the patron's name so that it is last name and then first name
-   * and in all caps. If it's a single name, just return it in all caps.
+   * Format the patron's name so that it is last name(s) and then first name
+   * (and middle name if it's included) in all caps. If it's a single name,
+   * just return it in all caps. This makes the assumption for full names that
+   * include three or more names that the second name is the middle name, and
+   * anything names after the second (middle) name are all last names. For a
+   * name such as "Albert Bart Joe Doe", the output will be
+   * "JOE DOE, ALBERT BART".
    * @param {string} name
    */
   const formatPatronName = (name) => {
@@ -70,9 +75,24 @@ const IlsClient = (props) => {
       return name.toUpperCase();
     }
 
-    const [first, last] = name.split(" ");
+    const names = name.split(" ");
+    let first;
+    let middle;
+    let last;
+    let fullName;
 
-    return `${last}, ${first}`.toUpperCase();
+    if (names.length >= 3) {
+      // Destructure any multiple last names into one variable and join them
+      // together. This catches the case where there can be multiple last names
+      // assuming that the first two names are first and middle names.
+      [first, middle, ...last] = names;
+      fullName = `${last.join(" ")}, ${first} ${middle}`;
+    } else if (names.length === 2) {
+      [first, last] = name.split(" ");
+      fullName = `${last}, ${first}`;
+    }
+
+    return fullName.toUpperCase();
   };
 
   /**

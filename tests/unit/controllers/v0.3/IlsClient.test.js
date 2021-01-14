@@ -135,6 +135,18 @@ describe("IlsClient", () => {
       const name = "Abraham Lincoln";
       expect(ilsClient.formatPatronName(name)).toEqual("LINCOLN, ABRAHAM");
     });
+
+    it("returns last name and then first name and middle name in all caps", () => {
+      const name = "Bart Jojo Simpson";
+      expect(ilsClient.formatPatronName(name)).toEqual("SIMPSON, BART JOJO");
+    });
+
+    it("returns two last names and then first name and middle name in all caps", () => {
+      const name = "Bart Jojo Cosmo Simpson";
+      expect(ilsClient.formatPatronName(name)).toEqual(
+        "COSMO SIMPSON, BART JOJO"
+      );
+    });
   });
 
   describe("agencyField", () => {
