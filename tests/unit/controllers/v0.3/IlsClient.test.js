@@ -256,7 +256,7 @@ describe("IlsClient", () => {
     );
     const policy = Policy({ policyType: "webApplicant" });
     const card = new Card({
-      name: "First Last test",
+      name: "First Middle Last",
       username: "username",
       pin: "1234",
       birthdate: "01/01/1988",
@@ -296,7 +296,7 @@ describe("IlsClient", () => {
 
       const formatted = ilsClient.formatPatronData(card);
 
-      expect(formatted.names).toEqual(["LAST, FIRST"]);
+      expect(formatted.names).toEqual(["LAST, FIRST MIDDLE"]);
       expect(formatted.pin).toEqual("1234");
       expect(formatted.patronType).toEqual(9);
       expect(formatted.birthDate).toEqual("1988-01-01");
