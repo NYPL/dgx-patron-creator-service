@@ -6,6 +6,7 @@ const Policy = require("../../../../api/models/v0.3/modelPolicy");
 const axios = require("axios");
 const { ILSIntegrationError } = require("../../../../api/helpers/errors");
 const encode = require("../../../../api/helpers/encode");
+const { normalizeName } = require("../../../../api/helpers/utils");
 
 jest.mock("axios");
 jest.mock("../../../../api/controllers/v0.3/AddressValidationAPI");
@@ -126,23 +127,12 @@ describe("IlsClient", () => {
       expect(ilsClient.formatPatronName()).toEqual("");
     });
 
-    it("returns the name in all caps if there is only one value", () => {
-      const name = "Abraham";
+    it("returns the name in all caps", () => {
+      let name = "Abraham";
       expect(ilsClient.formatPatronName(name)).toEqual("ABRAHAM");
-    });
-
-    it("returns last name and then first name in all caps", () => {
-      const name = "Abraham Lincoln";
+      name = "Lincoln, Abraham";
       expect(ilsClient.formatPatronName(name)).toEqual("LINCOLN, ABRAHAM");
-    });
-
-    it("returns last name and then first name and middle name in all caps", () => {
-      const name = "Bart Jojo Simpson";
-      expect(ilsClient.formatPatronName(name)).toEqual("SIMPSON, BART JOJO");
-    });
-
-    it("returns two last names and then first name and middle name in all caps", () => {
-      const name = "Bart Jojo Cosmo Simpson";
+      name = "Cosmo Simpson, Bart Jojo";
       expect(ilsClient.formatPatronName(name)).toEqual(
         "COSMO SIMPSON, BART JOJO"
       );
@@ -256,7 +246,7 @@ describe("IlsClient", () => {
     );
     const policy = Policy({ policyType: "webApplicant" });
     const card = new Card({
-      name: "First Middle Last",
+      name: normalizeName("First Middle Last"),
       username: "username",
       pin: "1234",
       birthdate: "01/01/1988",
@@ -351,7 +341,7 @@ describe("IlsClient", () => {
     );
     const policy = Policy({ policyType: "webApplicant" });
     const card = new Card({
-      name: "First Last",
+      name: normalizeName("First Last"),
       username: "username",
       pin: "1234",
       email: "test@test.com",
