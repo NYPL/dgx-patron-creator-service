@@ -57,8 +57,7 @@ const IlsClient = (props) => {
 
   /**
    * formatPatronName
-   * Format the patron's name so that it is last name and then first name
-   * and in all caps. If it's a single name, just return it in all caps.
+   * Formats the patron's name to be in uppercase.
    * @param {string} name
    */
   const formatPatronName = (name) => {
@@ -66,13 +65,7 @@ const IlsClient = (props) => {
       return "";
     }
 
-    if (name.indexOf(" ") === -1) {
-      return name.toUpperCase();
-    }
-
-    const [first, last] = name.split(" ");
-
-    return `${last}, ${first}`.toUpperCase();
+    return name.toUpperCase();
   };
 
   /**

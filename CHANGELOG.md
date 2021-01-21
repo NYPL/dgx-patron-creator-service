@@ -1,5 +1,16 @@
 ## Change Log
 
+### v0.8.0
+
+#### Fixed
+
+- Fixed issue where middle names were being used as last names and the last name was completely omitted.
+- Added subnets and security groups for the node-lambda deployment script.
+
+#### Updated
+
+- Updated the problem detail error objects for the Dependent Eligibility endpoint to distinguish between the "limit reached" and "not eligible" errors.
+
 ### v0.7.9
 
 #### Fixed
