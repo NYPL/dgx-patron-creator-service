@@ -6,6 +6,7 @@ const Policy = require("../../../../api/models/v0.3/modelPolicy");
 const axios = require("axios");
 const { ILSIntegrationError } = require("../../../../api/helpers/errors");
 const encode = require("../../../../api/helpers/encode");
+const { normalizeName } = require("../../../../api/helpers/utils");
 
 jest.mock("axios");
 jest.mock("../../../../api/controllers/v0.3/AddressValidationAPI");
@@ -126,14 +127,15 @@ describe("IlsClient", () => {
       expect(ilsClient.formatPatronName()).toEqual("");
     });
 
-    it("returns the name in all caps if there is only one value", () => {
-      const name = "Abraham";
+    it("returns the name in all caps", () => {
+      let name = "Abraham";
       expect(ilsClient.formatPatronName(name)).toEqual("ABRAHAM");
-    });
-
-    it("returns last name and then first name in all caps", () => {
-      const name = "Abraham Lincoln";
+      name = "Lincoln, Abraham";
       expect(ilsClient.formatPatronName(name)).toEqual("LINCOLN, ABRAHAM");
+      name = "Cosmo Simpson, Bart Jojo";
+      expect(ilsClient.formatPatronName(name)).toEqual(
+        "COSMO SIMPSON, BART JOJO"
+      );
     });
   });
 
@@ -244,7 +246,7 @@ describe("IlsClient", () => {
     );
     const policy = Policy({ policyType: "webApplicant" });
     const card = new Card({
-      name: "First Last test",
+      name: normalizeName("First Middle Last"),
       username: "username",
       pin: "1234",
       birthdate: "01/01/1988",
@@ -284,7 +286,7 @@ describe("IlsClient", () => {
 
       const formatted = ilsClient.formatPatronData(card);
 
-      expect(formatted.names).toEqual(["LAST, FIRST"]);
+      expect(formatted.names).toEqual(["LAST, FIRST MIDDLE"]);
       expect(formatted.pin).toEqual("1234");
       expect(formatted.patronType).toEqual(9);
       expect(formatted.birthDate).toEqual("1988-01-01");
@@ -339,7 +341,7 @@ describe("IlsClient", () => {
     );
     const policy = Policy({ policyType: "webApplicant" });
     const card = new Card({
-      name: "First Last",
+      name: normalizeName("First Last"),
       username: "username",
       pin: "1234",
       email: "test@test.com",

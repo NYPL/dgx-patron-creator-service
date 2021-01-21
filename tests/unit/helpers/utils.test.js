@@ -53,13 +53,13 @@ describe("updateJuvenileName", () => {
 
 describe("normalizeName", () => {
   it("returns the name if it's in the preferred format", () => {
-    const name = "James Bond";
-    expect(normalizeName(name)).toEqual(name);
+    const name = "Bond, James";
+    expect(normalizeName(name)).toEqual("Bond, James");
   });
 
-  it("returned the normalized name if the request name is 'lastName, firstName'", () => {
-    const name = "Bond, James";
-    expect(normalizeName(name)).toEqual("James Bond");
+  it("returned the normalized name if the request name is 'firstName, lastName'", () => {
+    const name = "James Bond";
+    expect(normalizeName(name)).toEqual("Bond, James");
   });
 
   it("returns the combined first and last name inputs", () => {
@@ -70,7 +70,7 @@ describe("normalizeName", () => {
       lastName: "Bond",
     };
     const { name, firstName, lastName } = body;
-    expect(normalizeName(name, firstName, lastName)).toEqual("James Bond");
+    expect(normalizeName(name, firstName, lastName)).toEqual("Bond, James");
   });
 
   it("returns the name even if the last name is not added", () => {
@@ -81,6 +81,28 @@ describe("normalizeName", () => {
     };
     const { name, firstName, lastName } = body;
     expect(normalizeName(name, firstName, lastName)).toEqual("James");
+  });
+
+  it("returns last names and then first and middle names", () => {
+    const firstName = "Abraham";
+    const lastName = "Lincoln";
+    expect(normalizeName("", firstName, lastName)).toEqual("Lincoln, Abraham");
+  });
+
+  it("returns last name and then first name and middle name", () => {
+    const firstName = "Bart Jojo";
+    const lastName = "Simpson";
+    expect(normalizeName("", firstName, lastName)).toEqual(
+      "Simpson, Bart Jojo"
+    );
+  });
+
+  it("returns any last names and then first name and middle name", () => {
+    const firstName = "Albert Bart Claude";
+    const lastName = "Doe Ellis Frank";
+    expect(normalizeName("", firstName, lastName)).toEqual(
+      "Doe Ellis Frank, Albert Bart Claude"
+    );
   });
 });
 

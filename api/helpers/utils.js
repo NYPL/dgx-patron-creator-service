@@ -29,9 +29,22 @@ const strToBool = (str) => {
 
 /**
  * normalizeName
- * Normalize the format of the patron's full name to be "firstName lastName".
+ * Normalize the format of the patron's full name to be "lastName, firstName".
  * This can be either from the `name` or the `firstName` and `lastName` request
- * input.
+ * inputs. If it's a single first name, just return.
+ * This makes the assumption for full names that include three or
+ * more names that the second name is the middle name, and anything names after
+ * the second (middle) name are all last names. This is for names passed from
+ * the `fullName` parameter. For names passed in the `firstName` and `lastName`
+ * parameters, multiple middle names and multiple last names will be combined
+ * appropriately.
+ * The preferred arguments are the `firstName` and `lastName` parameters.
+ *
+ * For a name such as `fullName = "Albert Bart Joe Doe", the output will be
+ * "Joe Doe, Albert Bart".
+ * For a name such as `firstName` = "Albert Bart Claude" and
+ * `lastName` = "Doe Ellis Frank", the output will be
+ * "Doe Ellis Frank, Albert Bart Claude".
  * @param {string} fullName
  * @param {string} firstName
  * @param {string} lastName
@@ -41,18 +54,34 @@ const normalizeName = (fullName = "", firstName = "", lastName = "") => {
   // and return them. If the client only sends a `firstName`, that's okay since
   // it'll get trimmed here.
   if (!fullName) {
-    return `${firstName} ${lastName}`.trim();
+    if (!lastName) {
+      return firstName.trim();
+    }
+    return `${lastName}, ${firstName}`.trim();
   }
 
-  // If clients send the `fullName` in the "firstName lastName" format, then
-  // we're done because it's the format we want. Some clients may send only
-  // the first name in `fullName`.
+  // Some clients send the `fullName` in the "lastName, firstName" format and
+  // we leave those alone.
   let updatedName = fullName;
-  // But some clients send the `fullName` in the "lastName, firstName" format.
-  // This covers that case by normalizing the string to be "firstName lastName".
-  if (fullName.indexOf(", ") !== -1) {
-    const [last, first] = fullName.split(", ");
-    updatedName = `${first} ${last}`;
+  // If clients send the `fullName` in the "firstName lastName" format, then
+  // we reformat the name. This also updates the name to include any middle
+  // name or multiple last names. This only works if there is *one* middle name.
+  if (fullName.indexOf(", ") === -1) {
+    const names = fullName.split(" ");
+    let first;
+    let middle;
+    let last;
+
+    if (names.length >= 3) {
+      // Destructure any multiple last names into one variable and join them
+      // together. This catches the case where there can be multiple last names
+      // assuming that the first two names are first and middle names.
+      [first, middle, ...last] = names;
+      updatedName = `${last.join(" ")}, ${first} ${middle}`;
+    } else if (names.length === 2) {
+      [first, last] = names;
+      updatedName = `${last}, ${first}`;
+    }
   }
 
   return updatedName;
