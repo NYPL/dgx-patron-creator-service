@@ -182,13 +182,31 @@ class ExpiredAccount extends ProblemDetail {
   }
 }
 
-class NotEligibleCard extends ProblemDetail {
-  constructor(detail) {
+class JuvenileLimitReached extends ProblemDetail {
+  constructor() {
     super();
     this.status = 400;
+    this.type = "limit-reached";
+    this.title = "Limit Reached";
+    this.message =
+      "You have reached the limit of dependent cards you can receive via online application.";
+    // To support older versions of API where client expect these values:
+    this.name = "NotEligibleCard";
+    // A client error object displays `detail` rather than `message` to follow
+    // the problem detail structure, but some clients expect `message` in the
+    // error response, so include it here.
+    this.displayMessageToClient = true;
+  }
+}
+
+class NotEligibleCard extends ProblemDetail {
+  constructor() {
+    super();
+    this.status = 401;
     this.type = "not-eligible-card";
     this.title = "Not Eligible Card";
-    this.message = detail;
+    this.message =
+      "You don’t have the correct card type to make child accounts. Please contact gethelp@nypl.org if you believe this is in error.";
     // To support older versions of API where client expect these values:
     this.name = "NotEligibleCard";
     // A client error object displays `detail` rather than `message` to follow
@@ -305,6 +323,7 @@ module.exports = {
   DatabaseError,
   IncorrectPin,
   ExpiredAccount,
+  JuvenileLimitReached,
   NotEligibleCard,
   BadUsername,
   NotILSValid,
