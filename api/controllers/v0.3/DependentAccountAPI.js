@@ -6,6 +6,7 @@ const {
   NoBarcode,
   ExpiredAccount,
   NotEligibleCard,
+  JuvenileLimitReached,
 } = require("../../helpers/errors");
 const IlsClient = require("./IlsClient");
 const logger = require("../../helpers/Logger");
@@ -46,9 +47,7 @@ const DependentAccountAPI = (ilsClient) => {
     // are older and temporary and we need to return the not eligible error
     // rather than the invalid request error.
     if (barcode && barcode.length === 7) {
-      throw new NotEligibleCard(
-        "You don’t have the correct card type to make child accounts. Please contact gethelp@nypl.org if you believe this is in error."
-      );
+      throw new NotEligibleCard();
     }
     if (barcode && (barcode.length < 14 || barcode.length > 16)) {
       throw new InvalidRequest(
@@ -89,17 +88,13 @@ const DependentAccountAPI = (ilsClient) => {
       const canCreateDependentsValue = canCreateDependents(patron.varFields);
 
       if (!canCreateDependentsValue) {
-        throw new NotEligibleCard(
-          "You have reached the limit of dependent cards you can receive via online application."
-        );
+        throw new JuvenileLimitReached();
       } else {
         response["eligible"] = true;
         response["description"] = "This patron can create dependent accounts.";
       }
     } else {
-      throw new NotEligibleCard(
-        "You don’t have the correct card type to make child accounts. Please contact gethelp@nypl.org if you believe this is in error."
-      );
+      throw new NotEligibleCard();
     }
 
     return response;
