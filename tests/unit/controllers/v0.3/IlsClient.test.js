@@ -143,7 +143,7 @@ describe("IlsClient", () => {
     // The `agencyField` method doesn't need any credentials or other props.
     const ilsClient = IlsClient({});
 
-    it("returns an object with a key of '86' and an object value", () => {
+    it("returns an object with a key of '158' and an object value", () => {
       const agency = "202";
       const fixedFields = {};
       const agencyField = ilsClient.agencyField(agency, fixedFields);
@@ -176,6 +176,66 @@ describe("IlsClient", () => {
         158: {
           label: "AGENCY",
           value: agency,
+        },
+      });
+    });
+  });
+
+  describe("notificationField", () => {
+    // The `notificationField` method doesn't need any
+    // credentials or other props.
+    const ilsClient = IlsClient({});
+
+    it("returns an object with a key of '268' and an object value", () => {
+      let notifications = false;
+      let agencyField = ilsClient.notificationField(notifications, {});
+
+      // If the patron doesn't want notifications, it reflects in the
+      // `value` property as "-".
+      expect(agencyField["268"].value).toEqual("-");
+      expect(agencyField).toEqual({
+        268: {
+          label: "NOTICE PREFERENCE",
+          value: IlsClient.NO_NOTICE_PREF,
+        },
+      });
+
+      notifications = true;
+      agencyField = ilsClient.notificationField(notifications, {});
+      // If the patron does want notifications, it reflects in the `value`
+      // property as "z".
+      expect(agencyField["268"].value).toEqual("z");
+      expect(agencyField).toEqual({
+        268: {
+          label: "NOTICE PREFERENCE",
+          value: IlsClient.EMAIL_NOTICE_PREF,
+        },
+      });
+    });
+
+    it("adds on to an existing fixedFields object", () => {
+      const notification = true;
+      const fixedFields = {
+        84: {
+          label: "some field",
+          value: "value",
+        },
+        85: {
+          label: "some field 2",
+          value: "value 2",
+        },
+      };
+
+      const agencyField = ilsClient.notificationField(
+        notification,
+        fixedFields
+      );
+
+      expect(agencyField).toEqual({
+        ...fixedFields,
+        268: {
+          label: "NOTICE PREFERENCE",
+          value: IlsClient.EMAIL_NOTICE_PREF,
         },
       });
     });
@@ -309,6 +369,10 @@ describe("IlsClient", () => {
           label: "AGENCY",
           value: "198",
         },
+        "268": {
+          label: "NOTICE PREFERENCE",
+          value: "-",
+        },
       });
     });
   });
@@ -417,6 +481,10 @@ describe("IlsClient", () => {
               label: "AGENCY",
               value: "198",
             },
+            "268": {
+              label: "NOTICE PREFERENCE",
+              value: "-",
+            },
           },
         },
         {
@@ -459,6 +527,10 @@ describe("IlsClient", () => {
             "158": {
               label: "AGENCY",
               value: "198",
+            },
+            "268": {
+              label: "NOTICE PREFERENCE",
+              value: "-",
             },
           },
         },

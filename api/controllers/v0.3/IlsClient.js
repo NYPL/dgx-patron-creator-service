@@ -76,13 +76,41 @@ const IlsClient = (props) => {
    * @param {string} agency
    * @param {object} fixedFields
    */
-  const agencyField = (agency, fixedFields) => ({
+  const agencyField = (
+    agency = IlsClient.DEFAULT_PATRON_AGENCY,
+    fixedFields = {}
+  ) => ({
     158: {
       label: "AGENCY",
       value: agency,
     },
     ...fixedFields,
   });
+
+  /**
+   * notificationField
+   * Keep any existing fixedFields but add a new field for the notification
+   * type which has a key of "268". The values are: "-" (none), "z" (email),
+   * and "p" (phone). Currently, we are only setting up the e-newsletter
+   * notifications through the web app. For now, that same flag value
+   * (`ecommunicationsPref`) is used to set the general notification
+   * field value. If a user opts in for the e-newsletter, they'll also opt in
+   * for the general notification through email. This is until UX is set up
+   * in the web app.
+   *
+   * @param {boolean} optIn
+   * @param {object} fixedFields
+   */
+  const notificationField = (optIn = false, fixedFields = {}) => {
+    const pref = optIn ? IlsClient.EMAIL_NOTICE_PREF : IlsClient.NO_NOTICE_PREF;
+    return {
+      268: {
+        label: "NOTICE PREFERENCE",
+        value: pref,
+      },
+      ...fixedFields,
+    };
+  };
 
   /**
    * ecommunicationsPref
@@ -160,6 +188,7 @@ const IlsClient = (props) => {
 
     // Add agency fixedField
     fixedFields = agencyField(patron.agency, fixedFields);
+    fixedFields = notificationField(patron.ecommunicationsPref, fixedFields);
 
     const patronName = formatPatronName(patron.name);
 
@@ -418,6 +447,7 @@ const IlsClient = (props) => {
     generateIlsToken,
     // For testing,
     agencyField,
+    notificationField,
     ecommunicationsPref,
     formatPatronData,
     formatAddress,
@@ -512,15 +542,17 @@ IlsClient.CAN_CREATE_DEPENDENTS = [
 // Default values for certain fields
 IlsClient.DEFAULT_HOME_LIB = "";
 IlsClient.DEFAULT_PATRON_AGENCY = "202";
-IlsClient.DEFAULT_NOTICE_PREF = "z";
 IlsClient.DEFAULT_NOTE = `Patron's work/school address is ADDRESS2[ph].
-                    Out-of-state home address is ADDRESS1[pa].`;
+Out-of-state home address is ADDRESS1[pa].`;
 // Opt-in/out of Marketing's email subscription service:
 // 's' = subscribed; '-' = not subscribed
 // This needs to be sent in the patronCodes object in the pcode1 field
 // { pcode1: 's' } or { pcode1: '-' }
 IlsClient.SUBSCRIBED_ECOMMUNICATIONS_PREF = "s";
 IlsClient.NOT_SUBSCRIBED_ECOMMUNICATIONS_PREF = "-";
+IlsClient.EMAIL_NOTICE_PREF = "z";
+IlsClient.PHONE_NOTICE_PREF = "p";
+IlsClient.NO_NOTICE_PREF = "-";
 IlsClient.WEB_APPLICANT_AGENCY = "198";
 IlsClient.WEB_APPLICANT_NYS_AGENCY = "199";
 // Error codes
