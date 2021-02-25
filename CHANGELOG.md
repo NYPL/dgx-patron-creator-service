@@ -1,5 +1,11 @@
 ## Change Log
 
+### v0.8.1
+
+#### Added
+
+- Added a "notice preference" value in the patron data that gets sent to the ILS through the `fixedField` object. This allows users to get email notifications for their holds. At the moment, this value is dependent on the `ecommunicationsPref` flag since there is no UX for the web app. Until then, this data object is couple with the `ecommunicationsPref` value.
+
 ### v0.8.0
 
 #### Fixed
