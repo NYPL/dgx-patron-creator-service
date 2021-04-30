@@ -1,5 +1,11 @@
 ## Change Log
 
+### v0.8.2
+
+#### Updated
+
+- Updated npm packages to fix security issues.
+
 ### v0.8.1
 
 #### Added
