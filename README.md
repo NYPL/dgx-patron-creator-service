@@ -26,7 +26,7 @@ See also [PatronService](https://github.com/NYPL-discovery/patron-service), [Pat
 
 ## Version
 
-v0.7.5
+v0.8.2
 
 ## Technologies
 
