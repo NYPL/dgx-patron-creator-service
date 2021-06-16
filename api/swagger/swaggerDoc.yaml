@@ -521,7 +521,7 @@ definitions:
     required:
       - names
       - username
-      - pin
+      - password
       - address
     properties:
       name:
@@ -533,7 +533,7 @@ definitions:
       usernameHasBeenValidated:
         type: boolean
         example: true
-      pin:
+      password:
         type: string
         example: '1234'
       address:
@@ -579,7 +579,7 @@ definitions:
       username:
         type: string
         example: username
-      pin:
+      password:
         type: string
         example: '1111'
       temporary:
@@ -596,7 +596,7 @@ definitions:
       - barcode
       - name
       - username
-      - pin
+      - password
     properties:
       barcode:
         type: string
@@ -610,7 +610,7 @@ definitions:
       username:
         type: string
         example: dependentUsername1
-      pin:
+      password:
         type: string
         example: '1234'
   PatronsDependentsResponseV03:
@@ -636,7 +636,7 @@ definitions:
               barcode:
                 type: string
                 example: '28888888888888'
-              pin:
+              password:
                 type: string
                 example: '1234'
           parent:

@@ -71,7 +71,7 @@ describe("Policy", () => {
         name: "some name",
         username: "username",
         address: metroAddress,
-        pin: "1234",
+        password: "MyLib1731@!",
         location: "nyc",
         policy,
       });
@@ -88,7 +88,7 @@ describe("Policy", () => {
         name: "some name",
         username: "username",
         address: metroAddress2,
-        pin: "1234",
+        password: "MyLib1731@!",
         location: "nyc",
         policy,
       });
@@ -117,7 +117,7 @@ describe("Policy", () => {
         name: "some name",
         username: "username",
         address: stateAddress,
-        pin: "1234",
+        password: "MyLib1731@!",
         location: "nys",
         policy,
       });
@@ -157,7 +157,7 @@ describe("Policy", () => {
         name: "some name",
         username: "username",
         address,
-        pin: "1234",
+        password: "MyLib1731@!",
       });
       const simplyeJuvenilePtype = policy.ilsPolicies.simplyeJuvenile.ptype;
       const juvenilePType = simplyeJuvenilePtype.default.id;
