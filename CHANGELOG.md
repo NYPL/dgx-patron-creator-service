@@ -1,5 +1,11 @@
 ## Change Log
 
+### v0.8.3
+
+#### Updated
+
+- Updated the "pin" name attribute to "password" for v0.3 endpoints, but "pin" is still supported for legacy API calls to the endpoints. The ILS API still requires the attribute name "pin". This update changes the format of the existing 4-digit pin to 8-32 alphanumeric password.
+
 ### v0.8.2
 
 #### Updated

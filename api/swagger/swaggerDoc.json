@@ -786,7 +786,7 @@
       "required": [
         "names",
         "username",
-        "pin",
+        "password",
         "address"
       ],
       "properties": {
@@ -802,7 +802,7 @@
           "type": "boolean",
           "example": true
         },
-        "pin": {
+        "password": {
           "type": "string",
           "example": "1234"
         },
@@ -865,7 +865,7 @@
           "type": "string",
           "example": "username"
         },
-        "pin": {
+        "password": {
           "type": "string",
           "example": "1111"
         },
@@ -888,7 +888,7 @@
         "barcode",
         "name",
         "username",
-        "pin"
+        "password"
       ],
       "properties": {
         "barcode": {
@@ -907,7 +907,7 @@
           "type": "string",
           "example": "dependentUsername1"
         },
-        "pin": {
+        "password": {
           "type": "string",
           "example": "1234"
         }
@@ -941,7 +941,7 @@
                   "type": "string",
                   "example": "28888888888888"
                 },
-                "pin": {
+                "password": {
                   "type": "string",
                   "example": "1234"
                 }

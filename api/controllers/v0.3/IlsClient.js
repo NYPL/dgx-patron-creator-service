@@ -142,6 +142,8 @@ const IlsClient = (props) => {
   /**
    * formatPatronData
    * Format all the data into an object that the ILS understands.
+   * Note: even though we use the name "password" as per NYPL policy, the
+   * attribute to send to the ILS *API* will remain as "pin".
    * Example of an ILS-ready object (with some fields):
    * {
    *   names: [ 'FirstName LastName' ],
@@ -195,7 +197,7 @@ const IlsClient = (props) => {
     const fields = {
       names: [patronName],
       addresses,
-      pin: patron.pin,
+      pin: patron.password,
       patronType: patron.ptype,
       patronCodes,
       expirationDate: patron.expirationDate.toISOString().slice(0, 10),

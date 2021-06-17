@@ -15,7 +15,7 @@ const {
  * on that data.
  *
  * @param {object} props - Object consisting of the name string,
- *  address Address object, username string, pin string, email string,
+ *  address Address object, username string, password string, email string,
  *  birthdate string, workAddress Address object, ecommunicationsPref string,
  *  and policy Policy object.
  */
@@ -27,7 +27,7 @@ class Card {
     this.location = props.location || "";
     this.username = props.username;
     this.usernameHasBeenValidated = strToBool(props.usernameHasBeenValidated);
-    this.pin = props.pin;
+    this.password = props.pin || props.password;
     this.email = props.email;
     this.birthdate = normalizedBirthdate(props.birthdate);
     this.ageGate = strToBool(props.ageGate);
@@ -66,17 +66,17 @@ class Card {
     }
 
     // These values are necessary for a Card object:
-    // name, address, email, username, pin, birthdate or ageGate.
+    // name, address, email, username, password, birthdate or ageGate.
     // First check and return an error for any empty values.
     if (
       !this.name ||
       !this.address ||
       !this.username ||
-      !this.pin ||
+      !this.password ||
       !this.email
     ) {
       throw new InvalidRequest(
-        "'name', 'address', 'username', 'pin', and 'email' are all required fields."
+        "'name', 'address', 'username', 'password', and 'email' are all required fields."
       );
     }
 
@@ -97,10 +97,21 @@ class Card {
       this.errors["email"] = "Email address must be valid.";
     }
 
-    // The pin must be a 4 digit string. Throw an error if it's incorrect.
-    if (!/^\d{4}$/.test(this.pin)) {
-      this.errors["pin"] =
-        "PIN should be 4 numeric characters only. Please revise your PIN.";
+    // The password must be at least 8 characters, include a mixture of both
+    // uppercase and lowercase letters, include a mixture of letters and
+    // numbers, and have at least one special character.
+    // Throw an error if it's incorrect.
+    if (
+      // eslint-disable-next-line no-useless-escape
+      !/(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.+[~`!?@#$%^&*()_=+\[\]{};:.,"'<>|\\/-]).{8,32}/g.test(
+        this.password
+      )
+    ) {
+      this.errors["password"] =
+        "Password should be 8-32 alphanumeric characters and should include " +
+        "a mixture of both uppercase and lowercase letters, include a " +
+        "mixture of letters and numbers, and have at least one special " +
+        "character. Please revise your password.";
     }
 
     if (this.requiredByPolicy("birthdate")) {
@@ -374,7 +385,7 @@ class Card {
     let details = {
       barcode: this.barcode,
       username: this.username,
-      pin: this.pin,
+      password: this.password,
       ptype: this.ptype,
     };
 
