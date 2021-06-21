@@ -52,7 +52,7 @@ You need credentials for making successful API calls to NYPL's ILS, Service Obje
 
 A local Postgres database named `barcodes` needs to be set up and other environment variables can be set in the configuration files in the `/config` directory.
 
-All the credentials are stored in the configuration files in the `/config` directory but you do need a personal AWS account under NYPL's account in order to be able to decrypt those values locally.
+All the credentials are stored in the configuration files in the `/config` directory but you do need a personal AWS account under NYPL's account in order to be able to decrypt those values locally. Install the `aws cli` tool on your machine and configure it by running `aws configure`. Then add your AWS account Access Key ID and Secret Access Key when asked. If you do not already have these set up, contant someone at NYPL to help you create/access these credentials.
 
 _Please contact an NYPL engineer to get credentials for the services._
 
@@ -153,6 +153,9 @@ Note: For the `simplye` policy type, the `ageGate` field is required. For the `w
 
 For more information about the request, success response, and error response, check the [patrons endpoint wiki](https://github.com/NYPL/dgx-patron-creator-service/wiki/API-V0.3#patron-account-creation---post-v03patrons).
 
+Pin/Password update:
+In mid-2021, the ILS updated it's policy to increase the length of the pin. The property is now "password" and can be a length of 4-64 alphanumeric characters, including special characters. Even though the ILS API uses "password" and the Card Creator will send the data as "password", for legacy calls this endpoint will still support a "pin" property and will internally update it.
+
 Example request:
 
 ```javascript
@@ -174,7 +177,7 @@ Example request:
     "state": "NY",
     "zip": "10018"
   },
-  "pin": "1234",
+  "password": "MyLib1731@!",
   "ageGate": true,
   "birthdate": "05-30-1988",
   "policyType": "simplye",
@@ -193,7 +196,7 @@ Example response:
   "link": "https://link.com/to/ils/1234567",
   "barcode": "111122222222345",
   "username": "tomnook42",
-  "pin": "1234",
+  "password": "MyLib1731@!",
   "temporary": false,
   "message": "The library card will be a standard library card.",
   "patronId": 1234567
@@ -241,6 +244,9 @@ _Note: a parent patron account must pass its barcode under `barcode` or its user
 
 For more information about the request, success response, and error response, check the [patron dependent eligibility endpoint wiki](https://github.com/NYPL/dgx-patron-creator-service/wiki/API-V0.3#dependent-juvenile-account-creation---post-v03patronsdependents).
 
+Pin/Password update:
+In mid-2021, the ILS updated it's policy to increase the length of the pin. The property is now "password" and can be a length of 4-64 alphanumeric characters, including special characters. Even though the ILS API uses "password" and the Card Creator will send the data as "password", for legacy calls this endpoint will still support a "pin" property and will internally update it.
+
 Example of a requests:
 
 ```javascript
@@ -250,7 +256,7 @@ Example of a requests:
   "firstName": "Isabelle",
   "lastName": "Shizue",
   "username": "isabelle1",
-  "pin": "1234"
+  "password": "MyLib1731@!"
 }
 ```
 
@@ -261,7 +267,7 @@ Example of a requests:
   "barcode": "12222222222222",
   "name": "Isabelle",
   "username": "isabelle1",
-  "pin": "1234"
+  "password": "MyLib1731@!"
 }
 ```
 
@@ -272,7 +278,7 @@ Example of a requests:
   "parentUsername": "tomnook42",
   "firstName": "Isabelle",
   "username": "isabelle1",
-  "pin": "1234"
+  "password": "MyLib1731@!"
 }
 ```
 
@@ -287,7 +293,7 @@ Example of responses:
       "username": "isabelle1",
       "name": "SHIZUE, ISABELLE",
       "barcode": "15555555555555",
-      "pin": "1234"
+      "password": "MyLib1731@!"
     },
     "parent": {
       "updated": true,
@@ -308,7 +314,7 @@ Whenever endpoints are updated, the corresponding Swagger documentation MUST be 
 
 ## Testing
 
-### Unit tests
+### Unit Tests
 
 Run `npm test` to run the unit tests.
 
@@ -332,11 +338,40 @@ DB_PASSWORD_TEST=database_password
 DB_PORT_TEST=5432
 ```
 
-### Integration tests
+### Integration Tests
 
 Run `NODE_ENV=production npm start` in one window to run the app locally in production mode. This is required to run the integration tests. The integration tests will hit the production ILS server to run against tests.
 
 Run `INTEGRATION_TESTS=true npm test` in a second window to run all the tests including the integration tests. Check the server to ensure that you see the message "Published to stream successfully!" to verify that the integration test exercised the Kinesis stream.
+
+### Manual Testing through Postman
+
+If you're testing manually through Postman to make real API calls, _make sure you are on NYPL's VPN network to make authenticated calls_. Then run the app as `NODE_ENV=qa npm start` or `NODE_ENV=production npm start` to hit the real QA/production ILS server. Now you can make calls to `http://localhost:3001/api/v0.3/validations/username`, for example, and it'll make real requests to the ILS.
+
+If you want to test the real endpoints on the NYPL Platform API through Postman, you need the right credentials by making two calls:
+
+- To the ISSO server to get a token
+- To the Platform API
+
+1. ISSO Server
+   In Postman, make a POST request to `https://isso.nypl.org/oauth/token` with:
+
+- Authorization: "Basic Auth"
+  - username: "isso_username"
+  - password: "isso_password"
+- Body: "x-www-form-urlencoded"
+  - key: "grant_type"
+  - value: "client_credentials"
+
+"isso_username" and "isso_password" should get obtained from the ILS team at NYPl. This API call will return a JSON object and the important value is the `access_token` value. You will need this value as the bearer token in the next step.
+
+2. Call the Platform API
+   In Postman, make a POST request to `https://platform.nypl.org/api/v0.3/validations/username` (for example) with:
+
+- Authorization: "Bearer Token"
+  - Token: "access_token"
+
+Since this is a POST request, you need to change the "body" type to "raw" and "JSON", now you can add the data object. For GET requests, you'd update the "params" instead.
 
 ## Deployment
 

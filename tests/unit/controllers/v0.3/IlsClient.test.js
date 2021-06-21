@@ -308,7 +308,7 @@ describe("IlsClient", () => {
     const card = new Card({
       name: normalizeName("First Middle Last"),
       username: "username",
-      pin: "1234",
+      password: "MyLib1731@!",
       birthdate: "01/01/1988",
       email: "email@gmail.com",
       address,
@@ -347,7 +347,9 @@ describe("IlsClient", () => {
       const formatted = ilsClient.formatPatronData(card);
 
       expect(formatted.names).toEqual(["LAST, FIRST MIDDLE"]);
-      expect(formatted.pin).toEqual("1234");
+      // This object returns "pin" since that's what the ILS API expects,
+      // but we use the name "password" everywhere else.
+      expect(formatted.pin).toEqual("MyLib1731@!");
       expect(formatted.patronType).toEqual(9);
       expect(formatted.birthDate).toEqual("1988-01-01");
       expect(formatted.addresses).toEqual([
@@ -407,7 +409,7 @@ describe("IlsClient", () => {
     const card = new Card({
       name: normalizeName("First Last"),
       username: "username",
-      pin: "1234",
+      password: "MyLib1731@!",
       email: "test@test.com",
       birthdate: "01/01/1988",
       address,
@@ -474,7 +476,8 @@ describe("IlsClient", () => {
           homeLibraryCode: "eb",
           names: ["LAST, FIRST"],
           patronType: 9,
-          pin: "1234",
+          // ILS API takes in pin instead of password.
+          pin: "MyLib1731@!",
           varFields: [{ content: "username", fieldTag: "u" }],
           fixedFields: {
             "158": {
@@ -521,7 +524,8 @@ describe("IlsClient", () => {
           homeLibraryCode: "eb",
           names: ["LAST, FIRST"],
           patronType: 9,
-          pin: "1234",
+          // ILS API takes in pin instead of password.
+          pin: "MyLib1731@!",
           varFields: [{ content: "username", fieldTag: "u" }],
           fixedFields: {
             "158": {
@@ -543,7 +547,7 @@ describe("IlsClient", () => {
       );
     });
 
-    it("fails attemping to call the ILS", async () => {
+    it("fails attempasswordg to call the ILS", async () => {
       axios.post.mockImplementationOnce(() =>
         Promise.reject(mockedILSIntegrationError)
       );

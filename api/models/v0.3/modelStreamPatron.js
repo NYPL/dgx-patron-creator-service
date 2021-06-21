@@ -6,7 +6,7 @@ const defaultData = {
   expirationDate: "",
   birthDate: "",
   emails: [],
-  pin: null,
+  password: null,
   patronType: null,
   patronCodes: {
     pcode1: null,

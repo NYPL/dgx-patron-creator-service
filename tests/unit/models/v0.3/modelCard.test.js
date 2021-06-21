@@ -28,7 +28,7 @@ const basicCard = {
     "soLicenseKey"
   ),
   username: "username",
-  pin: "1234",
+  password: "MyLib1731@!",
   email: "test@test.com",
   birthdate: "01/01/1988",
   acceptTerms: true,
@@ -74,7 +74,7 @@ describe("Card", () => {
           "soLicenseKy"
         ),
         username: "username",
-        pin: "1234",
+        password: "MyLib1731@!",
         // required for web applicants
         birthdate: "01/01/1988",
         // random library code
@@ -110,7 +110,7 @@ describe("Card", () => {
       const cardAcceptBool = new Card({
         name: "Tom",
         username: "username",
-        pin: "1234",
+        password: "MyLib1731@!",
         address: {},
         email: "email@email.com",
         policy: Policy({ policyType: "simplye" }),
@@ -121,7 +121,7 @@ describe("Card", () => {
       const cardAcceptString = new Card({
         name: "Tom",
         username: "username",
-        pin: "1234",
+        password: "MyLib1731@!",
         address: {},
         email: "email@email.com",
         policy: Policy({ policyType: "simplye" }),
@@ -157,7 +157,7 @@ describe("Card", () => {
       const cardAcceptBool = new Card({
         name: "Tom",
         username: "username",
-        pin: "1234",
+        password: "MyLib1731@!",
         address: {},
         email: "email@email.com",
         policy: Policy({ policyType: "simplye" }),
@@ -168,7 +168,7 @@ describe("Card", () => {
       const cardAcceptString = new Card({
         name: "Tom",
         username: "username",
-        pin: "1234",
+        password: "MyLib1731@!",
         address: {},
         email: "email@email.com",
         policy: Policy({ policyType: "simplye" }),
@@ -200,11 +200,11 @@ describe("Card", () => {
       expect(response).toEqual({ valid: true, errors: {} });
     });
 
-    it("should fail if there are no name, username, pin, address, and email values", async () => {
+    it("should fail if there are no name, username, password, address, and email values", async () => {
       const cardNoName = new Card({
         name: "",
         username: "username",
-        pin: "1234",
+        password: "MyLib1731@!",
         address: {},
         email: "test@test.com",
         acceptTerms: true,
@@ -212,15 +212,15 @@ describe("Card", () => {
       const cardNoUsername = new Card({
         name: "name",
         username: "",
-        pin: "1234",
+        password: "MyLib1731@!",
         address: {},
         email: "test@test.com",
         acceptTerms: true,
       });
-      const cardNoPin = new Card({
+      const cardNopassword = new Card({
         name: "name",
         username: "username",
-        pin: "",
+        password: "",
         address: {},
         email: "test@test.com",
         acceptTerms: true,
@@ -228,7 +228,7 @@ describe("Card", () => {
       const cardNoAddress = new Card({
         name: "name",
         username: "username",
-        pin: "1234",
+        password: "MyLib1731@!",
         address: undefined,
         email: "test@test.com",
         acceptTerms: true,
@@ -236,44 +236,44 @@ describe("Card", () => {
       const cardNoEmail = new Card({
         name: "name",
         username: "username",
-        pin: "1234",
+        password: "MyLib1731@!",
         address: undefined,
         email: "",
         acceptTerms: true,
       });
 
       await expect(cardNoName.validate()).rejects.toThrow(
-        "'name', 'address', 'username', 'pin', and 'email' are all required fields."
+        "'name', 'address', 'username', 'password', and 'email' are all required fields."
       );
       await expect(cardNoUsername.validate()).rejects.toThrow(
-        "'name', 'address', 'username', 'pin', and 'email' are all required fields."
+        "'name', 'address', 'username', 'password', and 'email' are all required fields."
       );
-      await expect(cardNoPin.validate()).rejects.toThrow(
-        "'name', 'address', 'username', 'pin', and 'email' are all required fields."
+      await expect(cardNopassword.validate()).rejects.toThrow(
+        "'name', 'address', 'username', 'password', and 'email' are all required fields."
       );
       await expect(cardNoAddress.validate()).rejects.toThrow(
-        "'name', 'address', 'username', 'pin', and 'email' are all required fields."
+        "'name', 'address', 'username', 'password', and 'email' are all required fields."
       );
       await expect(cardNoEmail.validate()).rejects.toThrow(
-        "'name', 'address', 'username', 'pin', and 'email' are all required fields."
+        "'name', 'address', 'username', 'password', and 'email' are all required fields."
       );
     });
 
-    it("should fail if the pin is not 4 digits", async () => {
-      const cardBadPin1 = new Card({
+    it("should fail if the password is not 8-32 characters", async () => {
+      const cardBadPassword1 = new Card({
         name: "name",
         username: "username",
-        pin: "12",
+        password: "12",
         email: "email@email.com",
         address: {},
         acceptTerms: true,
         birthdate: "01/01/1988",
         policy: Policy(),
       });
-      const cardBadPin2 = new Card({
+      const cardBadPassword2 = new Card({
         name: "name",
         username: "username",
-        pin: "12345",
+        password: "12345",
         email: "email@email.com",
         address: {},
         acceptTerms: true,
@@ -293,21 +293,23 @@ describe("Card", () => {
         available: true,
         response: { message: "Available username" },
       });
-      cardBadPin1.address.validate = mockAddressValidate;
-      cardBadPin2.address.validate = mockAddressValidate;
-      cardBadPin1.checkValidUsername = mockUsernameValidate;
-      cardBadPin2.checkValidUsername = mockUsernameValidate;
+      cardBadPassword1.address.validate = mockAddressValidate;
+      cardBadPassword2.address.validate = mockAddressValidate;
+      cardBadPassword1.checkValidUsername = mockUsernameValidate;
+      cardBadPassword2.checkValidUsername = mockUsernameValidate;
 
-      const result1 = await cardBadPin1.validate();
-      const result2 = await cardBadPin2.validate();
+      const result1 = await cardBadPassword1.validate();
+      const result2 = await cardBadPassword2.validate();
 
       expect(result1.valid).toEqual(false);
       expect(result1.errors).toEqual({
-        pin: "PIN should be 4 numeric characters only. Please revise your PIN.",
+        password:
+          "Password should be 8-32 alphanumeric characters and should include a mixture of both uppercase and lowercase letters, include a mixture of letters and numbers, and have at least one special character. Please revise your password.",
       });
       expect(result2.valid).toEqual(false);
       expect(result2.errors).toEqual({
-        pin: "PIN should be 4 numeric characters only. Please revise your PIN.",
+        password:
+          "Password should be 8-32 alphanumeric characters and should include a mixture of both uppercase and lowercase letters, include a mixture of letters and numbers, and have at least one special character. Please revise your password.",
       });
     });
 
@@ -1259,7 +1261,7 @@ describe("Card", () => {
 
       expect(details.barcode).toEqual("123456789");
       expect(details.username).toEqual("username");
-      expect(details.pin).toEqual("1234");
+      expect(details.password).toEqual("MyLib1731@!");
     });
 
     it("adds the patron ID if it was created", () => {
@@ -1268,7 +1270,7 @@ describe("Card", () => {
 
       expect(details.barcode).toEqual("123456789");
       expect(details.username).toEqual("username");
-      expect(details.pin).toEqual("1234");
+      expect(details.password).toEqual("MyLib1731@!");
       expect(details.patronId).toEqual("456789");
     });
   });
@@ -1316,7 +1318,7 @@ describe("Card", () => {
           "soLicenseKey"
         ),
         username: "username",
-        pin: "1234",
+        password: "MyLib1731@!",
         // required for web applicants
         birthdate: "01/01/1988",
       };

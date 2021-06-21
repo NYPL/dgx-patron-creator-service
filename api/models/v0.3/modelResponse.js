@@ -15,7 +15,7 @@ function patronResponse(data) {
     expirationDate: data.expirationDate || "",
     birthDate: data.birthDate || "",
     emails: data.emails || [],
-    pin: data.pin || "",
+    password: data.password || "",
     patronType: data.patronType || "",
     patronCodes: data.patronCodes || {
       pcode1: null,

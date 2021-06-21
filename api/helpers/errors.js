@@ -149,14 +149,14 @@ class DatabaseError extends ProblemDetail {
   }
 }
 
-class IncorrectPin extends ProblemDetail {
+class IncorrectPassword extends ProblemDetail {
   constructor() {
     super();
     this.status = 400;
-    this.type = "incorrect-pin";
+    this.type = "incorrect-password";
     this.title = "Missing Required Values";
     this.message =
-      "PIN should be 4 numeric characters only. Please revise your PIN.";
+      "Password should be 4-64 alphanumeric characters. Please revise your password.";
     // To support older versions of API where client expect these values:
     this.name = this.title;
     // A client error object displays `detail` rather than `message` to follow
@@ -321,7 +321,7 @@ module.exports = {
   PatronNotFound,
   NoBarcode,
   DatabaseError,
-  IncorrectPin,
+  IncorrectPassword,
   ExpiredAccount,
   JuvenileLimitReached,
   NotEligibleCard,

@@ -319,6 +319,7 @@ async function createPatron(req, res) {
     req.body.firstName,
     req.body.lastName
   );
+  const password = req.body.pin || req.body.password;
   const card = new Card({
     name: updatedName,
     address: address, // created above
@@ -326,7 +327,7 @@ async function createPatron(req, res) {
     workAddress: workAddress,
     username: req.body.username, // from req
     usernameHasBeenValidated: req.body.usernameHasBeenValidated,
-    pin: req.body.pin, // from req
+    password,
     email: req.body.email, // from req
     birthdate: req.body.birthdate, // from req
     ageGate: req.body.ageGate, // from req
@@ -358,7 +359,7 @@ async function createPatron(req, res) {
     };
   }
 
-  // If there are any errors with the request, such as missing pin, birthdate,
+  // If there are any errors with the request, such as missing password, birthdate,
   // etc., or if the username is unavailable, render that error.
   if (errors && Object.keys(errors).length !== 0) {
     response = {
@@ -544,10 +545,11 @@ async function createDependent(req, res) {
 
   // This new patron has a new ptype.
   const policy = Policy({ policyType: "simplyeJuvenile" });
+  const password = req.body.pin || req.body.password;
   const card = new Card({
     name: childsName, // from req
     username: req.body.username, // from req
-    pin: req.body.pin, // from req
+    password, // from req
     birthdate: req.body.birthdate, // from req
     address, // from parent
     // If no email was sent in the request, use the parent's email.
@@ -585,7 +587,7 @@ async function createDependent(req, res) {
     };
   }
 
-  // If there are any errors with the request, such as missing pin, birthdate,
+  // If there are any errors with the request, such as missing password, birthdate,
   // etc., or if the username is unavailable, render that error.
   if (errors && Object.keys(errors).length !== 0) {
     const badInput = new InvalidRequest("There was an error with the request");
@@ -624,7 +626,7 @@ async function createDependent(req, res) {
               username: card.username,
               name: card.name,
               barcode: card.barcode,
-              pin: card.pin,
+              password: card.password,
             },
             // Updating a patron in the ILS simply returns a 204 with no
             // response in the body.
