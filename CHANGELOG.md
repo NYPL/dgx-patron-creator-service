@@ -1,5 +1,11 @@
 ## Change Log
 
+### v0.8.4
+
+#### Fixed
+
+- Fixed the logic check for passwords to check for a string that is 8 to 32 characters in length. The previous requirements were just strong encouragements for patrons to use.
+
 ### v0.8.3
 
 #### Updated
