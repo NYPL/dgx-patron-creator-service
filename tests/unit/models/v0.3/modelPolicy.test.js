@@ -42,8 +42,8 @@ describe("Policy", () => {
 
       // Check the digital temporary ptype next:
       exptime = policy.getExpirationPoliciesForPtype(digitalTemporary);
-      // The standard time is 30 days.
-      expect(exptime).toEqual(30);
+      // The standard time is 14 days.
+      expect(exptime).toEqual(14);
 
       // Check the metro ptype next:
       exptime = policy.getExpirationPoliciesForPtype(digitalNonMetro);

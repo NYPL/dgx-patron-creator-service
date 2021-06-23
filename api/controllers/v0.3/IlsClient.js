@@ -479,7 +479,7 @@ IlsClient.NOTE_FIELD_TAG = "x";
 // Standard and temporary expiration times
 IlsClient.STANDARD_EXPIRATION_TIME = 1095; // days, 3 years
 IlsClient.ONE_YEAR_STANDARD_EXPIRATION_TIME = 365; // days, 1 year
-IlsClient.TEMPORARY_EXPIRATION_TIME = 30; // days
+IlsClient.TEMPORARY_EXPIRATION_TIME = 14; // days
 IlsClient.WEB_APPLICANT_EXPIRATION_TIME = 90; // days
 // Ptypes for various library card offerings
 IlsClient.WEB_APPLICANT_PTYPE = 1;
