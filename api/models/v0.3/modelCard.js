@@ -97,21 +97,23 @@ class Card {
       this.errors["email"] = "Email address must be valid.";
     }
 
-    // The password must be at least 8 characters, include a mixture of both
-    // uppercase and lowercase letters, include a mixture of letters and
-    // numbers, and have at least one special character.
-    // Throw an error if it's incorrect.
-    if (
-      // eslint-disable-next-line no-useless-escape
-      !/(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.+[~`!?@#$%^&*()_=+\[\]{};:.,"'<>|\\/-]).{8,32}/g.test(
-        this.password
-      )
-    ) {
-      this.errors["password"] =
-        "Password should be 8-32 alphanumeric characters and should include " +
-        "a mixture of both uppercase and lowercase letters, include a " +
-        "mixture of letters and numbers, and have at least one special " +
-        "character. Please revise your password.";
+    // For legacy username/pin set ups
+    if (this.password.length === 4) {
+      // The pin must be a 4 digit string. Throw an error if it's incorrect.
+      if (!/^\d{4}$/.test(this.password)) {
+        this.errors["pin"] =
+          "PIN should be 4 numeric characters only. Please revise your PIN.";
+      }
+    } else {
+      // The password must be at least 8 characters but no longer than
+      // 32 characters. Throw an error if it's incorrect.
+      if (this.password.length < 8 || this.password.length > 32) {
+        this.errors["password"] =
+          "Password should be 8-32 alphanumeric characters and should include " +
+          "a mixture of both uppercase and lowercase letters, include a " +
+          "mixture of letters and numbers, and have at least one special " +
+          "character. Please revise your password.";
+      }
     }
 
     if (this.requiredByPolicy("birthdate")) {
