@@ -999,10 +999,10 @@ describe("Card", () => {
       });
 
       // No ptype returns a temporary time.
-      expect(card.getExpirationTime()).toEqual(30);
-      // Web Digital Temporary is 30 days.
+      expect(card.getExpirationTime()).toEqual(14);
+      // Web Digital Temporary is 14 days.
       card.ptype = 7;
-      expect(card.getExpirationTime()).toEqual(30);
+      expect(card.getExpirationTime()).toEqual(14);
       // Web Digital Non-metro is 1 year
       card.ptype = 8;
       expect(card.getExpirationTime()).toEqual(365);

@@ -1,5 +1,11 @@
 ## Change Log
 
+### v0.8.5
+
+#### Updated
+
+- Updated the expiration date for temporary cards from 30 to 14 days.
+
 ### v0.8.4
 
 #### Fixed
