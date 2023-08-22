@@ -158,7 +158,7 @@ describe("Barcode", () => {
       );
 
       // This barcode was already in the database so "newBarcode" is false.
-      expect(nextBarcode.barcode).toEqual("28888055432435");
+      expect(nextBarcode.barcode).toEqual("28888855432460");
       expect(nextBarcode.newBarcode).toEqual(false);
     });
 
@@ -182,7 +182,7 @@ describe("Barcode", () => {
 
       // Just to be clear that there are barcodes in the database.
       const isFound = await barcode.nextAvailableFromDB("28888");
-      expect(isFound.barcode).toEqual("28888055432435");
+      expect(isFound.barcode).toEqual("28888855432460");
       expect(isFound.newBarcode).toEqual(false);
     });
   });
