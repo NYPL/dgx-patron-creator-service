@@ -413,7 +413,7 @@ describe("Card", () => {
     it("should fail if age is under 13", async () => {
       const card = new Card({
         ...basicCard,
-        birthdate: "01/01/2010",
+        birthdate: "01/01/2020",
         email: "test@email.com",
         policy: Policy({ policyType: "webApplicant" }),
       });
