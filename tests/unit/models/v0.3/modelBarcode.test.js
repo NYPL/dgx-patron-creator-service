@@ -121,7 +121,7 @@ describe("Barcode", () => {
 
       // It first tries to get the lowest barcode that is unused.
       expect(querySpy).toHaveBeenCalledWith(
-        `SELECT barcode FROM barcodes WHERE used=false and barcode like '${barcodeStartSeq}%' ORDER BY barcodes ASC LIMIT 1;`
+        `SELECT barcode FROM barcodes WHERE used=false and barcode like '${barcodeStartSeq}%' and barcode > 25555009181656 ORDER BY barcodes ASC LIMIT 1;`
       );
       // But there aren't any so get the largest used one and make a new barcode.
       expect(querySpy).toHaveBeenCalledWith(
@@ -154,7 +154,7 @@ describe("Barcode", () => {
       // Note: These are written in order they are called but jest doesn't
       // care about order.
       expect(querySpy).toHaveBeenCalledWith(
-        `SELECT barcode FROM barcodes WHERE used=false and barcode like '${barcodeStartSeq}%' ORDER BY barcodes ASC LIMIT 1;`
+        `SELECT barcode FROM barcodes WHERE used=false and barcode like '${barcodeStartSeq}%' and barcode > 25555009181656 ORDER BY barcodes ASC LIMIT 1;`
       );
 
       // This barcode was already in the database so "newBarcode" is false.
@@ -173,7 +173,7 @@ describe("Barcode", () => {
       // Note: These are written in order they are called but jest doesn't
       // care about order.
       expect(querySpy).toHaveBeenCalledWith(
-        `SELECT barcode FROM barcodes WHERE used=false and barcode like '${barcodeStartSeq}%' ORDER BY barcodes ASC LIMIT 1;`
+        `SELECT barcode FROM barcodes WHERE used=false and barcode like '${barcodeStartSeq}%' and barcode > 25555009181656 ORDER BY barcodes ASC LIMIT 1;`
       );
 
       // There are no barcodes that start with 23333.
