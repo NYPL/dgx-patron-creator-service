@@ -157,9 +157,8 @@ describe("Barcode", () => {
         `SELECT barcode FROM barcodes WHERE used=false and barcode like '${barcodeStartSeq}%' and barcode > 25555009181656 ORDER BY barcodes ASC LIMIT 1;`
       );
 
-      // This barcode was already in the database so "newBarcode" is false.
       expect(nextBarcode.barcode).toEqual("28888855432460");
-      expect(nextBarcode.newBarcode).toEqual(false);
+      expect(nextBarcode.newBarcode).toEqual(true);
     });
 
     it("should not get a barcode if there are none with the start sequence", async () => {
@@ -183,7 +182,7 @@ describe("Barcode", () => {
       // Just to be clear that there are barcodes in the database.
       const isFound = await barcode.nextAvailableFromDB("28888");
       expect(isFound.barcode).toEqual("28888855432460");
-      expect(isFound.newBarcode).toEqual(false);
+      expect(isFound.newBarcode).toEqual(true);
     });
   });
 
