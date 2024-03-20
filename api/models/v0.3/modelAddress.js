@@ -53,6 +53,14 @@ class Address {
    * Checks to see if the address is in New York City.
    */
   inNYCity() {
+    console.log(
+      "allowed cities",
+      allowedCities.includes(this.address.city.toLowerCase())
+    );
+    console.log(
+      "allowed counties",
+      allowedCounties.includes(this.address.county.toLowerCase())
+    );
     return (
       allowedCities.includes(this.address.city.toLowerCase()) ||
       allowedCounties.includes(this.address.county.toLowerCase())

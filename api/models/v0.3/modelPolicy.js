@@ -143,6 +143,15 @@ const Policy = (props) => {
 
     // The user's location is in NYS (including NYC) and has a home address
     // in NYC. Also, there were no errors validating against Service Objects.
+    console.log("Card information");
+    console.log("location", card.location);
+    console.log("livesInUS", card.livesInUS());
+    console.log("livesInNYCity", card.livesInNYCity());
+    console.log("livesInNYState", card.livesInNYState());
+    console.log("worksInNYCity", card.worksInNYCity());
+    console.log("addressIsResidential", card.addressIsResidential());
+    console.log("addressHasBeenValidated", card.addressHasBeenValidated());
+
     if (
       (card.location === "nyc" || card.location === "nys") &&
       card.livesInNYCity() &&

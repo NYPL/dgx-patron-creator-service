@@ -308,6 +308,8 @@ async function createPatron(req, res) {
   let workAddress = req.body.workAddress
     ? new Address(req.body.workAddress, soLicenseKey)
     : undefined;
+  console.log("address", address);
+  console.log("workAddress", workAddress);
 
   // The default and only allowed policty type will be "webApplicant" since we
   // are assigning the new "web digital" type p-types. At a later time after

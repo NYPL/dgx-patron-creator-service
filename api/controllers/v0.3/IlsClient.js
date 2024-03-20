@@ -230,6 +230,8 @@ const IlsClient = (props) => {
    */
   const createPatron = async (patron) => {
     const ilsPatron = formatPatronData(patron);
+    console.log("ilsPatron before sending", ilsPatron);
+    // return {};
 
     return (
       axios

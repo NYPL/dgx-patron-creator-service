@@ -99,9 +99,11 @@ class Barcode {
     // First try getting a barcode that is unused. This is not a "new"
     // barcode so we don't need to manipulate it.
     try {
-      query = `SELECT barcode FROM barcodes WHERE used=false and barcode like '${barcodeStartSequence}%' and barcode > 25555009181656 ORDER BY barcodes ASC LIMIT 1;`;
+      query = `SELECT barcode FROM barcodes WHERE used=false and barcode like '${barcodeStartSequence}%' ORDER BY barcodes ASC LIMIT 20;`;
       result = await this.db.query(query);
+      console.log(result.rows);
       barcode = result.rows[0].barcode;
+      this.markUsed(barcode, true);
       newBarcode = false;
     } catch (error) {
       // There are no unused barcodes so get the biggest barcode value to
@@ -225,8 +227,10 @@ class Barcode {
     // Likewise, when setting a barcode to unused, we expect the value to be
     // used in the database. If either of those tasks cause an issue, it will
     // be caught.
-    const query = `UPDATE barcodes SET used=${used} WHERE barcode='${barcode}' AND used=${!used};`;
+    console.log("markused", barcode, used);
+    const query = `UPDATE barcodes SET used=${used} WHERE barcode='${barcode}' AND used=${used};`;
     let result = await this.db.query(query);
+    console.log("markused", result.rowCount);
 
     if (result.rowCount !== 1) {
       if (used) {

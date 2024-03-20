@@ -226,6 +226,11 @@ class Card {
    * Checks if the card's home address has been validated by Service Objects.
    */
   addressHasBeenValidated() {
+    console.log(
+      "this.address.hasBeenValidated",
+      this.address.hasBeenValidated,
+      typeof this.address.hasBeenValidated
+    );
     return this.address.hasBeenValidated;
   }
 
@@ -234,6 +239,11 @@ class Card {
    * Checks if the card's home address is residential.
    */
   addressIsResidential() {
+    console.log(
+      "this.address.address.isResidential",
+      this.address.address.isResidential,
+      typeof this.address.address.isResidential
+    );
     return this.address.address.isResidential;
   }
 
