@@ -29,7 +29,7 @@ const Policy = (props) => {
       case IlsClient.WEB_APPLICANT_PTYPE:
         expTime = IlsClient.WEB_APPLICANT_EXPIRATION_TIME;
         break;
-      // 14 days.
+      // 30 days.
       case IlsClient.WEB_DIGITAL_TEMPORARY:
       default:
         expTime = IlsClient.TEMPORARY_EXPIRATION_TIME;
