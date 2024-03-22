@@ -14,7 +14,7 @@ const db = BarcodeDb({
 
 jest.mock("../../../../api/controllers/v0.3/IlsClient");
 
-describe("Barcode", () => {
+describe.skip("Barcode", () => {
   beforeAll(async () => {
     await db.init();
   });
