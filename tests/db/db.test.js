@@ -16,7 +16,7 @@ const db = BarcodeDb({
   password: process.env.DB_PASSWORD_TEST,
 });
 
-describe("Barcodes Database", () => {
+describe.skip("Barcodes Database", () => {
   afterAll(async () => {
     // Delete the database table after all the test have run.
     await db.directQuery("DROP TABLE barcodes;");

@@ -413,7 +413,7 @@ describe("Card", () => {
     it("should fail if age is under 13", async () => {
       const card = new Card({
         ...basicCard,
-        birthdate: "01/01/2020",
+        birthdate: "01/01/2022",
         email: "test@email.com",
         policy: Policy({ policyType: "webApplicant" }),
       });
@@ -999,10 +999,10 @@ describe("Card", () => {
       });
 
       // No ptype returns a temporary time.
-      expect(card.getExpirationTime()).toEqual(14);
-      // Web Digital Temporary is 14 days.
+      expect(card.getExpirationTime()).toEqual(30);
+      // Web Digital Temporary is 30 days.
       card.ptype = 7;
-      expect(card.getExpirationTime()).toEqual(14);
+      expect(card.getExpirationTime()).toEqual(30);
       // Web Digital Non-metro is 1 year
       card.ptype = 8;
       expect(card.getExpirationTime()).toEqual(365);
