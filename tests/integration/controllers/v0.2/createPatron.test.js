@@ -1,5 +1,5 @@
 /* eslint-disable */
-const request = require("request");
+const axios = require("axios");
 
 const options = {
   uri: "http://localhost:3001/api/v0.2/patrons",
@@ -44,7 +44,7 @@ if (process.env.INTEGRATION_TESTS === "true") {
     console.log("*** Running integration tests ***"); // eslint-disable-line no-console
     // TODO: Mocking the Kinesis stream as seen here: https://github.com/NYPL-discovery/node-nypl-streams-client/blob/pb/mocked-sdk-in-test-suite/test/encoding.test.js
     it("sends the patron data to the ILS", (done) => {
-      request.post(options, (err, res, body) => {
+      axios.post(options, (err, res, body) => {
         if (!res) {
           console.log(
             "*** Note: You aren't receiving a response from the Patron Creator Service.  Make sure the server is running in another tab. ***"
