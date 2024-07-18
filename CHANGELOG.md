@@ -1,5 +1,23 @@
 ## Change Log
 
+### v0.9.0
+
+#### Added
+
+- Added `.nvmrc` file and pointed it to node v20.
+
+#### Updated
+
+- Updated ServiceObjects URL to resolve upcoming TLS issue.
+- Updated QA ILS API credentials to use production credentials.
+- Updated the following npm packages:
+  `aws-sdk`, `axios`, `body-parser`, `express`, `jest`
+
+#### Removed
+
+- Removed the following npm packages:
+  `babel-jest`, `request`
+
 ### v0.8.6
 
 #### Updated
