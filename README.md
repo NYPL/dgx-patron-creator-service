@@ -22,7 +22,7 @@ The following endpoints are deprecated:
 - `POST /api/v0.1/validations/username`
 - `POST /api/v0.1/validations/address`
 
-See also [PatronService](https://github.com/NYPL-discovery/patron-service), [PatronEligibilityService](https://github.com/NYPL-discovery/patron-eligibility-service), [BarcodeService](https://github.com/NYPL/barcode-service) for other patron endpoints.
+See also [PatronEligibilityService](https://github.com/NYPL-discovery/patron-eligibility-service), [BarcodeService](https://github.com/NYPL/barcode-service) for other patron endpoints.
 
 ## Version
 
@@ -339,6 +339,8 @@ DB_PORT_TEST=5432
 ```
 
 ### Integration Tests
+
+_7/18/24 Note: The following set of tests don't run in the current jest environment. It's recommended to perform manual tests as described in the following section._
 
 Run `NODE_ENV=production npm start` in one window to run the app locally in production mode. This is required to run the integration tests. The integration tests will hit the production ILS server to run against tests.
 
