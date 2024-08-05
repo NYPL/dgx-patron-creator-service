@@ -11,7 +11,7 @@ const logger = require("../../helpers/Logger");
  * Helper class that calls Service Objects to validate addresses.
  */
 const ServiceObjectsClient = (soLicenseKey = "") => {
-  const baseUrl = "https://ws.serviceobjects.com/";
+  const baseUrl = "https://sws.serviceobjects.com/";
   // eslint-disable-next-line no-unused-vars
   const backupUrl = "https://wsbackup.serviceobjects.com/";
   const endpoint = "AV3/api.svc/GetBestMatchesJSON";

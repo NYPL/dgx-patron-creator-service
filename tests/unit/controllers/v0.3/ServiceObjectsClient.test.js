@@ -149,7 +149,7 @@ describe("ServiceObjectsClient", () => {
       await validateAddress(address);
 
       expect(axios.get).toHaveBeenCalledWith(
-        "https://ws.serviceobjects.com/AV3/api.svc/GetBestMatchesJSON?&Address=476%205th%20Avenue&Address2=&City=New%20York&State=NY&PostalCode=10018&LicenseKey=licenseKey"
+        "https://sws.serviceobjects.com/AV3/api.svc/GetBestMatchesJSON?&Address=476%205th%20Avenue&Address2=&City=New%20York&State=NY&PostalCode=10018&LicenseKey=licenseKey"
       );
     });
 
