@@ -33,7 +33,7 @@
     "avsc": "5.0.1",
     "aws-sdk": "2.1561.0",
     "aws-serverless-express": "3.3.8",
-    "axios": "1.7.2",
+    "axios": "1.7.4",
     "body-parser": "1.20.2",
     "dotenv": "4.0.0",
     "express": "4.19.2",
