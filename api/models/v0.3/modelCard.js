@@ -373,6 +373,10 @@ class Card {
       // free up the barcode in the database. Continue to send the same error
       // as an API response.
       await this.freeBarcode(this.barcode);
+      console.error(
+        "createIlsPatron - Error calling ilsClient.createPatron:",
+        error
+      );
       throw error;
     }
 

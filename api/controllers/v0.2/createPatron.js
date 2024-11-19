@@ -323,8 +323,6 @@ function createPatron(req, res) {
     ilsClientKey || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_KEY);
   ilsClientPassword =
     ilsClientPassword || awsDecrypt.decryptKMS(process.env.ILS_CLIENT_SECRET);
-  console.log("ilsClientKey: ", ilsClientKey);
-  console.log("ilsClientPassword: ", ilsClientPassword);
 
   Promise.all([ilsClientKey, ilsClientPassword])
     .then((decryptedValues) => {
