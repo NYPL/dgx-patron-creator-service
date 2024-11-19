@@ -383,6 +383,14 @@ async function createPatron(req, res) {
           ...card.details(),
         };
       } catch (error) {
+        console.log(
+          "controller createPatron error calling card.createIlsPatron",
+          error
+        );
+        logger.error(
+          "controller createPatron error calling card.createIlsPatron",
+          error
+        );
         // There was an error hitting the ILS to create the patron. Catch
         // and return the error.
         response = collectErrorResponseData(error);

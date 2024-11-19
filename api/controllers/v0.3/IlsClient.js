@@ -251,6 +251,18 @@ const IlsClient = (props) => {
           const response = error.response;
           const message =
             response.data && (response.data.description || response.data.name);
+          logger.error(
+            "ILSClient.createPatron - error calling ILS URL:",
+            createUrl
+          );
+          logger.error(
+            "ILSClient.createPatron - error calling ILS error:",
+            error
+          );
+          logger.error(
+            "createPatron - error calling ILS error message:",
+            message
+          );
 
           // If the request to the ILS is missing a value or a key is of
           // and incorrect type, i.e. the barcode is sent as an integer
@@ -350,8 +362,12 @@ const IlsClient = (props) => {
       .catch((error) => {
         const data = error.response && error.response.data;
         const message = data.description || data.name || "Unknown Error";
-        logger.error(`Error calling ILS URL - ${findUrl}${params}`);
-        logger.error(`Error calling ILS - ${message}`);
+        logger.error(
+          `ILSClient.getPatronFromBarcodeOrUsername - Error calling ILS URL - ${findUrl}${params}`
+        );
+        logger.error(
+          `ILSClient.getPatronFromBarcodeOrUsername - Error calling ILS - ${message}`
+        );
         return error.response;
       });
   };
