@@ -1,21 +1,16 @@
 const IlsClient = require("../../../../api/controllers/v0.3/IlsClient");
 const Address = require("../../../../api/models/v0.3/modelAddress");
 const Policy = require("../../../../api/models/v0.3/modelPolicy");
-const axios = require("axios");
 const { ILSIntegrationError } = require("../../../../api/helpers/errors");
-const encode = require("../../../../api/helpers/encode");
 const { normalizeName } = require("../../../../api/helpers/utils");
 const constants = require("../../../../constants");
 
-jest.mock("axios");
 jest.mock("../../../../api/controllers/v0.3/AddressValidationAPI");
 
-const tokenUrl = "ils/token/endpoint";
 const createUrl = "ils/create/endpoint";
 const findUrl = "ils/find/endpoint";
 const ilsClientKey = "key";
 const ilsClientSecret = "secret";
-const mockIlsToken = "theAccessToken";
 const mockedSuccessfulResponse = {
   id: "1234",
   patronType: 10,
@@ -24,10 +19,7 @@ const mockedSuccessfulResponse = {
     { fieldTag: "x", content: "some content" },
   ],
 };
-const mockedSuccessfulTokenResponse = {
-  status: 200,
-  data: { access_token: mockIlsToken },
-};
+
 const mockedErrorResponse = {
   response: {
     status: 404,
@@ -76,16 +68,11 @@ describe("IlsClient", () => {
       {
         createUrl,
         findUrl,
-        tokenUrl,
         ilsClientKey,
         ilsClientSecret,
       },
       mockClient
     );
-  });
-  afterEach(() => {
-    axios.get.mockClear();
-    axios.post.mockClear();
   });
 
   // The address object being sent to the ILS is in the form of:
@@ -749,175 +736,6 @@ describe("IlsClient", () => {
           `${findUrl}${expectedParams}`
         );
       });
-    });
-  });
-
-  describe("generateIlsToken", () => {
-    it("throws an error without credentials", async () => {
-      await expect(new IlsClient({}).generateIlsToken()).rejects.toThrow(
-        "The ILS client was set up without a key or secret to generate a token."
-      );
-    });
-
-    it("throws an error if the ILS returned an error", async () => {
-      const ilsClient = new IlsClient({
-        tokenUrl,
-        ilsClientKey,
-        ilsClientSecret,
-      });
-      axios.post.mockImplementationOnce(() =>
-        Promise.reject(mockedILSIntegrationError)
-      );
-
-      await expect(ilsClient.generateIlsToken()).rejects.toThrow(
-        "Problem calling the ILS token url, Internal server error"
-      );
-    });
-
-    it("makes a successful call and sets a token and timestamp", async () => {
-      const ilsClient = new IlsClient({
-        tokenUrl,
-        ilsClientKey,
-        ilsClientSecret,
-      });
-
-      axios.post.mockImplementationOnce(() =>
-        Promise.resolve(mockedSuccessfulTokenResponse)
-      );
-
-      expect(ilsClient.hasIlsToken()).toEqual(false);
-      expect(ilsClient.isTokenExpired()).toEqual(false);
-
-      await ilsClient.generateIlsToken();
-
-      // The token is private in the IlsClient class but we can at
-      // least know if it was set or not.
-      expect(ilsClient.hasIlsToken()).toEqual(true);
-      // We have a token but it's new so it isn't expired.
-      expect(ilsClient.isTokenExpired()).toEqual(false);
-      expect(axios.post).toHaveBeenCalledWith(
-        tokenUrl,
-        {},
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Basic ${encode(
-              `${ilsClientKey}:${ilsClientSecret}`
-            )}`,
-          },
-        }
-      );
-    });
-  });
-
-  describe("isTokenExpired", () => {
-    it("returns false if generating a token fails", async () => {
-      const ilsClient = new IlsClient({});
-
-      expect(ilsClient.isTokenExpired()).toEqual(false);
-
-      try {
-        await ilsClient.generateIlsToken();
-      } catch (error) {
-        console.log("Intentional test error");
-      }
-
-      expect(ilsClient.isTokenExpired()).toEqual(false);
-    });
-
-    it("returns false if a *new* token is generated", async () => {
-      const ilsClient = new IlsClient({
-        tokenUrl,
-        ilsClientKey,
-        ilsClientSecret,
-      });
-
-      axios.post.mockImplementationOnce(() =>
-        Promise.resolve(mockedSuccessfulTokenResponse)
-      );
-
-      expect(ilsClient.isTokenExpired()).toEqual(false);
-      await ilsClient.generateIlsToken();
-      expect(ilsClient.isTokenExpired()).toEqual(false);
-    });
-
-    it("returns true if the token has expired", async () => {
-      const todayNotExpired = new Date("2020-12-07T15:58:47.933Z");
-      const todayExpired = new Date("2020-12-07T17:58:14.849Z");
-      const expirationDate = new Date("2020-12-07T15:56:47.933Z");
-      // We are mocking when the Date class gets called.
-      const spy = jest
-        .spyOn(global, "Date")
-        // First call Date is for the current time. This is within the hour of
-        // the token expiration date so this will return not expired.
-        .mockReturnValueOnce(todayNotExpired)
-        // The second Date call for the first `isTokenExpired` call.
-        .mockReturnValueOnce(expirationDate)
-        // First Date call for the second `isTokenExpired` call. This is two
-        // hours later so we expect it to be expired.
-        .mockReturnValueOnce(todayExpired)
-        // The second Date call for the second `isTokenExpired` call. This
-        // should return true since the current time is more than one hour
-        // past this expiration date.
-        .mockReturnValueOnce(expirationDate);
-      const ilsClient = new IlsClient({
-        tokenUrl,
-        ilsClientKey,
-        ilsClientSecret,
-      });
-
-      axios.post.mockImplementationOnce(() =>
-        Promise.resolve(mockedSuccessfulTokenResponse)
-      );
-
-      expect(ilsClient.isTokenExpired()).toEqual(false);
-      await ilsClient.generateIlsToken();
-      expect(ilsClient.isTokenExpired()).toEqual(true);
-      spy.mockRestore();
-    });
-  });
-
-  // The token is private in the instance. We never know what exactly it is,
-  // but we know if there is one. That token is used to call other API
-  // endpoints.
-  describe("hasIlsToken", () => {
-    it("returns false if generating a token fails", async () => {
-      const ilsClient = new IlsClient({
-        tokenUrl,
-        ilsClientKey,
-        ilsClientSecret,
-      });
-      axios.post.mockImplementationOnce(() =>
-        Promise.reject(mockedILSIntegrationError)
-      );
-
-      // No token by default.
-      expect(ilsClient.hasIlsToken()).toEqual(false);
-
-      try {
-        await ilsClient.generateIlsToken();
-      } catch (error) {
-        console.log("Intentional test error");
-      }
-
-      // Still no token since an error occured.
-      expect(ilsClient.hasIlsToken()).toEqual(false);
-    });
-
-    it("returns true if a new token is generated", async () => {
-      const ilsClient = new IlsClient({
-        tokenUrl,
-        ilsClientKey,
-        ilsClientSecret,
-      });
-
-      axios.post.mockImplementationOnce(() =>
-        Promise.resolve(mockedSuccessfulTokenResponse)
-      );
-
-      expect(ilsClient.hasIlsToken()).toEqual(false);
-      await ilsClient.generateIlsToken();
-      expect(ilsClient.hasIlsToken()).toEqual(true);
     });
   });
 });

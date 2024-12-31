@@ -1,11 +1,5 @@
-const axios = require("axios");
-const {
-  ILSIntegrationError,
-  InvalidRequest,
-  NoILSCredentials,
-} = require("../../helpers/errors");
+const { ILSIntegrationError, InvalidRequest } = require("../../helpers/errors");
 const logger = require("../../helpers/Logger");
-const encode = require("../../helpers/encode");
 const constants = require("../../../constants");
 
 /**
@@ -16,31 +10,12 @@ const constants = require("../../../constants");
  */
 class IlsClient {
   constructor(props, client) {
-    const {
-      createUrl,
-      findUrl,
-      tokenUrl,
-      ilsClientKey,
-      ilsClientSecret,
-    } = props;
+    const { createUrl, findUrl, ilsClientKey, ilsClientSecret } = props;
     this.createUrl = createUrl;
     this.findUrl = findUrl;
-    this.tokenUrl = tokenUrl;
     this.ilsClientKey = ilsClientKey;
     this.ilsClientSecret = ilsClientSecret;
-    this.ilsToken = null;
-    this.ilsTokenTimestamp = null;
     this.sierraClient = client;
-  }
-  hasIlsToken() {
-    return !!this.ilsToken;
-  }
-  // 3540000 = 59 minutes; tokens are for 60 minutes
-  isTokenExpired() {
-    const timeNow = new Date();
-    return !!(
-      this.ilsTokenTimestamp && timeNow - this.ilsTokenTimestamp > 3540000
-    );
   }
 
   /**
@@ -416,42 +391,6 @@ class IlsClient {
     }
 
     return isAvailable;
-  }
-
-  /**
-   * generateIlsToken
-   * Get a token from the ILS using the ILS client key and secret.
-   */
-  async generateIlsToken() {
-    if (!this.ilsClientKey || !this.ilsClientSecret) {
-      throw new NoILSCredentials();
-    }
-
-    const basicAuth = `Basic ${encode(
-      `${this.ilsClientKey}:${this.ilsClientSecret}`
-    )}`;
-
-    return axios
-      .post(
-        this.tokenUrl,
-        {},
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: basicAuth,
-          },
-        }
-      )
-      .then((response) => {
-        // Set the global variables.
-        this.ilsToken = response.data.access_token;
-        this.ilsTokenTimestamp = new Date();
-      })
-      .catch((error) => {
-        throw new ILSIntegrationError(
-          `Problem calling the ILS token url, ${error.response.data.name}`
-        );
-      });
   }
 }
 
