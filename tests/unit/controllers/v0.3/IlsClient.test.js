@@ -865,60 +865,51 @@ describe("IlsClient", () => {
         // Mocking that the call to the ILS was successful and a patron
         // was found. This means that the username is already taken and
         // therefore not available. So, return false.
-        axios.get.mockImplementationOnce(() =>
+        mockClient.get.mockImplementationOnce(() =>
           Promise.resolve(mockedSuccessfulResponse)
         );
 
         const available = await ilsClient.available(username, isBarcode);
 
         expect(available).toEqual(false);
-        expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${mockIlsToken}`,
-          },
-        });
+        expect(mockClient.get).toHaveBeenCalledWith(
+          `${findUrl}${expectedParams}`
+        );
       });
 
       it("checks for username availability and gets a server error and duplicate, so it is not available", async () => {
-        axios.get.mockImplementationOnce(() =>
+        mockClient.get.mockImplementationOnce(() =>
           Promise.resolve(mockedErrorResponseDup)
         );
 
         const available = await ilsClient.available(username, isBarcode);
 
         expect(available).toEqual(false);
-        expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${mockIlsToken}`,
-          },
-        });
+        expect(mockClient.get).toHaveBeenCalledWith(
+          `${findUrl}${expectedParams}`
+        );
       });
 
       it("checks for username availability and doesn't find an existing patron, so it is available", async () => {
         // Mocking that the call to the ILS was not successful and it returned
         // an error. This means that a patron was not found and so the
         // username is not taken and therefore available. Return true.
-        axios.get.mockImplementationOnce(() =>
+        mockClient.get.mockImplementationOnce(() =>
           Promise.reject(mockedErrorResponse)
         );
 
         const available = await ilsClient.available(username, isBarcode);
 
         expect(available).toEqual(true);
-        expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${mockIlsToken}`,
-          },
-        });
+        expect(mockClient.get).toHaveBeenCalledWith(
+          `${findUrl}${expectedParams}`
+        );
       });
 
       it("throws an error if the ILS cannot be called", async () => {
         // Mocking that the call to the ILS did not go through and we received
         // a 500 error. Return a 502 error.
-        axios.get.mockImplementationOnce(() =>
+        mockClient.get.mockImplementationOnce(() =>
           Promise.reject(mockedILSIntegrationError)
         );
 
@@ -933,12 +924,9 @@ describe("IlsClient", () => {
           )
         );
 
-        expect(axios.get).toHaveBeenCalledWith(`${findUrl}${expectedParams}`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${mockIlsToken}`,
-          },
-        });
+        expect(mockClient.get).toHaveBeenCalledWith(
+          `${findUrl}${expectedParams}`
+        );
       });
     });
   });
