@@ -211,7 +211,6 @@ class IlsClient {
     );
 
     const patronName = this.formatPatronName(patron.name);
-
     const fields = {
       names: [patronName],
       addresses,
@@ -250,13 +249,8 @@ class IlsClient {
     const ilsPatron = IlsClient.formatPatronData(patron);
 
     return (
-      axios
-        .post(this.createUrl, ilsPatron, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${this.ilsToken}`,
-          },
-        })
+      this.sierraClient
+        .post(this.createUrl, ilsPatron)
         // Example correct response:
         // {
         //   status: 200,
@@ -264,7 +258,7 @@ class IlsClient {
         //     link: "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/{patron-id}"
         //   }
         // }
-        .then((axiosResponse) => axiosResponse)
+        .then((data) => data)
         .catch((error) => {
           const response = error.response;
           const message =
@@ -312,13 +306,8 @@ class IlsClient {
   async updatePatron(patronId, updatedFields) {
     const putUrl = `${this.createUrl}${patronId}`;
 
-    return axios
-      .put(putUrl, updatedFields, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this.ilsToken}`,
-        },
-      })
+    return this.sierraClient
+      .put(putUrl, updatedFields)
       .then((response) => {
         // Expects a 204 no content response.
         return response;
