@@ -10,11 +10,9 @@ const constants = require("../../../constants");
  */
 class IlsClient {
   constructor(props, client) {
-    const { createUrl, findUrl, ilsClientKey, ilsClientSecret } = props;
+    const { createUrl, findUrl } = props;
     this.createUrl = createUrl;
     this.findUrl = findUrl;
-    this.ilsClientKey = ilsClientKey;
-    this.ilsClientSecret = ilsClientSecret;
     this.sierraClient = client;
   }
 

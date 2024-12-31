@@ -9,8 +9,6 @@ jest.mock("../../../../api/controllers/v0.3/AddressValidationAPI");
 
 const createUrl = "ils/create/endpoint";
 const findUrl = "ils/find/endpoint";
-const ilsClientKey = "key";
-const ilsClientSecret = "secret";
 const mockedSuccessfulResponse = {
   id: "1234",
   patronType: 10,
@@ -56,25 +54,6 @@ const mockedILSIntegrationError = {
 };
 
 describe("IlsClient", () => {
-  let mockClient;
-  let ilsClient;
-  beforeAll(() => {
-    mockClient = {
-      put: jest.fn(),
-      get: jest.fn().mockResolvedValue(mockedSuccessfulResponse),
-      post: jest.fn(),
-    };
-    ilsClient = new IlsClient(
-      {
-        createUrl,
-        findUrl,
-        ilsClientKey,
-        ilsClientSecret,
-      },
-      mockClient
-    );
-  });
-
   // The address object being sent to the ILS is in the form of:
   // { lines: ['line 1', 'line 2'], type: 'a' }
   describe("formatAddress", () => {
@@ -274,6 +253,20 @@ describe("IlsClient", () => {
 
   // The patron object being sent to the ILS.
   describe("formatPatronData", () => {
+    let mockClient;
+    let ilsClient;
+    beforeAll(() => {
+      mockClient = {
+        get: jest.fn().mockRejectedValueOnce(mockedErrorResponse),
+      };
+      ilsClient = new IlsClient(
+        {
+          createUrl,
+          findUrl,
+        },
+        mockClient
+      );
+    });
     const address = new Address(
       {
         line1: "476 5th Avenue",
@@ -290,10 +283,6 @@ describe("IlsClient", () => {
     it("returns an ILS-ready patron object", async () => {
       // We want to mock that we called the ILS and it did not find a
       // username, so it is valid and the card is valid.
-      mockClient.get.mockImplementationOnce(() =>
-        Promise.reject(mockedErrorResponse)
-      );
-
       const card = {
         worksInNYCity: () => false,
         address,
@@ -304,7 +293,7 @@ describe("IlsClient", () => {
         email: "email@gmail.com",
         policy,
         location: "nyc",
-        ilsClient: new IlsClient({}, mockClient),
+        ilsClient: ilsClient,
         varFields: [{ fieldTag: "x", content: "DEPENDENT OF 1234" }],
         acceptTerms: true,
         ageGate: true,
@@ -350,8 +339,25 @@ describe("IlsClient", () => {
   // Creates a patron in the ILS.
   describe("createPatron", () => {
     let formatPatronData = IlsClient.formatPatronData;
+    let mockClient;
+    let ilsClient;
     beforeAll(() => {
       IlsClient.formatPatronData = () => ({});
+
+      mockClient = {
+        post: jest
+          .fn()
+          .mockRejectedValueOnce(mockedErrorResponse)
+          .mockResolvedValueOnce(mockedSuccessfulResponse)
+          .mockRejectedValueOnce(mockedILSIntegrationError),
+      };
+      ilsClient = new IlsClient(
+        {
+          createUrl,
+          findUrl,
+        },
+        mockClient
+      );
     });
     afterAll(() => {
       IlsClient.formatPatronData = formatPatronData;
@@ -362,21 +368,12 @@ describe("IlsClient", () => {
     };
 
     it("fails to create a patron", async () => {
-      // Now mock the POST request to the ILS.
-      mockClient.post.mockImplementationOnce(() =>
-        Promise.reject(mockedErrorResponse)
-      );
-
       const patron = await ilsClient.createPatron({});
       expect(patron).toEqual(mockedErrorResponse.response);
       expect(mockClient.post).toHaveBeenCalledWith(createUrl, {});
     });
 
     it("successfully creates a patron", async () => {
-      mockClient.post.mockImplementationOnce(() =>
-        Promise.resolve(mockedSuccessfulResponse)
-      );
-
       const patron = await ilsClient.createPatron({});
 
       expect(patron).toEqual(mockedSuccessfulResponse);
@@ -384,10 +381,6 @@ describe("IlsClient", () => {
     });
 
     it("fails attempasswordg to call the ILS", async () => {
-      mockClient.post.mockImplementationOnce(() =>
-        Promise.reject(mockedILSIntegrationError)
-      );
-
       await expect(ilsClient.createPatron()).rejects.toEqual(
         new ILSIntegrationError(
           "The ILS could not be requested when attempting to create a patron."
@@ -398,6 +391,26 @@ describe("IlsClient", () => {
 
   // Updates a patron in the ILS.
   describe("updatePatron", () => {
+    let mockClient;
+    let ilsClient;
+    beforeAll(() => {
+      IlsClient.formatPatronData = () => ({});
+      mockClient = {
+        put: jest
+          .fn()
+          .mockRejectedValueOnce(mockedErrorResponse)
+          .mockResolvedValueOnce(mockedSuccessfulResponse)
+          .mockRejectedValueOnce(mockedInvalidErrorResponse)
+          .mockRejectedValueOnce(mockedILSIntegrationError),
+      };
+      ilsClient = new IlsClient(
+        {
+          createUrl,
+          findUrl,
+        },
+        mockClient
+      );
+    });
     const mockedSuccessfulResponse = {};
     // The error response from the ILS when it can't find the patron in the
     // PUT request is slightly different.
@@ -415,11 +428,6 @@ describe("IlsClient", () => {
     };
 
     it("fails to update a patron", async () => {
-      // We want to mock that we called the ILS and it did not find
-      // the patron to update.
-      mockClient.put.mockImplementationOnce(() =>
-        Promise.reject(mockedErrorResponse)
-      );
       await expect(
         ilsClient.updatePatron(patronId, updatedFields)
       ).rejects.toThrow("Patron record not found");
@@ -430,10 +438,6 @@ describe("IlsClient", () => {
     });
 
     it("updates a patron", async () => {
-      mockClient.put.mockImplementationOnce(() =>
-        Promise.resolve(mockedSuccessfulResponse)
-      );
-
       const response = await ilsClient.updatePatron(patronId, updatedFields);
       expect(response).toEqual(mockedSuccessfulResponse);
       expect(mockClient.put).toHaveBeenCalledWith(
@@ -443,12 +447,6 @@ describe("IlsClient", () => {
     });
 
     it("should throw an error with invalid data to update", async () => {
-      // We want to mock that we called the ILS and it did not find a
-      // username, so it is valid and the card is valid.
-      mockClient.put.mockImplementationOnce(() =>
-        Promise.reject(mockedInvalidErrorResponse)
-      );
-
       await expect(
         ilsClient.updatePatron(patronId, updatedFields)
       ).rejects.toThrow("Invalid request to ILS: Invalid JSON request");
@@ -478,49 +476,34 @@ describe("IlsClient", () => {
   });
 
   describe("getPatronFromBarcodeOrUsername", () => {
-    it("calls the ILS with the barcode parameters", async () => {
-      const barcode = "999999999";
-      const isBarcode = true;
-
-      const barcodeFieldTag = constants.BARCODE_FIELD_TAG;
-      const expectedParams = `?varFieldTag=${barcodeFieldTag}&varFieldContent=${barcode}&fields=patronType,varFields,names,addresses,emails,expirationDate`;
-      const patron = await ilsClient.getPatronFromBarcodeOrUsername(
-        barcode,
-        isBarcode
-      );
-
-      expect(patron.id).toEqual("1234");
-      expect(patron.patronType).toEqual(10);
-      expect(mockClient.get).toHaveBeenCalledWith(
-        `${findUrl}${expectedParams}`
-      );
-    });
-
-    it("calls the ILS with the username parameters", async () => {
-      const username = "username1";
-      const isBarcode = false;
-
-      const usernameFieldTag = constants.USERNAME_FIELD_TAG;
-      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,names,addresses,emails,expirationDate`;
-      const patron = await ilsClient.getPatronFromBarcodeOrUsername(
-        username,
-        isBarcode
-      );
-
-      expect(patron.id).toEqual("1234");
-      expect(patron.patronType).toEqual(10);
-      expect(mockClient.get).toHaveBeenCalledWith(
-        `${findUrl}${expectedParams}`
+    let mockClient;
+    let ilsClient;
+    beforeAll(() => {
+      mockClient = {
+        put: jest.fn(),
+        get: jest
+          .fn()
+          .mockRejectedValueOnce(mockedErrorResponse)
+          .mockRejectedValueOnce(mockedErrorResponseDup)
+          .mockRejectedValueOnce(mockedILSIntegrationError)
+          .mockResolvedValueOnce(mockedSuccessfulResponse)
+          .mockResolvedValueOnce(mockedSuccessfulResponse),
+        post: jest.fn(),
+      };
+      ilsClient = new IlsClient(
+        {
+          createUrl,
+          findUrl,
+        },
+        mockClient
       );
     });
-
     it("can't find the patron", async () => {
       // This is testing the username but the barcode will return the same error.
       const username = "username1";
       const isBarcode = false;
 
       // Mocking that the call to the ILS was not successful.
-      mockClient.get.mockRejectedValueOnce(mockedErrorResponse);
 
       const usernameFieldTag = constants.USERNAME_FIELD_TAG;
       const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,names,addresses,emails,expirationDate`;
@@ -542,7 +525,6 @@ describe("IlsClient", () => {
       const isBarcode = false;
 
       // Mocking that the call to the ILS was not successful.
-      mockClient.get.mockRejectedValueOnce(mockedErrorResponseDup);
 
       const usernameFieldTag = constants.USERNAME_FIELD_TAG;
       const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,names,addresses,emails,expirationDate`;
@@ -568,7 +550,6 @@ describe("IlsClient", () => {
       const isBarcode = false;
 
       // Mocking that the call to the ILS was not successful.
-      mockClient.get.mockRejectedValueOnce(mockedILSIntegrationError);
 
       const usernameFieldTag = constants.USERNAME_FIELD_TAG;
       const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,names,addresses,emails,expirationDate`;
@@ -587,23 +568,76 @@ describe("IlsClient", () => {
         `${findUrl}${expectedParams}`
       );
     });
+    it("calls the ILS with the username parameters", async () => {
+      const username = "username1";
+      const isBarcode = false;
+      const usernameFieldTag = constants.USERNAME_FIELD_TAG;
+      const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,names,addresses,emails,expirationDate`;
+      const patron = await ilsClient.getPatronFromBarcodeOrUsername(
+        username,
+        isBarcode
+      );
+
+      expect(patron.id).toEqual("1234");
+      expect(patron.patronType).toEqual(10);
+      expect(mockClient.get).toHaveBeenCalledWith(
+        `${findUrl}${expectedParams}`
+      );
+    });
+    it("calls the ILS with the barcode parameters", async () => {
+      const barcode = "999999999";
+      const isBarcode = true;
+      const barcodeFieldTag = constants.BARCODE_FIELD_TAG;
+      const expectedParams = `?varFieldTag=${barcodeFieldTag}&varFieldContent=${barcode}&fields=patronType,varFields,names,addresses,emails,expirationDate`;
+
+      const patron = await ilsClient.getPatronFromBarcodeOrUsername(
+        barcode,
+        isBarcode
+      );
+
+      expect(mockClient.get).toHaveBeenCalledWith(
+        `${findUrl}${expectedParams}`
+      );
+      expect(patron.id).toEqual("1234");
+      expect(patron.patronType).toEqual(10);
+    });
   });
 
   // Checks a barcode or username availability. Internally, `available`
   // calls `getPatronFromBarcodeOrUsername` which is tested above.
   describe("available", () => {
     describe("barcode", () => {
+      let mockClient;
+      let ilsClient;
+      beforeAll(() => {
+        mockClient = {
+          put: jest.fn(),
+
+          get: jest
+            .fn()
+            //successful response means barcode was found, therefore not available
+            .mockResolvedValueOnce(mockedSuccessfulResponse)
+            .mockRejectedValueOnce(mockedErrorResponseDup)
+            //successful response means barcode was not found, therefore available
+            .mockRejectedValueOnce(mockedErrorResponse)
+            .mockRejectedValueOnce(mockedILSIntegrationError)
+            .mockResolvedValueOnce(mockedSuccessfulResponse),
+          post: jest.fn(),
+        };
+        ilsClient = new IlsClient(
+          {
+            createUrl,
+            findUrl,
+          },
+          mockClient
+        );
+      });
       const barcode = "12341234123412";
       const barcodeFieldTag = constants.BARCODE_FIELD_TAG;
       const expectedParams = `?varFieldTag=${barcodeFieldTag}&varFieldContent=${barcode}&fields=patronType,varFields,names,addresses,emails,expirationDate`;
       const isBarcode = true;
 
       it("checks for barcode availability and finds an existing patron, so it is not available", async () => {
-        // Mocking that the call to the ILS was successful and a patron
-        // was found. This means that the barcode is already taken and
-        // therefore not available. So, return false.
-        mockClient.get.mockResolvedValueOnce(mockedSuccessfulResponse);
-
         const available = await ilsClient.available(barcode, isBarcode);
 
         expect(available).toEqual(false);
@@ -613,8 +647,6 @@ describe("IlsClient", () => {
       });
 
       it("checks for barcode availability and gets a server error and duplicate, so it is not available", async () => {
-        mockClient.get.mockResolvedValueOnce(mockedErrorResponseDup);
-
         const available = await ilsClient.available(barcode, isBarcode);
 
         expect(available).toEqual(false);
@@ -624,13 +656,6 @@ describe("IlsClient", () => {
       });
 
       it("checks for barcode availability and doesn't find an existing patron, so it is available", async () => {
-        // Mocking that the call to the ILS was not successful and it returned
-        // an error. This means that a patron was not found and so the
-        // barcode is not taken and therefore available. Return true.
-        mockClient.get.mockImplementationOnce(() =>
-          Promise.reject(mockedErrorResponse)
-        );
-
         const available = await ilsClient.available(barcode, isBarcode);
 
         expect(available).toEqual(true);
@@ -640,12 +665,6 @@ describe("IlsClient", () => {
       });
 
       it("throws an error if the ILS cannot be called", async () => {
-        // Mocking that the call to the ILS did not go through and we received
-        // a 500 error. Return a 502 error.
-        mockClient.get.mockImplementationOnce(() =>
-          Promise.reject(mockedILSIntegrationError)
-        );
-
         // Getting a 404 from the ILS is okay since it tells us that the
         // request was valid but nothing was returned. But, if the ILS returns
         // anything above 500, then throw an error. The syntax for this test
@@ -664,6 +683,31 @@ describe("IlsClient", () => {
     });
 
     describe("username", () => {
+      let mockClient;
+      let ilsClient;
+      beforeAll(() => {
+        mockClient = {
+          put: jest.fn(),
+
+          get: jest
+            .fn()
+            //successful response means barcode was found, therefore not available
+            .mockResolvedValueOnce(mockedSuccessfulResponse)
+            .mockRejectedValueOnce(mockedErrorResponseDup)
+            //successful response means barcode was not found, therefore available
+            .mockRejectedValueOnce(mockedErrorResponse)
+            .mockRejectedValueOnce(mockedILSIntegrationError)
+            .mockResolvedValueOnce(mockedSuccessfulResponse),
+          post: jest.fn(),
+        };
+        ilsClient = new IlsClient(
+          {
+            createUrl,
+            findUrl,
+          },
+          mockClient
+        );
+      });
       const username = "username";
       const usernameFieldTag = constants.USERNAME_FIELD_TAG;
       const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,names,addresses,emails,expirationDate`;

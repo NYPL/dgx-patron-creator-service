@@ -18,6 +18,7 @@ const {
 const DependentAccountAPI = require("./DependentAccountAPI");
 const { normalizeName, updateJuvenileName } = require("../../helpers/utils");
 const { KMSDecryption, InvalidRequest } = require("../../helpers/errors");
+const sierraWrapper = require("@nypl/sierra-wrapper");
 
 const ROUTE_TAG = "CREATE_PATRON_0.3";
 // This returns a function that generates the error response object.
@@ -120,16 +121,19 @@ async function setupEndpoint(endpointFn, req, res) {
     );
   }
 
+  sierraWrapper.config({
+    key: ilsClientKey,
+    secret: ilsClientSecret,
+    base: process.env.ILS_BASE_URL,
+  });
+
   // Only one instance of the IlsClient class is needed, so create it if
   // it doesn't already exist.
   ilsClient =
     ilsClient ||
-    IlsClient({
+    new IlsClient({
       createUrl: process.env.ILS_CREATE_PATRON_URL,
       findUrl: process.env.ILS_FIND_VALUE_URL,
-      tokenUrl: process.env.ILS_CREATE_TOKEN_URL,
-      ilsClientKey,
-      ilsClientSecret,
     });
 
   const [tokenError, tokenErrorMessage] = await checkIlsToken(req, res);
