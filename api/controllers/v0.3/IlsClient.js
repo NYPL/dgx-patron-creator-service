@@ -15,7 +15,7 @@ const constants = require("../../../constants");
  * @param {object} props
  */
 class IlsClient {
-  constructor(props) {
+  constructor(props, client) {
     const {
       createUrl,
       findUrl,
@@ -30,6 +30,7 @@ class IlsClient {
     this.ilsClientSecret = ilsClientSecret;
     this.ilsToken = null;
     this.ilsTokenTimestamp = null;
+    this.sierraClient = client;
   }
   hasIlsToken() {
     return !!this.ilsToken;
@@ -364,14 +365,9 @@ class IlsClient {
     // These two query parameters are required to make a valid GET request.
     const varFieldParams = `varFieldTag=${fieldTag}&varFieldContent=${barcodeOrUsername}`;
     const params = `?${varFieldParams}${constants.ILS_RESPONSE_FIELDS}`;
-    return axios
-      .get(`${this.findUrl}${params}`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this.ilsToken}`,
-        },
-      })
-      .then((response) => response)
+    return this.sierraClient
+      .get(`${this.findUrl}${params}`)
+      .then((data) => data)
       .catch((error) => {
         const data = error.response && error.response.data;
         const message = data.description || data.name || "Unknown Error";
