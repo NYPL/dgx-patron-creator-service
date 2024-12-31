@@ -66,6 +66,22 @@ const mockedILSIntegrationError = {
 };
 
 describe("IlsClient", () => {
+  let mockClient;
+  let ilsClient;
+  beforeAll(() => {
+    mockClient = {
+      get: jest.fn().mockResolvedValue(mockedSuccessfulResponse),
+    };
+    ilsClient = new IlsClient(
+      {
+        findUrl,
+        tokenUrl,
+        ilsClientKey,
+        ilsClientSecret,
+      },
+      mockClient
+    );
+  });
   afterEach(() => {
     axios.get.mockClear();
     axios.post.mockClear();
@@ -654,23 +670,6 @@ describe("IlsClient", () => {
   });
 
   describe("getPatronFromBarcodeOrUsername", () => {
-    let mockClient;
-    let ilsClient;
-    beforeAll(() => {
-      mockClient = {
-        get: jest.fn().mockResolvedValue(mockedSuccessfulResponse),
-      };
-      ilsClient = new IlsClient(
-        {
-          findUrl,
-          tokenUrl,
-          ilsClientKey,
-          ilsClientSecret,
-        },
-        mockClient
-      );
-    });
-
     it("calls the ILS with the barcode parameters", async () => {
       const barcode = "999999999";
       const isBarcode = true;
@@ -785,21 +784,6 @@ describe("IlsClient", () => {
   // Checks a barcode or username availability. Internally, `available`
   // calls `getPatronFromBarcodeOrUsername` which is tested above.
   describe("available", () => {
-    let mockClient;
-    let ilsClient;
-    beforeAll(() => {
-      mockClient = { get: jest.fn() };
-      ilsClient = new IlsClient(
-        {
-          findUrl,
-          tokenUrl,
-          ilsClientKey,
-          ilsClientSecret,
-        },
-        mockClient
-      );
-    });
-
     describe("barcode", () => {
       const barcode = "12341234123412";
       const barcodeFieldTag = constants.BARCODE_FIELD_TAG;
