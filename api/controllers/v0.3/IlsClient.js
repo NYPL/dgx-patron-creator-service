@@ -247,7 +247,6 @@ class IlsClient {
    */
   async createPatron(patron) {
     const ilsPatron = IlsClient.formatPatronData(patron);
-
     return (
       this.sierraClient
         .post(this.createUrl, ilsPatron)

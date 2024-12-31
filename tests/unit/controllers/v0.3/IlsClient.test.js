@@ -72,6 +72,7 @@ describe("IlsClient", () => {
     mockClient = {
       put: jest.fn(),
       get: jest.fn().mockResolvedValue(mockedSuccessfulResponse),
+      post: jest.fn(),
     };
     ilsClient = new IlsClient(
       {
@@ -375,173 +376,56 @@ describe("IlsClient", () => {
   });
 
   // Creates a patron in the ILS.
-  // xdescribe("createPatron", () => {
+  describe("createPatron", () => {
+    let formatPatronData = IlsClient.formatPatronData;
+    beforeAll(() => {
+      IlsClient.formatPatronData = () => ({});
+    });
+    afterAll(() => {
+      IlsClient.formatPatronData = formatPatronData;
+    });
 
-  //   ilsClient.ilsToken = mockIlsToken;
-  //   const mockedSuccessfulResponse = {
-  //     status: 200,
-  //     data: {
-  //       link:
-  //         "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/1234",
-  //     },
-  //   };
-  //   const address = new Address(
-  //     {
-  //       line1: "476 5th Avenue",
-  //       city: "New York",
-  //       state: "NY",
-  //       zip: "10018",
-  //       isResidential: true,
-  //       hasBeenValidated: true,
-  //     },
-  //     "soLicenseKey"
-  //   );
-  //   const policy = Policy({ policyType: "webApplicant" });
-  //   const card = new Card({
-  //     name: normalizeName("First Last"),
-  //     username: "username",
-  //     password: "MyLib1731@!",
-  //     email: "test@test.com",
-  //     birthdate: "01/01/1988",
-  //     address,
-  //     policy,
-  //     ilsClient,
-  //     location: "nyc",
-  //     acceptTerms: true,
-  //     ageGate: true,
-  //   });
-  //   // Mock that the ptype was added to the card.
-  //   card.setPtype();
-  //   // Mock that the agency was added.
-  //   card.setAgency();
+    const mockedSuccessfulResponse = {
+      link: "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/1234",
+    };
 
-  //   // Mocking current expiration date.
-  //   const now = new Date();
-  //   const currentYear = now.getFullYear();
-  //   const currentMonth = now.getMonth();
-  //   const currentDay = now.getDate();
-  //   const expirationDate = new Date(
-  //     currentYear,
-  //     currentMonth,
-  //     currentDay + 1095
-  //   );
+    it("fails to create a patron", async () => {
+      // We want to mock that we called the ILS and it did not find a
+      // username, so it is valid and the card is valid.
 
-  //   it("fails to create a patron", async () => {
-  //     // We want to mock that we called the ILS and it did not find a
-  //     // username, so it is valid and the card is valid.
-  //     axios.get.mockImplementationOnce(() =>
-  //       Promise.reject(mockedErrorResponse)
-  //     );
-  //     await card.validate();
+      // Now mock the POST request to the ILS.
+      mockClient.post.mockImplementationOnce(() =>
+        Promise.reject(mockedErrorResponse)
+      );
 
-  //     // Now mock the POST request to the ILS.
-  //     axios.post.mockImplementationOnce(() =>
-  //       Promise.reject(mockedErrorResponse)
-  //     );
+      const patron = await ilsClient.createPatron({});
+      expect(patron).toEqual(mockedErrorResponse.response);
+      expect(mockClient.post).toHaveBeenCalledWith(createUrl, {});
+    });
 
-  //     const patron = await ilsClient.createPatron(card);
-  //     expect(patron).toEqual(mockedErrorResponse.response);
-  //     expect(axios.post).toHaveBeenNthCalledWith(
-  //       1,
-  //       createUrl,
-  //       {
-  //         addresses: [
-  //           {
-  //             lines: ["476 5TH AVENUE", "NEW YORK, NY 10018"],
-  //             type: "a",
-  //           },
-  //         ],
-  //         birthDate: "1988-01-01",
-  //         emails: ["TEST@TEST.COM"],
-  //         expirationDate: expirationDate.toISOString().slice(0, 10),
-  //         // The patron is not subscribed to e-communications by default.
-  //         patronCodes: { pcode1: "-" },
-  //         homeLibraryCode: "eb",
-  //         names: ["LAST, FIRST"],
-  //         patronType: 9,
-  //         // ILS API takes in pin instead of password.
-  //         pin: "MyLib1731@!",
-  //         varFields: [{ content: "username", fieldTag: "u" }],
-  //         fixedFields: {
-  //           "158": {
-  //             label: "AGENCY",
-  //             value: "198",
-  //           },
-  //           "268": {
-  //             label: "NOTICE PREFERENCE",
-  //             value: "-",
-  //           },
-  //         },
-  //       },
-  //       {
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //           Authorization: `Bearer ${mockIlsToken}`,
-  //         },
-  //       }
-  //     );
-  //   });
+    it("successfully creates a patron", async () => {
+      mockClient.post.mockImplementationOnce(() =>
+        Promise.resolve(mockedSuccessfulResponse)
+      );
 
-  //   it("successfully creates a patron", async () => {
-  //     axios.post.mockImplementationOnce(() =>
-  //       Promise.resolve(mockedSuccessfulResponse)
-  //     );
+      const patron = await ilsClient.createPatron({});
 
-  //     const patron = await ilsClient.createPatron(card);
+      expect(patron).toEqual(mockedSuccessfulResponse);
+      expect(mockClient.post).toHaveBeenCalledWith(createUrl, {});
+    });
 
-  //     expect(patron).toEqual(mockedSuccessfulResponse);
-  //     expect(axios.post).toHaveBeenNthCalledWith(
-  //       1,
-  //       createUrl,
-  //       {
-  //         addresses: [
-  //           {
-  //             lines: ["476 5TH AVENUE", "NEW YORK, NY 10018"],
-  //             type: "a",
-  //           },
-  //         ],
-  //         birthDate: "1988-01-01",
-  //         emails: ["TEST@TEST.COM"],
-  //         expirationDate: expirationDate.toISOString().slice(0, 10),
-  //         patronCodes: { pcode1: "-" },
-  //         homeLibraryCode: "eb",
-  //         names: ["LAST, FIRST"],
-  //         patronType: 9,
-  //         // ILS API takes in pin instead of password.
-  //         pin: "MyLib1731@!",
-  //         varFields: [{ content: "username", fieldTag: "u" }],
-  //         fixedFields: {
-  //           "158": {
-  //             label: "AGENCY",
-  //             value: "198",
-  //           },
-  //           "268": {
-  //             label: "NOTICE PREFERENCE",
-  //             value: "-",
-  //           },
-  //         },
-  //       },
-  //       {
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //           Authorization: `Bearer ${mockIlsToken}`,
-  //         },
-  //       }
-  //     );
-  //   });
+    it("fails attempasswordg to call the ILS", async () => {
+      mockClient.post.mockImplementationOnce(() =>
+        Promise.reject(mockedILSIntegrationError)
+      );
 
-  //   it("fails attempasswordg to call the ILS", async () => {
-  //     axios.post.mockImplementationOnce(() =>
-  //       Promise.reject(mockedILSIntegrationError)
-  //     );
-
-  //     await expect(ilsClient.createPatron(card)).rejects.toEqual(
-  //       new ILSIntegrationError(
-  //         "The ILS could not be requested when attempting to create a patron."
-  //       )
-  //     );
-  //   });
-  // });
+      await expect(ilsClient.createPatron()).rejects.toEqual(
+        new ILSIntegrationError(
+          "The ILS could not be requested when attempting to create a patron."
+        )
+      );
+    });
+  });
 
   // Updates a patron in the ILS.
   describe("updatePatron", () => {
