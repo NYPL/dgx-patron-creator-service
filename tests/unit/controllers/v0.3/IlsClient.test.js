@@ -7,6 +7,7 @@ const axios = require("axios");
 const { ILSIntegrationError } = require("../../../../api/helpers/errors");
 const encode = require("../../../../api/helpers/encode");
 const { normalizeName } = require("../../../../api/helpers/utils");
+const constants = require("../../../../constants");
 
 jest.mock("axios");
 jest.mock("../../../../api/controllers/v0.3/AddressValidationAPI");
@@ -69,16 +70,14 @@ const mockedILSIntegrationError = {
 };
 
 describe("IlsClient", () => {
-  beforeEach(() => {
-    axios.mockClear();
+  afterEach(() => {
+    axios.get.mockClear();
+    axios.post.mockClear();
   });
 
   // The address object being sent to the ILS is in the form of:
   // { lines: ['line 1', 'line 2'], type: 'a' }
   describe("formatAddress", () => {
-    // The `formatAddress` method doesn't need any
-    // credentials or other props.
-    const ilsClient = IlsClient({});
     const address = new Address(
       {
         line1: "476 5th Avenue",
@@ -92,26 +91,26 @@ describe("IlsClient", () => {
     // The primary address type is 'a'.
     it("returns a primary address object for the ILS", () => {
       const isWorkAddress = false;
-      const formattedAddress = ilsClient.formatAddress(address, isWorkAddress);
+      const formattedAddress = IlsClient.formatAddress(address, isWorkAddress);
 
       expect(formattedAddress.lines).toEqual([
         "476 5TH AVENUE",
         "NEW YORK, NY 10018",
       ]);
-      expect(formattedAddress.type).toEqual(IlsClient.ADDRESS_FIELD_TAG);
+      expect(formattedAddress.type).toEqual(constants.ADDRESS_FIELD_TAG);
       expect(formattedAddress.type).toEqual("a");
     });
 
     // The work address type is 'h'.
     it("returns a work address object for the ILS", () => {
       const isWorkAddress = true;
-      const formattedAddress = ilsClient.formatAddress(address, isWorkAddress);
+      const formattedAddress = IlsClient.formatAddress(address, isWorkAddress);
 
       expect(formattedAddress.lines).toEqual([
         "476 5TH AVENUE",
         "NEW YORK, NY 10018",
       ]);
-      expect(formattedAddress.type).toEqual(IlsClient.WORK_ADDRESS_FIELD_TAG);
+      expect(formattedAddress.type).toEqual(constants.WORK_ADDRESS_FIELD_TAG);
       expect(formattedAddress.type).toEqual("h");
     });
   });
@@ -119,34 +118,27 @@ describe("IlsClient", () => {
   // The name being sent to the ILS is in the form of:
   // 'LASTNAME, FIRSTNAME'
   describe("formatPatronName", () => {
-    // The `formatPatronName` method doesn't need any
-    // credentials or other props.
-    const ilsClient = IlsClient({});
-
     it("returns an empty string if nothing was passed", () => {
-      expect(ilsClient.formatPatronName()).toEqual("");
+      expect(IlsClient.formatPatronName()).toEqual("");
     });
 
     it("returns the name in all caps", () => {
       let name = "Abraham";
-      expect(ilsClient.formatPatronName(name)).toEqual("ABRAHAM");
+      expect(IlsClient.formatPatronName(name)).toEqual("ABRAHAM");
       name = "Lincoln, Abraham";
-      expect(ilsClient.formatPatronName(name)).toEqual("LINCOLN, ABRAHAM");
+      expect(IlsClient.formatPatronName(name)).toEqual("LINCOLN, ABRAHAM");
       name = "Cosmo Simpson, Bart Jojo";
-      expect(ilsClient.formatPatronName(name)).toEqual(
+      expect(IlsClient.formatPatronName(name)).toEqual(
         "COSMO SIMPSON, BART JOJO"
       );
     });
   });
 
   describe("agencyField", () => {
-    // The `agencyField` method doesn't need any credentials or other props.
-    const ilsClient = IlsClient({});
-
     it("returns an object with a key of '158' and an object value", () => {
       const agency = "202";
       const fixedFields = {};
-      const agencyField = ilsClient.agencyField(agency, fixedFields);
+      const agencyField = IlsClient.agencyField(agency, fixedFields);
 
       expect(agencyField).toEqual({
         158: {
@@ -169,7 +161,7 @@ describe("IlsClient", () => {
         },
       };
 
-      const agencyField = ilsClient.agencyField(agency, fixedFields);
+      const agencyField = IlsClient.agencyField(agency, fixedFields);
 
       expect(agencyField).toEqual({
         ...fixedFields,
@@ -182,13 +174,9 @@ describe("IlsClient", () => {
   });
 
   describe("notificationField", () => {
-    // The `notificationField` method doesn't need any
-    // credentials or other props.
-    const ilsClient = IlsClient({});
-
     it("returns an object with a key of '268' and an object value", () => {
       let notifications = false;
-      let agencyField = ilsClient.notificationField(notifications, {});
+      let agencyField = IlsClient.notificationField(notifications, {});
 
       // If the patron doesn't want notifications, it reflects in the
       // `value` property as "-".
@@ -196,19 +184,19 @@ describe("IlsClient", () => {
       expect(agencyField).toEqual({
         268: {
           label: "NOTICE PREFERENCE",
-          value: IlsClient.NO_NOTICE_PREF,
+          value: constants.NO_NOTICE_PREF,
         },
       });
 
       notifications = true;
-      agencyField = ilsClient.notificationField(notifications, {});
+      agencyField = IlsClient.notificationField(notifications, {});
       // If the patron does want notifications, it reflects in the `value`
       // property as "z".
       expect(agencyField["268"].value).toEqual("z");
       expect(agencyField).toEqual({
         268: {
           label: "NOTICE PREFERENCE",
-          value: IlsClient.EMAIL_NOTICE_PREF,
+          value: constants.EMAIL_NOTICE_PREF,
         },
       });
     });
@@ -226,7 +214,7 @@ describe("IlsClient", () => {
         },
       };
 
-      const agencyField = ilsClient.notificationField(
+      const agencyField = IlsClient.notificationField(
         notification,
         fixedFields
       );
@@ -235,7 +223,7 @@ describe("IlsClient", () => {
         ...fixedFields,
         268: {
           label: "NOTICE PREFERENCE",
-          value: IlsClient.EMAIL_NOTICE_PREF,
+          value: constants.EMAIL_NOTICE_PREF,
         },
       });
     });
@@ -244,18 +232,14 @@ describe("IlsClient", () => {
   // The preference object being sent to the ILS is in the form of:
   // { patronCodes: { pcode1: "s" } }
   describe("ecommunicationsPref", () => {
-    // The `ecommunicationsPref` method doesn't need any
-    // credentials or other props.
-    const ilsClient = IlsClient({});
-
     // The not subscribed content string is '-'.
     it("returns a not subscribed preference", () => {
       const subscribed = false;
       let patronCodes = {};
-      patronCodes = ilsClient.ecommunicationsPref(subscribed, patronCodes);
+      patronCodes = IlsClient.ecommunicationsPref(subscribed, patronCodes);
 
       expect(patronCodes.pcode1).toEqual(
-        IlsClient.NOT_SUBSCRIBED_ECOMMUNICATIONS_PREF
+        constants.NOT_SUBSCRIBED_ECOMMUNICATIONS_PREF
       );
       expect(patronCodes.pcode1).toEqual("-");
       expect(patronCodes).toEqual({ pcode1: "-" });
@@ -265,10 +249,10 @@ describe("IlsClient", () => {
     it("returns a subscribed preference", () => {
       const subscribed = true;
       let patronCodes = {};
-      patronCodes = ilsClient.ecommunicationsPref(subscribed, patronCodes);
+      patronCodes = IlsClient.ecommunicationsPref(subscribed, patronCodes);
 
       expect(patronCodes.pcode1).toEqual(
-        IlsClient.SUBSCRIBED_ECOMMUNICATIONS_PREF
+        constants.SUBSCRIBED_ECOMMUNICATIONS_PREF
       );
       expect(patronCodes.pcode1).toEqual("s");
       expect(patronCodes).toEqual({ pcode1: "s" });
@@ -278,7 +262,7 @@ describe("IlsClient", () => {
       const subscribed = true;
       let patronCodes = { pcode2: "some value", pcode3: "another value" };
 
-      patronCodes = ilsClient.ecommunicationsPref(subscribed, patronCodes);
+      patronCodes = IlsClient.ecommunicationsPref(subscribed, patronCodes);
 
       expect(patronCodes).toEqual({
         pcode1: "s",
@@ -290,9 +274,6 @@ describe("IlsClient", () => {
 
   // The patron object being sent to the ILS.
   describe("formatPatronData", () => {
-    // The `formatPatronName` method doesn't need any
-    // credentials or other props.
-    const ilsClient = IlsClient({});
     const address = new Address(
       {
         line1: "476 5th Avenue",
@@ -314,7 +295,7 @@ describe("IlsClient", () => {
       address,
       policy,
       location: "nyc",
-      ilsClient: IlsClient({}),
+      ilsClient: new IlsClient({}),
       varFields: [{ fieldTag: "x", content: "DEPENDENT OF 1234" }],
       acceptTerms: true,
       ageGate: true,
@@ -344,7 +325,7 @@ describe("IlsClient", () => {
       // Make sure we have a validated card.
       await card.validate();
 
-      const formatted = ilsClient.formatPatronData(card);
+      const formatted = IlsClient.formatPatronData(card);
 
       expect(formatted.names).toEqual(["LAST, FIRST MIDDLE"]);
       // This object returns "pin" since that's what the ILS API expects,
@@ -381,12 +362,13 @@ describe("IlsClient", () => {
 
   // Creates a patron in the ILS.
   describe("createPatron", () => {
-    const ilsClient = IlsClient({
+    const ilsClient = new IlsClient({
       createUrl,
       tokenUrl,
       ilsClientKey,
       ilsClientSecret,
     });
+    ilsClient.ilsToken = mockIlsToken;
     const mockedSuccessfulResponse = {
       status: 200,
       data: {
@@ -435,14 +417,6 @@ describe("IlsClient", () => {
       currentDay + 1095
     );
 
-    beforeAll(async () => {
-      // Mock that we got a token for authenticated requests.
-      axios.post.mockImplementationOnce(() =>
-        Promise.resolve(mockedSuccessfulTokenResponse)
-      );
-      await ilsClient.generateIlsToken();
-    });
-
     it("fails to create a patron", async () => {
       // We want to mock that we called the ILS and it did not find a
       // username, so it is valid and the card is valid.
@@ -459,7 +433,7 @@ describe("IlsClient", () => {
       const patron = await ilsClient.createPatron(card);
       expect(patron).toEqual(mockedErrorResponse.response);
       expect(axios.post).toHaveBeenNthCalledWith(
-        2,
+        1,
         createUrl,
         {
           addresses: [
@@ -508,7 +482,7 @@ describe("IlsClient", () => {
 
       expect(patron).toEqual(mockedSuccessfulResponse);
       expect(axios.post).toHaveBeenNthCalledWith(
-        3,
+        1,
         createUrl,
         {
           addresses: [
@@ -562,7 +536,7 @@ describe("IlsClient", () => {
 
   // Updates a patron in the ILS.
   describe("updatePatron", () => {
-    const ilsClient = IlsClient({
+    const ilsClient = new IlsClient({
       createUrl,
       tokenUrl,
       ilsClientKey,
@@ -684,7 +658,7 @@ describe("IlsClient", () => {
   });
 
   describe("getPatronFromBarcodeOrUsername", () => {
-    const ilsClient = IlsClient({
+    const ilsClient = new IlsClient({
       findUrl,
       tokenUrl,
       ilsClientKey,
@@ -708,7 +682,7 @@ describe("IlsClient", () => {
         Promise.resolve(mockedSuccessfulResponse)
       );
 
-      const barcodeFieldTag = IlsClient.BARCODE_FIELD_TAG;
+      const barcodeFieldTag = constants.BARCODE_FIELD_TAG;
       const expectedParams = `?varFieldTag=${barcodeFieldTag}&varFieldContent=${barcode}&fields=patronType,varFields,names,addresses,emails,expirationDate`;
       const patron = await ilsClient.getPatronFromBarcodeOrUsername(
         barcode,
@@ -735,7 +709,7 @@ describe("IlsClient", () => {
         Promise.resolve(mockedSuccessfulResponse)
       );
 
-      const usernameFieldTag = IlsClient.USERNAME_FIELD_TAG;
+      const usernameFieldTag = constants.USERNAME_FIELD_TAG;
       const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,names,addresses,emails,expirationDate`;
       const patron = await ilsClient.getPatronFromBarcodeOrUsername(
         username,
@@ -763,7 +737,7 @@ describe("IlsClient", () => {
         Promise.reject(mockedErrorResponse)
       );
 
-      const usernameFieldTag = IlsClient.USERNAME_FIELD_TAG;
+      const usernameFieldTag = constants.USERNAME_FIELD_TAG;
       const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,names,addresses,emails,expirationDate`;
       const patron = await ilsClient.getPatronFromBarcodeOrUsername(
         username,
@@ -791,7 +765,7 @@ describe("IlsClient", () => {
         Promise.reject(mockedErrorResponseDup)
       );
 
-      const usernameFieldTag = IlsClient.USERNAME_FIELD_TAG;
+      const usernameFieldTag = constants.USERNAME_FIELD_TAG;
       const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,names,addresses,emails,expirationDate`;
       const patron = await ilsClient.getPatronFromBarcodeOrUsername(
         username,
@@ -822,7 +796,7 @@ describe("IlsClient", () => {
         Promise.reject(mockedILSIntegrationError)
       );
 
-      const usernameFieldTag = IlsClient.USERNAME_FIELD_TAG;
+      const usernameFieldTag = constants.USERNAME_FIELD_TAG;
       const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,names,addresses,emails,expirationDate`;
       const patron = await ilsClient.getPatronFromBarcodeOrUsername(
         username,
@@ -847,7 +821,7 @@ describe("IlsClient", () => {
   // Checks a barcode or username availability. Internally, `available`
   // calls `getPatronFromBarcodeOrUsername` which is tested above.
   describe("available", () => {
-    const ilsClient = IlsClient({
+    const ilsClient = new IlsClient({
       findUrl,
       tokenUrl,
       ilsClientKey,
@@ -864,7 +838,7 @@ describe("IlsClient", () => {
 
     describe("barcode", () => {
       const barcode = "12341234123412";
-      const barcodeFieldTag = IlsClient.BARCODE_FIELD_TAG;
+      const barcodeFieldTag = constants.BARCODE_FIELD_TAG;
       const expectedParams = `?varFieldTag=${barcodeFieldTag}&varFieldContent=${barcode}&fields=patronType,varFields,names,addresses,emails,expirationDate`;
       const isBarcode = true;
 
@@ -950,7 +924,7 @@ describe("IlsClient", () => {
 
     describe("username", () => {
       const username = "username";
-      const usernameFieldTag = IlsClient.USERNAME_FIELD_TAG;
+      const usernameFieldTag = constants.USERNAME_FIELD_TAG;
       const expectedParams = `?varFieldTag=${usernameFieldTag}&varFieldContent=${username}&fields=patronType,varFields,names,addresses,emails,expirationDate`;
       const isBarcode = false;
 
@@ -1038,15 +1012,17 @@ describe("IlsClient", () => {
 
   describe("generateIlsToken", () => {
     it("throws an error without credentials", async () => {
-      const ilsClient = IlsClient({});
-
-      await expect(ilsClient.generateIlsToken()).rejects.toThrow(
+      await expect(new IlsClient({}).generateIlsToken()).rejects.toThrow(
         "The ILS client was set up without a key or secret to generate a token."
       );
     });
 
     it("throws an error if the ILS returned an error", async () => {
-      const ilsClient = IlsClient({ tokenUrl, ilsClientKey, ilsClientSecret });
+      const ilsClient = new IlsClient({
+        tokenUrl,
+        ilsClientKey,
+        ilsClientSecret,
+      });
       axios.post.mockImplementationOnce(() =>
         Promise.reject(mockedILSIntegrationError)
       );
@@ -1057,7 +1033,11 @@ describe("IlsClient", () => {
     });
 
     it("makes a successful call and sets a token and timestamp", async () => {
-      const ilsClient = IlsClient({ tokenUrl, ilsClientKey, ilsClientSecret });
+      const ilsClient = new IlsClient({
+        tokenUrl,
+        ilsClientKey,
+        ilsClientSecret,
+      });
 
       axios.post.mockImplementationOnce(() =>
         Promise.resolve(mockedSuccessfulTokenResponse)
@@ -1090,7 +1070,7 @@ describe("IlsClient", () => {
 
   describe("isTokenExpired", () => {
     it("returns false if generating a token fails", async () => {
-      const ilsClient = IlsClient({});
+      const ilsClient = new IlsClient({});
 
       expect(ilsClient.isTokenExpired()).toEqual(false);
 
@@ -1104,7 +1084,11 @@ describe("IlsClient", () => {
     });
 
     it("returns false if a *new* token is generated", async () => {
-      const ilsClient = IlsClient({ tokenUrl, ilsClientKey, ilsClientSecret });
+      const ilsClient = new IlsClient({
+        tokenUrl,
+        ilsClientKey,
+        ilsClientSecret,
+      });
 
       axios.post.mockImplementationOnce(() =>
         Promise.resolve(mockedSuccessfulTokenResponse)
@@ -1134,7 +1118,11 @@ describe("IlsClient", () => {
         // should return true since the current time is more than one hour
         // past this expiration date.
         .mockReturnValueOnce(expirationDate);
-      const ilsClient = IlsClient({ tokenUrl, ilsClientKey, ilsClientSecret });
+      const ilsClient = new IlsClient({
+        tokenUrl,
+        ilsClientKey,
+        ilsClientSecret,
+      });
 
       axios.post.mockImplementationOnce(() =>
         Promise.resolve(mockedSuccessfulTokenResponse)
@@ -1152,7 +1140,11 @@ describe("IlsClient", () => {
   // endpoints.
   describe("hasIlsToken", () => {
     it("returns false if generating a token fails", async () => {
-      const ilsClient = IlsClient({ tokenUrl, ilsClientKey, ilsClientSecret });
+      const ilsClient = new IlsClient({
+        tokenUrl,
+        ilsClientKey,
+        ilsClientSecret,
+      });
       axios.post.mockImplementationOnce(() =>
         Promise.reject(mockedILSIntegrationError)
       );
@@ -1171,7 +1163,11 @@ describe("IlsClient", () => {
     });
 
     it("returns true if a new token is generated", async () => {
-      const ilsClient = IlsClient({ tokenUrl, ilsClientKey, ilsClientSecret });
+      const ilsClient = new IlsClient({
+        tokenUrl,
+        ilsClientKey,
+        ilsClientSecret,
+      });
 
       axios.post.mockImplementationOnce(() =>
         Promise.resolve(mockedSuccessfulTokenResponse)

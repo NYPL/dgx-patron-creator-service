@@ -6,6 +6,7 @@ const {
 } = require("../../helpers/errors");
 const logger = require("../../helpers/Logger");
 const encode = require("../../helpers/encode");
+const constants = require("../../../constants");
 
 /**
  * Helper class to setup API calls to the ILS. This class assumes that all the
@@ -13,22 +14,33 @@ const encode = require("../../helpers/encode");
  * for API requests to the ILS.
  * @param {object} props
  */
-const IlsClient = (props) => {
-  const { createUrl, findUrl, tokenUrl, ilsClientKey, ilsClientSecret } = props;
-  let ilsToken;
-  let ilsTokenTimestamp;
-  // We need the `id`, `patronType`, `varFields`, `addresses`, `emails`, and
-  // `expirationDate` fields from the patron object (`id` is returned by
-  // default), so those fields are added at the end of the endpoint request.
-  const ilsResponseFields =
-    "&fields=patronType,varFields,names,addresses,emails,expirationDate";
-
-  const hasIlsToken = () => !!ilsToken;
+class IlsClient {
+  constructor(props) {
+    const {
+      createUrl,
+      findUrl,
+      tokenUrl,
+      ilsClientKey,
+      ilsClientSecret,
+    } = props;
+    this.createUrl = createUrl;
+    this.findUrl = findUrl;
+    this.tokenUrl = tokenUrl;
+    this.ilsClientKey = ilsClientKey;
+    this.ilsClientSecret = ilsClientSecret;
+    this.ilsToken = null;
+    this.ilsTokenTimestamp = null;
+  }
+  hasIlsToken() {
+    return !!this.ilsToken;
+  }
   // 3540000 = 59 minutes; tokens are for 60 minutes
-  const isTokenExpired = () => {
+  isTokenExpired() {
     const timeNow = new Date();
-    return !!(ilsTokenTimestamp && timeNow - ilsTokenTimestamp > 3540000);
-  };
+    return !!(
+      this.ilsTokenTimestamp && timeNow - this.ilsTokenTimestamp > 3540000
+    );
+  }
 
   /**
    * formatAddress
@@ -45,28 +57,28 @@ const IlsClient = (props) => {
    * @param {Address object} address
    * @param {boolean} isWorkAddress
    */
-  const formatAddress = (address, isWorkAddress = false) => {
+  static formatAddress(address, isWorkAddress = false) {
     const type = isWorkAddress
-      ? IlsClient.WORK_ADDRESS_FIELD_TAG // 'h'
-      : IlsClient.ADDRESS_FIELD_TAG; // 'a'
+      ? constants.WORK_ADDRESS_FIELD_TAG // 'h'
+      : constants.ADDRESS_FIELD_TAG; // 'a'
     const fullString = address.toString().toUpperCase();
     const lines = fullString.split("\n");
 
     return { lines, type };
-  };
+  }
 
   /**
    * formatPatronName
    * Formats the patron's name to be in uppercase.
    * @param {string} name
    */
-  const formatPatronName = (name) => {
+  static formatPatronName(name) {
     if (!name) {
       return "";
     }
 
     return name.toUpperCase();
-  };
+  }
 
   /**
    * agencyField
@@ -76,16 +88,18 @@ const IlsClient = (props) => {
    * @param {string} agency
    * @param {object} fixedFields
    */
-  const agencyField = (
-    agency = IlsClient.DEFAULT_PATRON_AGENCY,
+  static agencyField(
+    agency = constants.DEFAULT_PATRON_AGENCY,
     fixedFields = {}
-  ) => ({
-    158: {
-      label: "AGENCY",
-      value: agency,
-    },
-    ...fixedFields,
-  });
+  ) {
+    return {
+      158: {
+        label: "AGENCY",
+        value: agency,
+      },
+      ...fixedFields,
+    };
+  }
 
   /**
    * notificationField
@@ -101,8 +115,8 @@ const IlsClient = (props) => {
    * @param {boolean} optIn
    * @param {object} fixedFields
    */
-  const notificationField = (optIn = false, fixedFields = {}) => {
-    const pref = optIn ? IlsClient.EMAIL_NOTICE_PREF : IlsClient.NO_NOTICE_PREF;
+  static notificationField(optIn = false, fixedFields = {}) {
+    const pref = optIn ? constants.EMAIL_NOTICE_PREF : constants.NO_NOTICE_PREF;
     return {
       268: {
         label: "NOTICE PREFERENCE",
@@ -110,7 +124,7 @@ const IlsClient = (props) => {
       },
       ...fixedFields,
     };
-  };
+  }
 
   /**
    * ecommunicationsPref
@@ -128,16 +142,13 @@ const IlsClient = (props) => {
    * @param {boolean} ecommunicationsPrefValue
    * @param {object} patronCodes
    */
-  const ecommunicationsPref = (
-    ecommunicationsPrefValue = false,
-    patronCodes
-  ) => {
+  static ecommunicationsPref(ecommunicationsPrefValue = false, patronCodes) {
     const value = ecommunicationsPrefValue
-      ? IlsClient.SUBSCRIBED_ECOMMUNICATIONS_PREF
-      : IlsClient.NOT_SUBSCRIBED_ECOMMUNICATIONS_PREF;
+      ? constants.SUBSCRIBED_ECOMMUNICATIONS_PREF
+      : constants.NOT_SUBSCRIBED_ECOMMUNICATIONS_PREF;
 
     return { ...patronCodes, pcode1: value };
-  };
+  }
 
   /**
    * formatPatronData
@@ -157,7 +168,7 @@ const IlsClient = (props) => {
    * }
    * @param {Card object} patron
    */
-  const formatPatronData = (patron) => {
+  static formatPatronData(patron) {
     // Addresses should be in a list.
     const addresses = [];
     // varFields is an array of objects.
@@ -166,15 +177,15 @@ const IlsClient = (props) => {
     let fixedFields = {};
     let patronCodes = {};
 
-    const address = formatAddress(patron.address);
+    const address = this.formatAddress(patron.address);
     addresses.push(address);
     if (patron.worksInNYCity()) {
-      const workAddress = formatAddress(patron.workAddress, true);
+      const workAddress = this.formatAddress(patron.workAddress, true);
       addresses.push(workAddress);
     }
 
     const usernameVarField = {
-      fieldTag: IlsClient.USERNAME_FIELD_TAG,
+      fieldTag: constants.USERNAME_FIELD_TAG,
       content: patron.username,
     };
 
@@ -186,13 +197,19 @@ const IlsClient = (props) => {
 
     // E-communications value has a key of pcode1 in the patronCodes object.
     // Merging any other pcode values and overwriting patronCodes.
-    patronCodes = ecommunicationsPref(patron.ecommunicationsPref, patronCodes);
+    patronCodes = this.ecommunicationsPref(
+      patron.ecommunicationsPref,
+      patronCodes
+    );
 
     // Add agency fixedField
-    fixedFields = agencyField(patron.agency, fixedFields);
-    fixedFields = notificationField(patron.ecommunicationsPref, fixedFields);
+    fixedFields = this.agencyField(patron.agency, fixedFields);
+    fixedFields = this.notificationField(
+      patron.ecommunicationsPref,
+      fixedFields
+    );
 
-    const patronName = formatPatronName(patron.name);
+    const patronName = this.formatPatronName(patron.name);
 
     const fields = {
       names: [patronName],
@@ -217,7 +234,7 @@ const IlsClient = (props) => {
     }
 
     return fields;
-  };
+  }
 
   /**
    * createPatron
@@ -228,15 +245,15 @@ const IlsClient = (props) => {
    *  `response.data.link`.
    * @param {Card object} patron
    */
-  const createPatron = async (patron) => {
-    const ilsPatron = formatPatronData(patron);
+  async createPatron(patron) {
+    const ilsPatron = IlsClient.formatPatronData(patron);
 
     return (
       axios
-        .post(createUrl, ilsPatron, {
+        .post(this.createUrl, ilsPatron, {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${ilsToken}`,
+            Authorization: `Bearer ${this.ilsToken}`,
           },
         })
         // Example correct response:
@@ -252,11 +269,11 @@ const IlsClient = (props) => {
           const message =
             response.data && (response.data.description || response.data.name);
           logger.error(
-            "ILSClient.createPatron - error calling ILS URL:",
-            createUrl
+            "constants.createPatron - error calling ILS URL:",
+            this.createUrl
           );
           logger.error(
-            "ILSClient.createPatron - error calling ILS error:",
+            "constants.createPatron - error calling ILS error:",
             error
           );
           logger.error(
@@ -279,7 +296,7 @@ const IlsClient = (props) => {
           );
         })
     );
-  };
+  }
 
   /**
    * updatePatron
@@ -291,14 +308,14 @@ const IlsClient = (props) => {
    * @param {Card object} patron
    * @param {object} updatedFields
    */
-  const updatePatron = async (patronId, updatedFields) => {
-    const putUrl = `${createUrl}${patronId}`;
+  async updatePatron(patronId, updatedFields) {
+    const putUrl = `${this.createUrl}${patronId}`;
 
     return axios
       .put(putUrl, updatedFields, {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${ilsToken}`,
+          Authorization: `Bearer ${this.ilsToken}`,
         },
       })
       .then((response) => {
@@ -328,7 +345,7 @@ const IlsClient = (props) => {
           "The ILS could not be requested when attempting to update a patron."
         );
       });
-  };
+  }
 
   /**
    * getPatronFromBarcodeOrUsername
@@ -340,22 +357,18 @@ const IlsClient = (props) => {
    * @param {string} barcodeOrUsername
    * @param {boolean} isBarcode
    */
-  const getPatronFromBarcodeOrUsername = async (
-    barcodeOrUsername,
-    isBarcode = true
-  ) => {
+  async getPatronFromBarcodeOrUsername(barcodeOrUsername, isBarcode = true) {
     const fieldTag = isBarcode
-      ? IlsClient.BARCODE_FIELD_TAG
-      : IlsClient.USERNAME_FIELD_TAG;
+      ? constants.BARCODE_FIELD_TAG
+      : constants.USERNAME_FIELD_TAG;
     // These two query parameters are required to make a valid GET request.
     const varFieldParams = `varFieldTag=${fieldTag}&varFieldContent=${barcodeOrUsername}`;
-    const params = `?${varFieldParams}${ilsResponseFields}`;
-
+    const params = `?${varFieldParams}${constants.ILS_RESPONSE_FIELDS}`;
     return axios
-      .get(`${findUrl}${params}`, {
+      .get(`${this.findUrl}${params}`, {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${ilsToken}`,
+          Authorization: `Bearer ${this.ilsToken}`,
         },
       })
       .then((response) => response)
@@ -363,14 +376,14 @@ const IlsClient = (props) => {
         const data = error.response && error.response.data;
         const message = data.description || data.name || "Unknown Error";
         logger.error(
-          `ILSClient.getPatronFromBarcodeOrUsername - Error calling ILS URL - ${findUrl}${params}`
+          `ILSClient.getPatronFromBarcodeOrUsername - Error calling ILS URL - ${this.findUrl}${params}`
         );
         logger.error(
           `ILSClient.getPatronFromBarcodeOrUsername - Error calling ILS - ${message}`
         );
         return error.response;
       });
-  };
+  }
 
   /**
    * available
@@ -384,10 +397,10 @@ const IlsClient = (props) => {
    * @param {string} barcodeOrUsername
    * @param {boolean} isBarcode
    */
-  const available = async (barcodeOrUsername, isBarcode = true) => {
+  async available(barcodeOrUsername, isBarcode = true) {
     const fieldType = isBarcode ? "barcode" : "username";
     let isAvailable = false;
-    const response = await getPatronFromBarcodeOrUsername(
+    const response = await this.getPatronFromBarcodeOrUsername(
       barcodeOrUsername,
       isBarcode
     );
@@ -419,22 +432,24 @@ const IlsClient = (props) => {
     }
 
     return isAvailable;
-  };
+  }
 
   /**
    * generateIlsToken
    * Get a token from the ILS using the ILS client key and secret.
    */
-  const generateIlsToken = async () => {
-    if (!ilsClientKey || !ilsClientSecret) {
+  async generateIlsToken() {
+    if (!this.ilsClientKey || !this.ilsClientSecret) {
       throw new NoILSCredentials();
     }
 
-    const basicAuth = `Basic ${encode(`${ilsClientKey}:${ilsClientSecret}`)}`;
+    const basicAuth = `Basic ${encode(
+      `${this.ilsClientKey}:${this.ilsClientSecret}`
+    )}`;
 
     return axios
       .post(
-        tokenUrl,
+        this.tokenUrl,
         {},
         {
           headers: {
@@ -445,140 +460,15 @@ const IlsClient = (props) => {
       )
       .then((response) => {
         // Set the global variables.
-        ilsToken = response.data.access_token;
-        ilsTokenTimestamp = new Date();
+        this.ilsToken = response.data.access_token;
+        this.ilsTokenTimestamp = new Date();
       })
       .catch((error) => {
         throw new ILSIntegrationError(
           `Problem calling the ILS token url, ${error.response.data.name}`
         );
       });
-  };
-
-  return {
-    createPatron,
-    available,
-    getPatronFromBarcodeOrUsername,
-    updatePatron,
-    hasIlsToken,
-    isTokenExpired,
-    generateIlsToken,
-    // For testing,
-    agencyField,
-    notificationField,
-    ecommunicationsPref,
-    formatPatronData,
-    formatAddress,
-    formatPatronName,
-  };
-};
-
-IlsClient.MINOR_AGE = 13;
-// Field tags to access patron information in ILS
-IlsClient.BIRTHDATE_FIELD_TAG = "51";
-// Barcode AND username are indexed on this tag.
-IlsClient.BARCODE_FIELD_TAG = "b";
-IlsClient.PIN_FIELD_TAG = "=";
-IlsClient.PTYPE_FIELD_TAG = "47";
-IlsClient.ADDRESS_FIELD_TAG = "a";
-IlsClient.WORK_ADDRESS_FIELD_TAG = "h";
-IlsClient.NAME_FIELD_TAG = "n";
-IlsClient.EMAIL_FIELD_TAG = "z";
-IlsClient.PATRONID_FIELD_TAG = ".";
-IlsClient.EXPIRATION_FIELD_TAG = "43";
-IlsClient.USERNAME_FIELD_TAG = "u";
-IlsClient.HOME_LIB_FIELD_TAG = "53";
-IlsClient.PATRON_AGENCY_FIELD_TAG = "158";
-// ILS notifications ('p' = phone or 'z' = email)
-IlsClient.NOTICE_PREF_FIELD_TAG = "268";
-IlsClient.NOTE_FIELD_TAG = "x";
-// Standard and temporary expiration times
-IlsClient.STANDARD_EXPIRATION_TIME = 1095; // days, 3 years
-IlsClient.ONE_YEAR_STANDARD_EXPIRATION_TIME = 365; // days, 1 year
-IlsClient.TEMPORARY_EXPIRATION_TIME = 30; // days
-IlsClient.WEB_APPLICANT_EXPIRATION_TIME = 90; // days
-// Ptypes for various library card offerings
-IlsClient.WEB_APPLICANT_PTYPE = 1;
-IlsClient.SIMPLYE_METRO_PTYPE = 2;
-IlsClient.SIMPLYE_NON_METRO_PTYPE = 3;
-IlsClient.ADULT_METRO_PTYPE = 10;
-IlsClient.ADULT_NYS_PTYPE = 11;
-IlsClient.SENIOR_METRO_PTYPE = 20;
-IlsClient.SENIOR_NYS_PTYPE = 21;
-IlsClient.SIMPLYE_JUVENILE = 4;
-IlsClient.SIMPLYE_JUVENILE_ONLY = 5;
-IlsClient.SIMPLYE_YOUNG_ADULT = 6;
-IlsClient.WEB_DIGITAL_TEMPORARY = 7;
-IlsClient.WEB_DIGITAL_NON_METRO = 8;
-IlsClient.WEB_DIGITAL_METRO = 9;
-// The following two p-types don't have a code yet.
-// Using 101 for now but MUST be updated.
-IlsClient.DISABLED_METRO_NY_PTYPE = 101;
-IlsClient.HOMEBOUND_NYC_PTYPE = 101;
-IlsClient.TEEN_METRO_PTYPE = 50;
-IlsClient.TEEN_NYS_PTYPE = 51;
-IlsClient.MARLI_PTYPE = 81;
-IlsClient.REJECTED_PTYPE = 101;
-IlsClient.ILS_ERROR = "-1";
-IlsClient.PTYPE_TO_TEXT = {
-  WEB_APPLICANT_PTYPE: "Web applicant (No Borrowing)",
-  ADULT_METRO_PTYPE: "Adult 18-64 Metro (3 Year)",
-  ADULT_NYS_PTYPE: "Adult 18-64 NY State (3 Year)",
-  SENIOR_METRO_PTYPE: "Senior, 65+, Metro (3 Year)",
-  SENIOR_NYS_PTYPE: "Senior, 65+, NY State (3 Year)",
-  DISABLED_METRO_NY_PTYPE: "Disabled Metro NY (3 Year)",
-  HOMEBOUND_NYC_PTYPE: "Homebound NYC (3 Year)",
-  SIMPLYE_METRO_PTYPE: "SimplyE Metro",
-  SIMPLYE_NON_METRO_PTYPE: "SimplyE Non-Metro",
-  SIMPLYE_JUVENILE: "SimplyE Juvenile",
-  SIMPLYE_JUVENILE_ONLY: "SimplyE Juvenile Only",
-  SIMPLYE_YOUNG_ADULT: "SimplyE Young Adult",
-  WEB_DIGITAL_TEMPORARY: "Web Digital Temporary",
-  WEB_DIGITAL_NON_METRO: "Web Digital Non-Metro",
-  WEB_DIGITAL_METRO: "Web Digital Metro",
-  TEEN_METRO_PTYPE: "Teen Metro (3 Year)",
-  TEEN_NYS_PTYPE: "Teen NY State (3 Year)",
-  MARLI_PTYPE: "Marli",
-  REJECTED_PTYPE: "Rejected",
-  ILS_ERROR: "Unable to create in ILS",
-};
-IlsClient.CAN_CREATE_DEPENDENTS = [
-  IlsClient.ADULT_METRO_PTYPE,
-  IlsClient.ADULT_NYS_PTYPE,
-  IlsClient.WEB_DIGITAL_NON_METRO,
-  IlsClient.WEB_DIGITAL_METRO,
-  IlsClient.SENIOR_METRO_PTYPE,
-  IlsClient.SENIOR_NYS_PTYPE,
-  IlsClient.DISABLED_METRO_NY_PTYPE,
-  IlsClient.HOMEBOUND_NYC_PTYPE,
-  IlsClient.SIMPLYE_METRO_PTYPE,
-  IlsClient.SIMPLYE_NON_METRO_PTYPE,
-  IlsClient.TEEN_METRO_PTYPE,
-  IlsClient.TEEN_NYS_PTYPE,
-  IlsClient.MARLI_PTYPE,
-];
-// Default values for certain fields
-IlsClient.DEFAULT_HOME_LIB = "";
-IlsClient.DEFAULT_PATRON_AGENCY = "202";
-IlsClient.DEFAULT_NOTE = `Patron's work/school address is ADDRESS2[ph].
-Out-of-state home address is ADDRESS1[pa].`;
-// Opt-in/out of Marketing's email subscription service:
-// 's' = subscribed; '-' = not subscribed
-// This needs to be sent in the patronCodes object in the pcode1 field
-// { pcode1: 's' } or { pcode1: '-' }
-IlsClient.SUBSCRIBED_ECOMMUNICATIONS_PREF = "s";
-IlsClient.NOT_SUBSCRIBED_ECOMMUNICATIONS_PREF = "-";
-IlsClient.EMAIL_NOTICE_PREF = "z";
-IlsClient.PHONE_NOTICE_PREF = "p";
-IlsClient.NO_NOTICE_PREF = "-";
-IlsClient.WEB_APPLICANT_AGENCY = "198";
-IlsClient.WEB_APPLICANT_NYS_AGENCY = "199";
-// Error codes
-IlsClient.NOT_FOUND = "9001";
-IlsClient.MULTIPLE_MATCHES = "9002";
-// String-type marc tag
-IlsClient.STRING_MARCTAG = { "@xsi:type": "xsd:string" };
-// fields that require marc tag to be set
-IlsClient.WITH_MARCTAG = ["expiration", "ptype"];
+  }
+}
 
 module.exports = IlsClient;

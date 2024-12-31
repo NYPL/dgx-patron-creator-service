@@ -1,4 +1,4 @@
-const IlsClient = require("../../controllers/v0.3/IlsClient");
+const constants = require("../../../constants");
 
 /**
  * Creates a policy object to find out what type of card is allowed for a
@@ -15,73 +15,73 @@ const Policy = (props) => {
     let expTime;
     switch (ptype) {
       // One year.
-      case IlsClient.WEB_DIGITAL_NON_METRO:
-        expTime = IlsClient.ONE_YEAR_STANDARD_EXPIRATION_TIME;
+      case constants.WEB_DIGITAL_NON_METRO:
+        expTime = constants.ONE_YEAR_STANDARD_EXPIRATION_TIME;
         break;
       // Three years.
-      case IlsClient.WEB_DIGITAL_METRO:
-      case IlsClient.SIMPLYE_JUVENILE:
-      case IlsClient.SIMPLYE_METRO_PTYPE:
-      case IlsClient.SIMPLYE_NON_METRO_PTYPE:
-        expTime = IlsClient.STANDARD_EXPIRATION_TIME;
+      case constants.WEB_DIGITAL_METRO:
+      case constants.SIMPLYE_JUVENILE:
+      case constants.SIMPLYE_METRO_PTYPE:
+      case constants.SIMPLYE_NON_METRO_PTYPE:
+        expTime = constants.STANDARD_EXPIRATION_TIME;
         break;
       // 90 days.
-      case IlsClient.WEB_APPLICANT_PTYPE:
-        expTime = IlsClient.WEB_APPLICANT_EXPIRATION_TIME;
+      case constants.WEB_APPLICANT_PTYPE:
+        expTime = constants.WEB_APPLICANT_EXPIRATION_TIME;
         break;
       // 30 days.
-      case IlsClient.WEB_DIGITAL_TEMPORARY:
+      case constants.WEB_DIGITAL_TEMPORARY:
       default:
-        expTime = IlsClient.TEMPORARY_EXPIRATION_TIME;
+        expTime = constants.TEMPORARY_EXPIRATION_TIME;
         break;
     }
     return expTime;
   };
   const ilsPolicies = {
     simplye: {
-      agency: IlsClient.DEFAULT_PATRON_AGENCY,
+      agency: constants.DEFAULT_PATRON_AGENCY,
       ptype: {
         default: {
-          id: IlsClient.SIMPLYE_NON_METRO_PTYPE,
-          desc: IlsClient.PTYPE_TO_TEXT.SIMPLYE_NON_METRO_PTYPE,
+          id: constants.SIMPLYE_NON_METRO_PTYPE,
+          desc: constants.PTYPE_TO_TEXT.SIMPLYE_NON_METRO_PTYPE,
         },
         metro: {
-          id: IlsClient.SIMPLYE_METRO_PTYPE,
-          desc: IlsClient.PTYPE_TO_TEXT.SIMPLYE_METRO_PTYPE,
+          id: constants.SIMPLYE_METRO_PTYPE,
+          desc: constants.PTYPE_TO_TEXT.SIMPLYE_METRO_PTYPE,
         },
       },
       requiredFields: ["ageGate"],
       minimumAge: 13,
     },
     webApplicant: {
-      agency: IlsClient.WEB_APPLICANT_AGENCY,
+      agency: constants.WEB_APPLICANT_AGENCY,
       ptype: {
         default: {
-          id: IlsClient.WEB_APPLICANT_PTYPE,
-          desc: IlsClient.PTYPE_TO_TEXT.WEB_APPLICANT_PTYPE,
+          id: constants.WEB_APPLICANT_PTYPE,
+          desc: constants.PTYPE_TO_TEXT.WEB_APPLICANT_PTYPE,
         },
         digitalTemporary: {
-          id: IlsClient.WEB_DIGITAL_TEMPORARY,
-          desc: IlsClient.PTYPE_TO_TEXT.WEB_DIGITAL_TEMPORARY,
+          id: constants.WEB_DIGITAL_TEMPORARY,
+          desc: constants.PTYPE_TO_TEXT.WEB_DIGITAL_TEMPORARY,
         },
         digitalNonMetro: {
-          id: IlsClient.WEB_DIGITAL_NON_METRO,
-          desc: IlsClient.PTYPE_TO_TEXT.WEB_DIGITAL_NON_METRO,
+          id: constants.WEB_DIGITAL_NON_METRO,
+          desc: constants.PTYPE_TO_TEXT.WEB_DIGITAL_NON_METRO,
         },
         digitalMetro: {
-          id: IlsClient.WEB_DIGITAL_METRO,
-          desc: IlsClient.PTYPE_TO_TEXT.WEB_DIGITAL_METRO,
+          id: constants.WEB_DIGITAL_METRO,
+          desc: constants.PTYPE_TO_TEXT.WEB_DIGITAL_METRO,
         },
       },
       requiredFields: ["birthdate"],
       minimumAge: 13,
     },
     simplyeJuvenile: {
-      agency: IlsClient.DEFAULT_PATRON_AGENCY,
+      agency: constants.DEFAULT_PATRON_AGENCY,
       ptype: {
         default: {
-          id: IlsClient.SIMPLYE_JUVENILE,
-          desc: IlsClient.PTYPE_TO_TEXT.SIMPLYE_JUVENILE,
+          id: constants.SIMPLYE_JUVENILE,
+          desc: constants.PTYPE_TO_TEXT.SIMPLYE_JUVENILE,
         },
       },
       requiredFields: [],
