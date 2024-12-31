@@ -1,6 +1,4 @@
-const AddressValidationAPI = require("../../../../api/controllers/v0.3/AddressValidationAPI");
 const IlsClient = require("../../../../api/controllers/v0.3/IlsClient");
-const Card = require("../../../../api/models/v0.3/modelCard");
 const Address = require("../../../../api/models/v0.3/modelAddress");
 const Policy = require("../../../../api/models/v0.3/modelPolicy");
 const axios = require("axios");
@@ -288,7 +286,7 @@ describe("IlsClient", () => {
   });
 
   // The patron object being sent to the ILS.
-  describe.skip("formatPatronData", () => {
+  describe("formatPatronData", () => {
     const address = new Address(
       {
         line1: "476 5th Avenue",
@@ -301,20 +299,6 @@ describe("IlsClient", () => {
       "soLicenseKey"
     );
     const policy = Policy({ policyType: "webApplicant" });
-    const card = new Card({
-      name: normalizeName("First Middle Last"),
-      username: "username",
-      password: "MyLib1731@!",
-      birthdate: "01/01/1988",
-      email: "email@gmail.com",
-      address,
-      policy,
-      location: "nyc",
-      ilsClient: new IlsClient({}, mockClient),
-      varFields: [{ fieldTag: "x", content: "DEPENDENT OF 1234" }],
-      acceptTerms: true,
-      ageGate: true,
-    });
 
     it("returns an ILS-ready patron object", async () => {
       // We want to mock that we called the ILS and it did not find a
@@ -322,24 +306,25 @@ describe("IlsClient", () => {
       mockClient.get.mockImplementationOnce(() =>
         Promise.reject(mockedErrorResponse)
       );
-      AddressValidationAPI.mockImplementation(() => ({
-        validate: () =>
-          Promise.resolve({
-            type: "valid-address",
-            address: {
-              line1: "476 5th Avenue",
-              city: "New York",
-              state: "NY",
-              zip: "10018",
-              isResidential: true,
-              hasBeenValidated: true,
-            },
-          }),
-      }));
 
-      // Make sure we have a validated card.
-      await card.validate();
-
+      const card = {
+        worksInNYCity: () => false,
+        address,
+        name: normalizeName("First Middle Last"),
+        username: "username",
+        password: "MyLib1731@!",
+        birthdate: new Date("01/01/1988"),
+        email: "email@gmail.com",
+        policy,
+        location: "nyc",
+        ilsClient: new IlsClient({}, mockClient),
+        varFields: [{ fieldTag: "x", content: "DEPENDENT OF 1234" }],
+        acceptTerms: true,
+        ageGate: true,
+        ptype: 9,
+        expirationDate: new Date(1988, 1, 1),
+        agency: "198",
+      };
       const formatted = IlsClient.formatPatronData(card);
 
       expect(formatted.names).toEqual(["LAST, FIRST MIDDLE"]);
