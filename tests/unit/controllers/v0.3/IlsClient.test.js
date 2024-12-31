@@ -390,9 +390,6 @@ describe("IlsClient", () => {
     };
 
     it("fails to create a patron", async () => {
-      // We want to mock that we called the ILS and it did not find a
-      // username, so it is valid and the card is valid.
-
       // Now mock the POST request to the ILS.
       mockClient.post.mockImplementationOnce(() =>
         Promise.reject(mockedErrorResponse)
