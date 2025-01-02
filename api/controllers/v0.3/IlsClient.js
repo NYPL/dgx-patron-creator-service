@@ -230,7 +230,7 @@ const IlsClient = (props) => {
    */
   const createPatron = async (patron) => {
     const ilsPatron = formatPatronData(patron);
-
+    logger.debug("POSTing patron to " + createUrl);
     return (
       axios
         .post(createUrl, ilsPatron, {
