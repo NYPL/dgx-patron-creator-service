@@ -13,11 +13,14 @@ class BarcodesDb {
       password: args["password"],
       port: args["port"],
     });
+    this.freshTableCreated = false;
   }
 
   async init() {
     await this.createTable();
-    await this.initInsert();
+    if (this.freshTableCreated) {
+      await this.initInsert();
+    }
   }
 
   /**
@@ -36,10 +39,12 @@ class BarcodesDb {
       const res = await this.pool.query(query);
       if (res.command === "CREATE") {
         logger.debug("database table 'barcodes' created");
+        this.freshTableCreated = true;
       }
     } catch (error) {
       if (error.message === 'relation "barcodes" already exists') {
-        logger.error("database table barcodes already exists, continuing");
+        logger.debug("database table barcodes already exists, continuing");
+        this.freshTableCreated = false;
       }
     }
     return;
@@ -62,9 +67,15 @@ class BarcodesDb {
           await this.pool.query(text, values);
           logger.debug(`Successfully inserted seed barcode ${barcode}.`);
         } catch (error) {
-          logger.error(
-            `"barcodes" table already has the initial value of ${barcode}`
-          );
+          if (
+            error.message.includes(
+              " table already has the initial value of 28888855432452"
+            )
+          ) {
+            logger.debug(
+              `"barcodes" table already has the initial value of ${barcode}`
+            );
+          }
         }
       })
     );

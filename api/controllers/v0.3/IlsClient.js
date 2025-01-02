@@ -362,12 +362,16 @@ const IlsClient = (props) => {
       .catch((error) => {
         const data = error.response && error.response.data;
         const message = data.description || data.name || "Unknown Error";
-        logger.error(
-          `ILSClient.getPatronFromBarcodeOrUsername - Error calling ILS URL - ${findUrl}${params}`
-        );
-        logger.error(
-          `ILSClient.getPatronFromBarcodeOrUsername - Error calling ILS - ${message}`
-        );
+        const expectedErrorStatus =
+          error.response?.status === 409 || error.response?.status === 404;
+        if (!expectedErrorStatus) {
+          logger.error(
+            `ILSClient.getPatronFromBarcodeOrUsername - Error calling ILS URL - ${findUrl}${params}`
+          );
+          logger.error(
+            `ILSClient.getPatronFromBarcodeOrUsername - Error calling ILS - ${message}`
+          );
+        }
         return error.response;
       });
   };
@@ -402,6 +406,11 @@ const IlsClient = (props) => {
 
     // The ILS returns a 404 with the record not found... so it's available!
     if (status === 404 && data.name === "Record not found") {
+      logger.debug(
+        `query for ${
+          isBarcode ? "barcode" : "username"
+        }: ${barcodeOrUsername} returned 404 - identifier is AVAILABLE`
+      );
       isAvailable = true;
     } else if (
       // But if it returns 409, then a duplicate entry was found
@@ -411,6 +420,11 @@ const IlsClient = (props) => {
       response.data.description ===
         "Duplicate patrons found for the specified varFieldTag[b]."
     ) {
+      logger.debug(
+        `query for ${
+          isBarcode ? "barcode" : "username"
+        }: ${barcodeOrUsername} returned duplicate entries - identifier is UNAVAILABLE`
+      );
       isAvailable = false;
     } else if (response.status >= 500) {
       throw new ILSIntegrationError(
