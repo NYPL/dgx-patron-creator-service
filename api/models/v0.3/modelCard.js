@@ -9,6 +9,7 @@ const {
   TermsNotAccepted,
   AgeGateFailure,
 } = require("../../helpers/errors");
+const logger = require("../../helpers/Logger");
 
 /**
  * A card class to create proper Card data structure and validations
@@ -373,7 +374,7 @@ class Card {
       // free up the barcode in the database. Continue to send the same error
       // as an API response.
       await this.freeBarcode(this.barcode);
-      console.error(
+      logger.error(
         "createIlsPatron - Error calling ilsClient.createPatron:",
         error
       );
