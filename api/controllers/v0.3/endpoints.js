@@ -1,8 +1,5 @@
-const modelResponse = require("../../models/v0.3/modelResponse");
 const awsDecrypt = require("./../../../config/awsDecrypt.js");
 const IlsClient = require("./IlsClient");
-const modelStreamPatron = require("./../../models/v0.3/modelStreamPatron.js");
-const streamPublish = require("./../../helpers/streamPublish");
 const logger = require("../../helpers/Logger");
 const Card = require("../../models/v0.3/modelCard");
 const Address = require("../../models/v0.3/modelAddress");
@@ -39,8 +36,6 @@ const envVariableNames = [
   "ILS_CREATE_PATRON_URL",
   "ILS_CREATE_TOKEN_URL",
   "ILS_FIND_VALUE_URL",
-  "PATRON_STREAM_NAME_V03",
-  "PATRON_SCHEMA_NAME_V03",
   "SO_LICENSE_KEY",
 ];
 
@@ -398,40 +393,6 @@ async function createPatron(req, res) {
     }
   }
 
-  // Only stream the data to AWS Kinesis if the status is 200, so only
-  // if the patron account creation was successful.
-  if (response.status === 200) {
-    const modeledResponse = modelResponse.patronResponse({
-      ...ilsClient.formatPatronData(card),
-      patronId: response.patronId,
-    });
-    modelStreamPatron
-      .transformPatronRequest(modeledResponse)
-      .then((streamPatron) => {
-        // `return` is necessary below, to wait for streamPublish to complete
-        return streamPublish.streamPublish(
-          process.env.PATRON_SCHEMA_NAME_V03,
-          process.env.PATRON_STREAM_NAME_V03,
-          streamPatron
-        );
-      })
-      .then(() => {
-        logger.debug("Published to stream successfully!", {
-          routeTag: ROUTE_TAG,
-        });
-      })
-      .catch((error) => {
-        logger.error(
-          `Error publishing to stream.\n modeledResponse: ${JSON.stringify(
-            modeledResponse
-          )}\n ${JSON.stringify(error)}\n`,
-          { routeTag: ROUTE_TAG }
-        );
-      });
-  }
-
-  // Whether or not the patron data was streamed to Kinesis, return the
-  // correct response or the error response.
   return renderResponse(req, res, response.status, response);
 }
 
