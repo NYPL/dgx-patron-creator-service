@@ -403,6 +403,11 @@ const IlsClient = (props) => {
     const status = response.status;
     const data = response.data;
     if (status === 200 && data.id) {
+      logger.debug(
+        `query for ${
+          isBarcode ? "barcode" : "username"
+        }: ${barcodeOrUsername} returned 200 - identifier is UNAVAILABLE`
+      );
       isAvailable = false;
     }
 
