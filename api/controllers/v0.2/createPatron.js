@@ -5,9 +5,6 @@ const isEmpty = require("underscore").isEmpty;
 const awsDecrypt = require("./../../../config/awsDecrypt.js");
 const modelResponse = require("./../../models/v0.2/modelResponse.js");
 const modelDebug = require("./../../models/v0.2/modelDebug.js");
-const modelStreamPatron = require("./../../models/v0.2/modelStreamPatron.js")
-  .modelStreamPatron;
-const streamPublish = require("./../../helpers/streamPublish");
 const logger = require("../../helpers/Logger");
 const encode = require("../../helpers/encode");
 const customErrors = require("../../helpers/errors");
@@ -38,7 +35,7 @@ function validateEnvVariable(res, envVariableName) {
 
 /**
  * validateEnvironmentAndRequest(req, res)
- * Validate the request format and environment variables related to the ILS and streaming service.
+ * Validate the request format and environment variables related to the ILS
  *
  * @param {HTTP request} req
  * @param {HTTP response} res
@@ -50,8 +47,6 @@ function validateEnvironmentAndRequest(req, res) {
     "SCHEMA_API_BASE_URL",
     "ILS_CREATE_PATRON_URL",
     "ILS_CREATE_TOKEN_URL",
-    "PATRON_STREAM_NAME_V02",
-    "PATRON_SCHEMA_NAME_V02",
   ];
   envVariableNames.forEach((envVariableName) => {
     validateEnvVariable(res, envVariableName);
@@ -156,40 +151,6 @@ function getIlsToken(req, res, username, password) {
 }
 
 /**
- * streamPatron(req, res, streamPatron, modeledResponse)
- * Send the new patron data to the NewPatron Kinesis stream
- *
- * @param {HTTP request} req
- * @param {HTTP response} res
- * @param {object} streamPatronData
- * @param {object} modeledResponse
- */
-function streamPatron(req, res, streamPatronData, modeledResponse) {
-  streamPublish
-    .streamPublish(
-      process.env.PATRON_SCHEMA_NAME_V02,
-      process.env.PATRON_STREAM_NAME_V02,
-      streamPatronData // eslint-disable-line comma-dangle
-    )
-    .then(() => {
-      // eslint-disable-line no-unused-vars
-      renderResponse(req, res, 201, modeledResponse);
-      logger.debug("Published to stream successfully!", {
-        routeTag: ROUTE_TAG,
-      });
-    })
-    .catch((streamError) => {
-      renderResponse(req, res, 201, modeledResponse);
-      logger.error(
-        "Error publishing to stream.\n" +
-          `streamPatronData: ${JSON.stringify(streamPatronData)}\n` +
-          `${JSON.stringify(streamError)}\n`,
-        { routeTag: ROUTE_TAG } // eslint-disable-line comma-dangle
-      );
-    });
-}
-
-/**
  * callAxiosToCreatePatron(req, res, tokenResponse)
  * Make an HTTP request to the ILS to create the patron
  *
@@ -216,22 +177,6 @@ function callAxiosToCreatePatron(req, res) {
         Authorization: `Bearer ${ilsToken}`,
       },
     })
-    .then((axiosResponse) => {
-      const modeledResponse = modelResponse.patronCreator(
-        axiosResponse.data,
-        axiosResponse.status,
-        req.body
-      ); // eslint-disable-line max-len
-      modelStreamPatron
-        .transformPatronRequest(req.body, modeledResponse)
-        .then((streamPatronData) => {
-          streamPatron(req, res, streamPatronData, modeledResponse);
-        })
-        .catch(() => {
-          // eslint-disable-next-line max-len
-          renderResponse(req, res, 201, modeledResponse); // respond with 201 even if streaming fails
-        });
-    })
     .catch((axiosError) => {
       try {
         const errorResponseData = modelResponse.errorResponseData(
@@ -249,7 +194,7 @@ function callAxiosToCreatePatron(req, res) {
           collectErrorResponseData(
             500,
             "",
-            `Error related to ${process.env.ILS_CREATE_PATRON_URL} or publishing to the NewPatron stream.`,
+            `Error related to ${process.env.ILS_CREATE_PATRON_URL}`,
             "",
             ""
           ) // eslint-disable-line comma-dangle

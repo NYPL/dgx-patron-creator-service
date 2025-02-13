@@ -99,7 +99,7 @@ class Barcode {
     // First try getting a barcode that is unused. This is not a "new"
     // barcode so we don't need to manipulate it.
     try {
-      query = `SELECT barcode FROM barcodes WHERE used=false and barcode like '${barcodeStartSequence}%' ORDER BY barcodes ASC LIMIT 1;`;
+      query = `SELECT barcode FROM barcodes WHERE used=false and barcode like '${barcodeStartSequence}%' and barcode > 25555009181656 ORDER BY barcodes ASC LIMIT 1;`;
       result = await this.db.query(query);
       barcode = result.rows[0].barcode;
       newBarcode = false;

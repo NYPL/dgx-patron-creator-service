@@ -14,7 +14,7 @@ function validateEnvironmentVariable(envVariableName) {
 
   if (!envVariable || isEmpty(envVariable)) {
     throw new InvalidEnvironmentConfiguration(
-      `${envVariableName} was not set.`,
+      `${envVariableName} was not set.`
     );
   }
 }
@@ -22,14 +22,14 @@ function validateEnvironmentVariable(envVariableName) {
 /**
  * validateEnvironmentAndRequest(envVariableNames)
  * Validate the request format and environment variables related to the
- * ILS and streaming service.
+ * ILS
  *
  * @param {Array} envVariableNames
  */
 function validateEnvironmentAndRequest(envVariableNames) {
   if (!envVariableNames || envVariableNames.length === 0) {
     throw new InvalidEnvironmentConfiguration(
-      "Environment variables were not passed to validateEnvironmentAndRequest.",
+      "Environment variables were not passed to validateEnvironmentAndRequest."
     );
   }
 

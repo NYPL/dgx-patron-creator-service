@@ -42,7 +42,6 @@ const options = {
 if (process.env.INTEGRATION_TESTS === "true") {
   describe("createPatron v0.2 route", () => {
     console.log("*** Running integration tests ***"); // eslint-disable-line no-console
-    // TODO: Mocking the Kinesis stream as seen here: https://github.com/NYPL-discovery/node-nypl-streams-client/blob/pb/mocked-sdk-in-test-suite/test/encoding.test.js
     it("sends the patron data to the ILS", (done) => {
       axios.post(options, (err, res, body) => {
         if (!res) {
