@@ -6,9 +6,6 @@ const awsDecrypt = require("./../../../config/awsDecrypt.js");
 const modelRequestBody = require("./../../models/v0.1/modelRequestBody.js");
 const modelResponse = require("./../../models/v0.1/modelResponse.js");
 const modelDebug = require("./../../models/v0.1/modelDebug.js");
-const modelStreamPatron = require("./../../models/v0.1/modelStreamPatron.js")
-  .modelStreamPatron;
-const streamPublish = require("./../../helpers/streamPublish");
 const logger = require("../../helpers/Logger");
 
 const ROUTE_TAG = "CREATE_PATRON_0.1";
@@ -140,83 +137,47 @@ function createPatron(req, res) {
       },
       withCredentials: true,
       auth: { username: cardCreatorUsername, password: cardCreatorPassword },
-    })
-      .then((response) => {
-        const modeledResponse = modelResponse.patronCreator(
-          response.data,
-          response.status
+    }).catch((response) => {
+      // eslint-disable-next-line no-console
+      console.error(
+        `status_code: ${response.response.status}, ` +
+          'type: "invalid-request", ' +
+          `message: "${response.message} from NYPL Simplified Card Creator.", ` +
+          `response: ${JSON.stringify(response.response.data)}` // eslint-disable-line comma-dangle
+      );
+
+      if (response.response && response.response.data) {
+        const responseObject = collectErrorResponseData(
+          response.response.status,
+          response.response.data.type,
+          response.response.data.detail,
+          response.response.data.title,
+          response.response.data.debug_message // eslint-disable-line comma-dangle
         );
-        modelStreamPatron
-          .transformSimplePatronRequest(
-            req.body,
-            modeledResponse // eslint-disable-line comma-dangle
+
+        renderResponse(
+          req,
+          res,
+          responseObject.status || 500,
+          modelResponse.errorResponseData(responseObject) // eslint-disable-line comma-dangle
+        );
+      } else {
+        renderResponse(
+          req,
+          res,
+          response.response.status,
+          modelResponse.errorResponseData(
+            collectErrorResponseData(
+              response.response.status,
+              "",
+              "",
+              "",
+              `${response.message} from NYPL Simplified Card Creator.`
+            ) // eslint-disable-line comma-dangle
           )
-          .then((streamPatron) => {
-            // eslint-disable-line arrow-body-style
-            // `return` is necessary below, to wait for streamPublish to complete
-            return streamPublish.streamPublish(
-              process.env.PATRON_SCHEMA_NAME_V01,
-              process.env.PATRON_STREAM_NAME_V01,
-              streamPatron // eslint-disable-line comma-dangle
-            );
-          })
-          .then(() => {
-            renderResponse(req, res, 201, modeledResponse);
-            logger.debug("Published to stream successfully!", {
-              routeTag: ROUTE_TAG,
-            });
-          })
-          .catch((error) => {
-            renderResponse(req, res, 201, modeledResponse);
-            logger.error(
-              `Error publishing to stream.\n modeledResponse: ${JSON.stringify(
-                modeledResponse
-              )}\n ${JSON.stringify(error)}\n`,
-              { routeTag: ROUTE_TAG } // eslint-disable-line comma-dangle
-            );
-          });
-      })
-      .catch((response) => {
-        // eslint-disable-next-line no-console
-        console.error(
-          `status_code: ${response.response.status}, ` +
-            'type: "invalid-request", ' +
-            `message: "${response.message} from NYPL Simplified Card Creator.", ` +
-            `response: ${JSON.stringify(response.response.data)}` // eslint-disable-line comma-dangle
         );
-
-        if (response.response && response.response.data) {
-          const responseObject = collectErrorResponseData(
-            response.response.status,
-            response.response.data.type,
-            response.response.data.detail,
-            response.response.data.title,
-            response.response.data.debug_message // eslint-disable-line comma-dangle
-          );
-
-          renderResponse(
-            req,
-            res,
-            responseObject.status || 500,
-            modelResponse.errorResponseData(responseObject) // eslint-disable-line comma-dangle
-          );
-        } else {
-          renderResponse(
-            req,
-            res,
-            response.response.status,
-            modelResponse.errorResponseData(
-              collectErrorResponseData(
-                response.response.status,
-                "",
-                "",
-                "",
-                `${response.message} from NYPL Simplified Card Creator.`
-              ) // eslint-disable-line comma-dangle
-            )
-          );
-        }
-      });
+      }
+    });
   });
 }
 

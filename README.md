@@ -31,12 +31,11 @@ v0.8.5
 ## Technologies
 
 - [AWS Lambda](https://aws.amazon.com/lambda/) - The service will serve as an AWS Lambda instance.
-- [Amazon Kinesis](https://aws.amazon.com/kinesis/) - The service for streaming data after successfully creating a patron.
 - [Amazon RDS](https://aws.amazon.com/kinesis/) - The database that the Lambda will use for generating barcodes.
 - [aws-serverless-express](https://github.com/awslabs/aws-serverless-express) - The server is built with ExpressJS with the npm module specifically for AWS Lambda.
 - [Swagger](http://swagger.io/) - The framework for the API documentation and architecture.
 - [node-lambda](https://www.npmjs.com/package/node-lambda) - The npm module helps us deploy this Express application as an AWS Lambda instance.
-- [AWS Nodejs SDK](https://aws.amazon.com/sdk-for-node-js/) - The SDK helps take the complexity out of coding by providing JavaScript objects for AWS services. We use it here for streaming the data to [Amazon Kinesis](https://aws.amazon.com/kinesis/) and to decrypt credentials using [Amazon KMS](https://aws.amazon.com/kms/).
+- [AWS Nodejs SDK](https://aws.amazon.com/sdk-for-node-js/) - The SDK helps take the complexity out of coding by providing JavaScript objects for AWS services. We use it here to decrypt credentials using [Amazon KMS](https://aws.amazon.com/kms/).
 
 ## Install and Run
 
@@ -48,7 +47,7 @@ $ npm install
 
 ### Configuration and Credentials
 
-You need credentials for making successful API calls to NYPL's ILS, Service Objects, and for using AWS Kinesis to stream patron data.
+You need credentials for making successful API calls to NYPL's ILS and Service Objects API.
 
 A local Postgres database named `barcodes` needs to be set up and other environment variables can be set in the configuration files in the `/config` directory.
 
