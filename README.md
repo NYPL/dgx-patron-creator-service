@@ -343,7 +343,7 @@ _7/18/24 Note: The following set of tests don't run in the current jest environm
 
 Run `NODE_ENV=production npm start` in one window to run the app locally in production mode. This is required to run the integration tests. The integration tests will hit the production ILS server to run against tests.
 
-Run `INTEGRATION_TESTS=true npm test` in a second window to run all the tests including the integration tests. Check the server to ensure that you see the message "Published to stream successfully!" to verify that the integration test exercised the Kinesis stream.
+Run `INTEGRATION_TESTS=true npm test` in a second window to run all the tests including the integration tests.
 
 ### Manual Testing through Postman
 
