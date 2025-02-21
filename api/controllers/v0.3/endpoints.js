@@ -382,7 +382,8 @@ async function createPatron(req, res) {
           "controller createPatron error calling card.createIlsPatron",
           error
         );
-        logger.info("errored patron info", card);
+        if (error?.message.includes("PIN is trivial"))
+          logger.info("errored patron info", card.password);
         // There was an error hitting the ILS to create the patron. Catch
         // and return the error.
         response = collectErrorResponseData(error);
