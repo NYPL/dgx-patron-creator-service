@@ -1,12 +1,6 @@
 /* eslint-disable */
 const BarcodeDb = require("../../db");
 
-// If Travis is not running the tests, use the local environment variables.
-if (!process.env.TRAVIS) {
-  const pathName = `${process.cwd()}/config/deploy_development.env`;
-  require("dotenv").config({ path: pathName });
-}
-
 // Initialize the connection to the database.
 const db = BarcodeDb({
   database: "barcodes_test",
