@@ -18,7 +18,7 @@ data "archive_file" "lambda_zip" {
   type        = "zip"
   output_path = "${path.module}/dist.zip"
   source_dir  = "../../"
-  excludes    = [".git", ".terraform", "provisioning", "test", "scripts","config"]
+  excludes    = [".git", ".terraform", "provisioning", "test", "scripts"]
 }
 
 # Upload the zipped app to S3:
