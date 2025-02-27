@@ -1,11 +1,12 @@
 name: Test
-on: push
+on: [push, pull_request]
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: setup node version
+      - name: Set up node version
         uses: actions/setup-node@v4
         with: 
           node-version-file: .nvmrc
