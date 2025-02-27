@@ -174,7 +174,7 @@ function streamPatron(req, res, streamPatronData, modeledResponse) {
     .then(() => {
       // eslint-disable-line no-unused-vars
       renderResponse(req, res, 201, modeledResponse);
-      logger.debug("Published to stream successfully!", {
+      logger.debug("Published to stream successfully", {
         routeTag: ROUTE_TAG,
       });
     })
