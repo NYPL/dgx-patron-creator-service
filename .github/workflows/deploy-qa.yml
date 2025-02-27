@@ -21,6 +21,7 @@ jobs:
           role-to-assume: arn:aws:iam::946183545209:role/GithubActionsDeployerRole
           aws-region: us-east-1
       - uses: actions/checkout@v3
+      - uses: hashicorp/setup-terraform@v2
       - name: npm install
         run: npm ci
       - name: Deploy app to QA
