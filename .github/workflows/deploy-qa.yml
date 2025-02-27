@@ -25,5 +25,5 @@ jobs:
         run: npm ci
       - name: Deploy app to QA
         run: |
-          terraform -chdir=lambda/provisioning/qa init -input=false
-          terraform -chdir=lambda/provisioning/qa apply -auto-approve -input=false
+          terraform -chdir=provisioning/qa init -input=false
+          terraform -chdir=provisioning/qa apply -auto-approve -input=false
