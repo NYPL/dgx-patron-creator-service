@@ -33,7 +33,7 @@ resource "aws_s3_object" "uploaded_zip" {
 # Create the lambda:
 resource "aws_lambda_function" "lambda_instance" {
   description   = "API for creating new patron accounts"
-  function_name = "dgx-patron-creator-service-production-${var.environment}"
+  function_name = "dgx-patron-creator-service-${var.environment}"
   handler       = "index.handler"
   memory_size   = 128
   role          = "arn:aws:iam::946183545209:role/lambda-full-access"
