@@ -48,8 +48,8 @@ function validateEnvironmentAndRequest(req, res) {
     "ILS_CLIENT_KEY",
     "ILS_CLIENT_SECRET",
     "SCHEMA_API_BASE_URL",
-    "ILS_CREATE_PATRON_URL",
-    "ILS_CREATE_TOKEN_URL",
+    "ILS_CREATE_PATRON_URL_V02",
+    "ILS_CREATE_TOKEN_URL_V02",
     "PATRON_STREAM_NAME_V02",
     "PATRON_SCHEMA_NAME_V02",
   ];
@@ -128,7 +128,7 @@ function getIlsToken(req, res, username, password) {
 
   return axios
     .post(
-      process.env.ILS_CREATE_TOKEN_URL,
+      process.env.ILS_CREATE_TOKEN_URL_V02,
       {},
       {
         headers: {
@@ -210,7 +210,7 @@ function callAxiosToCreatePatron(req, res) {
   }
 
   axios
-    .post(process.env.ILS_CREATE_PATRON_URL, req.body, {
+    .post(process.env.ILS_CREATE_PATRON_URL_V02, req.body, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${ilsToken}`,
@@ -249,7 +249,7 @@ function callAxiosToCreatePatron(req, res) {
           collectErrorResponseData(
             500,
             "",
-            `Error related to ${process.env.ILS_CREATE_PATRON_URL} or publishing to the NewPatron stream.`,
+            `Error related to ${process.env.ILS_CREATE_PATRON_URL_V02} or publishing to the NewPatron stream.`,
             "",
             ""
           ) // eslint-disable-line comma-dangle
