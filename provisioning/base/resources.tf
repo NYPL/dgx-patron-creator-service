@@ -18,7 +18,7 @@ data "archive_file" "lambda_zip" {
   type        = "zip"
   output_path = "${path.module}/dist.zip"
   source_dir  = "../../"
-  excludes    = [".git", ".terraform", "provisioning", "test", "scripts"]
+  excludes = [".git", ".terraform", "provisioning", "test", "scripts"]
 }
 
 # Upload the zipped app to S3:
@@ -51,10 +51,4 @@ resource "aws_lambda_function" "lambda_instance" {
     Environment = var.environment
     Project = "LSP"
   }
-
-  # Load ENV vars from ./config/{environment}.env
-  environment {
-    variables = { for tuple in regexall("(.*?)=(.*)", file("../../config/${var.environment}.env")) : tuple[0] => tuple[1] }
-  }
-  
 }

@@ -10,7 +10,7 @@ const createPatronV0_3 = require("./api/controllers/v0.3/endpoints.js");
 const BarcodeDb = require("./db");
 
 const app = express();
-const pathName = `${process.cwd()}/config/deploy_${app.get("env")}.env`;
+const pathName = `${process.cwd()}/config/${app.get("env")}.env`;
 require("dotenv").config({ path: pathName });
 
 // Decrypt any database credentials if on QA or production for the NYPL AWS
@@ -19,7 +19,6 @@ async function initDatabase() {
   let dbUser;
   let dbHost;
   let dbPassword;
-
   if (process.env.NODE_ENV === "development") {
     dbUser = process.env.DB_USER;
     dbHost = process.env.DB_HOST;
