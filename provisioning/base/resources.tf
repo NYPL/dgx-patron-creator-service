@@ -51,10 +51,4 @@ resource "aws_lambda_function" "lambda_instance" {
     Environment = var.environment
     Project = "LSP"
   }
-
-  # Load ENV vars from ./config/{environment}.env
-  environment {
-    variables = { for tuple in regexall("(.*?)=(.*)", file("../../config/${var.environment}.env")) : tuple[0] => tuple[1] }
-  }
-  
 }
