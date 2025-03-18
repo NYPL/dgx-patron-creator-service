@@ -2,6 +2,10 @@ provider "aws" {
   region     = "us-east-1"
 }
 
+variable "vpc_config" {
+  type = map
+  description = "The name of the environnment (qa, production)"
+}
 variable "environment" {
   type = string
   default = "qa"
@@ -56,5 +60,11 @@ resource "aws_lambda_function" "lambda_instance" {
   environment {
     variables = { for tuple in regexall("(.*?)=(.*)", file("../../config/${var.environment}.env")) : tuple[0] => tuple[1] }
   }
+
+   vpc_config {
+    subnet_ids         = var.vpc_config.subnet_ids
+    security_group_ids = var.vpc_config.security_group_ids
+  }
+
   
 }
