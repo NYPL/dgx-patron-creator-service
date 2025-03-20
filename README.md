@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/NYPL/dgx-patron-creator-service.svg?branch=development)](https://travis-ci.org/NYPL/dgx-patron-creator-service)
-
 # dgx-patron-creator-service
 
 This is the repository of the New York Public Library's Patron Card Creator microservice. The microservice offers the API endpoints necessary to validate ILS usernames, validate addresses through Service Objects, check dependent account creation, and create new patron accounts in NYPL's ILS. Examples of consuming applications are the SimplyE mobile clients and the "Get a Library Card" app.
@@ -377,9 +375,9 @@ Since this is a POST request, you need to change the "body" type to "raw" and "J
 
 ## Deployment
 
-Travis CI/CD is used to deploy the Lambda to AWS. Sensitive environment variables for AWS Lambda are encrypted in source control and decrypted by AWS as part of deployment.
+Terraform is used to deploy the Lambda to AWS via Github actions. Sensitive environment variables for AWS Lambda are encrypted in source control and decrypted by AWS as part of deployment.
 
-The Travis configuration sets up automatic deployment to NYPl's development and production AWS accounts on the `development`, `qa`, and `master` branches. When new code is merged into each branch, and the tests pass, Travis will deploy to the appropriate environment, using the corresponding npm script found in `package.json`.
+The Github Actions configuration sets up automatic deployment to NYPl's development and production AWS accounts on the `development`, `qa`, and `master` branches. When new code is merged into each branch, and the tests pass, GHA will invoke Terraform will deploy to the appropriate environment.
 
 If any endpoints were added or updated, make sure to make the corresponding update in the AWS API Gateway. For more information, please see NYPL [Library Services Platform's documentation](https://github.com/NYPL/lsp_workflows/blob/master/workflows/adding-a-platform-api-endpoint.md) on updating the API Gateway with new endpoints.
 

@@ -1,0 +1,30 @@
+name: Deploy production
+
+on:
+  workflow_run:
+    workflows: [Test]
+    branches: [master]
+    types:
+      - completed
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write
+      contents: read
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::946183545209:role/GithubActionsDeployerRole
+          aws-region: us-east-1
+      - uses: actions/checkout@v3
+      - uses: hashicorp/setup-terraform@v2
+      - name: npm install
+        run: npm ci
+      - name: Deploy app to production
+        run: |
+          terraform -chdir=provisioning/production init -input=false
+          terraform -chdir=provisioning/production apply -auto-approve -input=false

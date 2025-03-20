@@ -43,3 +43,6 @@ dist
 npm-debug.log
 .DS_Store
 .eslintcache
+
+*terraform*
+dist.zip
