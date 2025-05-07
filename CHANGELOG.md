@@ -1,5 +1,9 @@
 ## Change Log
 
+### v0.9.1
+
+- update web non metro expiration to 3 years [SCC-4658](https://newyorkpubliclibrary.atlassian.net/browse/SCC-4658)
+
 ### v0.9.0
 
 #### Added
