@@ -1005,7 +1005,7 @@ describe("Card", () => {
       expect(card.getExpirationTime()).toEqual(30);
       // Web Digital Non-metro is 1 year
       card.ptype = 8;
-      expect(card.getExpirationTime()).toEqual(365);
+      expect(card.getExpirationTime()).toEqual(1095);
       // Web Digital Metro is 3 years
       card.ptype = 9;
       expect(card.getExpirationTime()).toEqual(1095);

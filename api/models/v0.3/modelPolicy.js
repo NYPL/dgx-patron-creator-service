@@ -16,7 +16,7 @@ const Policy = (props) => {
     switch (ptype) {
       // One year.
       case IlsClient.WEB_DIGITAL_NON_METRO:
-        expTime = IlsClient.ONE_YEAR_STANDARD_EXPIRATION_TIME;
+        expTime = IlsClient.STANDARD_EXPIRATION_TIME;
         break;
       // Three years.
       case IlsClient.WEB_DIGITAL_METRO:
