@@ -390,8 +390,7 @@ describe("IlsClient", () => {
     const mockedSuccessfulResponse = {
       status: 200,
       data: {
-        link:
-          "https://qa-catalogservices.nypl.org/iii/sierra-api/v6/patrons/1234",
+        link: "https://nypl-sierra-test.iii.com/iii/sierra-api/v6/patrons/1234",
       },
     };
     const address = new Address(
