@@ -1098,8 +1098,7 @@ describe("Card", () => {
 
     it("should set the id from the link string", () => {
       const data = {
-        link:
-          "https://nypl-sierra-test.nypl.org/iii/sierra-api/v6/patrons/1234",
+        link: "https://nypl-sierra-test.iii.com/iii/sierra-api/v6/patrons/1234",
       };
 
       card.setPatronId(data);
