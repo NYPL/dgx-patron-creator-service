@@ -1,10 +1,10 @@
-const axios = require('axios');
-const Promise = require('promise');
-const avsc = require('avsc');
-const crypto = require('crypto');
-const AWS = require('aws-sdk');
+const axios = require("axios");
+const Promise = require("promise");
+const avsc = require("avsc");
+const crypto = require("crypto");
+const { KinesisClient, PutRecordCommand } = require("@aws-sdk/client-kinesis");
 
-const kinesisClient = new AWS.Kinesis({ region: 'us-east-1' });
+const kinesisClient = new KinesisClient({ region: "us-east-1" });
 
 /**
  * Retreive the Schema from the Schema API
@@ -14,7 +14,7 @@ const kinesisClient = new AWS.Kinesis({ region: 'us-east-1' });
 function getSchema(schemaName) {
   return new Promise((resolve, reject) => {
     axios({
-      method: 'get',
+      method: "get",
       url: `${process.env.SCHEMA_API_BASE_URL}/${schemaName}`,
     })
       .then((response) => {
@@ -39,7 +39,7 @@ function createAvroSchemaObject(schema) {
       resolve(avroSchema);
     }
 
-    reject(new Error('Unable to parse Avro schema'));
+    reject(new Error("Unable to parse Avro schema"));
   });
 }
 
@@ -56,7 +56,7 @@ function encodeToAvroData(avroSchema, data) {
       resolve(avroData);
     }
 
-    reject(new Error('Unable to get Avro data'));
+    reject(new Error("Unable to get Avro data"));
   });
 }
 
@@ -67,20 +67,13 @@ function encodeToAvroData(avroSchema, data) {
  * @return {*|Promise}
  */
 function publishStream(streamName, avroData) {
-  return new Promise((resolve, reject) => {
-    const params = {
-      Data: avroData,
-      PartitionKey: crypto.randomBytes(20).toString('hex').toString(),
-      StreamName: streamName,
-    };
+  const params = {
+    Data: avroData,
+    PartitionKey: crypto.randomBytes(20).toString("hex"),
+    StreamName: streamName,
+  };
 
-    kinesisClient.putRecord(params, (err, data) => {
-      if (err) {
-        reject(err);
-      }
-      resolve(data);
-    });
-  });
+  return kinesisClient.send(new PutRecordCommand(params));
 }
 
 /**
@@ -92,13 +85,13 @@ function publishStream(streamName, avroData) {
  */
 function streamPublish(schemaName, streamName, streamData) {
   return new Promise((resolve, reject) => {
-    if (!streamName) reject(new Error('streamName is missing'));
-    if (!streamData) reject(new Error('data is missing'));
+    if (!streamName) reject(new Error("streamName is missing"));
+    if (!streamData) reject(new Error("data is missing"));
 
     getSchema(schemaName)
-      .then(schema => createAvroSchemaObject(schema))
-      .then(avroSchema => encodeToAvroData(avroSchema, streamData))
-      .then(avroData => resolve(publishStream(streamName, avroData)))
+      .then((schema) => createAvroSchemaObject(schema))
+      .then((avroSchema) => encodeToAvroData(avroSchema, streamData))
+      .then((avroData) => resolve(publishStream(streamName, avroData)))
       .catch((response) => {
         console.error(response); // eslint-disable-line no-console
         return reject(response);
