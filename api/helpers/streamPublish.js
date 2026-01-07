@@ -4,7 +4,10 @@ const avsc = require("avsc");
 const crypto = require("crypto");
 const { KinesisClient, PutRecordCommand } = require("@aws-sdk/client-kinesis");
 
-const kinesisClient = new KinesisClient({ region: "us-east-1" });
+const kinesisClient = new KinesisClient({
+  region: "us-east-1",
+  logger: console,
+});
 
 /**
  * Retreive the Schema from the Schema API
