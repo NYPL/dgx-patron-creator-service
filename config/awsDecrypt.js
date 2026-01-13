@@ -1,24 +1,21 @@
 // The credentials for NYPL's Simplified Card Creator API
-const aws = require("aws-sdk");
+const { KMSClient, DecryptCommand } = require("@aws-sdk/client-kms");
 
-const kms = new aws.KMS({
+const kms = new KMSClient({
   region: "us-east-1",
 });
 
-const decryptKMS = (key) => {
+const decryptKMS = async (key) => {
   const params = {
     CiphertextBlob: Buffer.from(key, "base64"),
   };
 
-  return new Promise((resolve, reject) => {
-    kms.decrypt(params, (err, data) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(data.Plaintext.toString());
-      }
-    });
-  });
+  const command = new DecryptCommand(params);
+  const response = await kms.send(command);
+
+  const plaintextBytes = response.Plaintext;
+  const decoder = new TextDecoder("utf-8");
+  return decoder.decode(plaintextBytes);
 };
 
 module.exports = {
