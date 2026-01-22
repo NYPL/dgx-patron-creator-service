@@ -1,8 +1,8 @@
-swagger: '2.0'
+swagger: "2.0"
 info:
   version: 0.7.6
   title: dgx-patron-creator-service
-host: 'localhost:3001'
+host: "localhost:3001"
 basePath: /api
 schemes:
   - http
@@ -25,15 +25,15 @@ paths:
           description: The information of the new patron
           required: true
           schema:
-            $ref: '#/definitions/PatronsCreatorDataV01'
+            $ref: "#/definitions/PatronsCreatorDataV01"
       responses:
-        '400':
+        "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/400ErrorResponseDeprecated'
+            $ref: "#/definitions/400ErrorResponseDeprecated"
       security:
         - api_auth:
-            - 'openid write:patron offline_access api'
+            - "openid write:patron offline_access api"
   /v0.2/patrons:
     x-swagger-router-controller: patrons
     post:
@@ -48,23 +48,23 @@ paths:
           description: The information of the new patron
           required: true
           schema:
-            $ref: '#/definitions/PatronsCreatorDataV02'
+            $ref: "#/definitions/PatronsCreatorDataV02"
       responses:
-        '201':
+        "201":
           description: Successful operation
           schema:
-            $ref: '#/definitions/PatronsCreatorResponseV02'
-        '400':
+            $ref: "#/definitions/PatronsCreatorResponseV02"
+        "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/400ErrorResponseV02'
-        '500':
+            $ref: "#/definitions/400ErrorResponseV02"
+        "500":
           description: Generic server error
           schema:
-            $ref: '#/definitions/500ErrorResponseV02'
+            $ref: "#/definitions/500ErrorResponseV02"
       security:
         - api_auth:
-            - 'openid write:patron offline_access api'
+            - "openid write:patron offline_access api"
   /v0.3/patrons:
     x-swagger-router-controller: patrons
     post:
@@ -79,23 +79,23 @@ paths:
           description: The information of the new patron
           required: true
           schema:
-            $ref: '#/definitions/PatronsCreatorDataV03'
+            $ref: "#/definitions/PatronsCreatorDataV03"
       responses:
-        '200':
+        "200":
           description: Successful operation
           schema:
-            $ref: '#/definitions/PatronsCreatorResponseV03'
-        '400':
+            $ref: "#/definitions/PatronsCreatorResponseV03"
+        "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/400ErrorResponseV03'
-        '502':
+            $ref: "#/definitions/400ErrorResponseV03"
+        "502":
           description: Generic server error
           schema:
-            $ref: '#/definitions/500ErrorResponseCreatePatronV03'
+            $ref: "#/definitions/500ErrorResponseCreatePatronV03"
       security:
         - api_auth:
-            - 'openid write:patron offline_access api'
+            - "openid write:patron offline_access api"
   /v0.3/patrons/dependents:
     x-swagger-router-controller: patrons
     post:
@@ -110,23 +110,23 @@ paths:
           description: The barcode or username of the existing parent patron and the dependent's account information.
           required: true
           schema:
-            $ref: '#/definitions/PatronsDependentsDataV03'
+            $ref: "#/definitions/PatronsDependentsDataV03"
       responses:
-        '200':
+        "200":
           description: Successful operation
           schema:
-            $ref: '#/definitions/PatronsDependentsResponseV03'
-        '400':
+            $ref: "#/definitions/PatronsDependentsResponseV03"
+        "400":
           description: Invalid request
           schema:
-            $ref: '#/definitions/400DependentsErrorResponseV03'
-        '502':
+            $ref: "#/definitions/400DependentsErrorResponseV03"
+        "502":
           description: ILS Integration Error
           schema:
-            $ref: '#/definitions/502ILSIntegrationErrorV03'
+            $ref: "#/definitions/502ILSIntegrationErrorV03"
       security:
         - api_auth:
-            - 'openid write:patron offline_access api'
+            - "openid write:patron offline_access api"
   /v0.3/patrons/dependent-eligibility:
     x-swagger-router-controller: patrons
     get:
@@ -145,21 +145,21 @@ paths:
           description: The username of the existing patron
           type: string
       responses:
-        '200':
+        "200":
           description: Successful operation
           schema:
-            $ref: '#/definitions/PatronsEligibilityResponseV03'
-        '400':
+            $ref: "#/definitions/PatronsEligibilityResponseV03"
+        "400":
           description: Invalid request
           schema:
-            $ref: '#/definitions/400BarcodeErrorResponseV03'
-        '502':
+            $ref: "#/definitions/400BarcodeErrorResponseV03"
+        "502":
           description: ILS Integration Error
           schema:
-            $ref: '#/definitions/502PatronNotFoundErrorV03'
+            $ref: "#/definitions/502PatronNotFoundErrorV03"
       security:
         - api_auth:
-            - 'openid write:patron offline_access api'
+            - "openid write:patron offline_access api"
   /v0.1/validations/username:
     x-swagger-router-controller: validations/username
     post:
@@ -174,15 +174,15 @@ paths:
           description: The username to be validated
           required: true
           schema:
-            $ref: '#/definitions/UsernameData'
+            $ref: "#/definitions/UsernameData"
       responses:
-        '400':
+        "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/400ErrorResponseDeprecated'
+            $ref: "#/definitions/400ErrorResponseDeprecated"
       security:
         - api_auth:
-            - 'openid write:patron offline_access api'
+            - "openid write:patron offline_access api"
   /v0.1/validations/address:
     x-swagger-router-controller: validations/address
     post:
@@ -197,15 +197,15 @@ paths:
           description: The address to be validated
           required: true
           schema:
-            $ref: '#/definitions/AddressDataV1'
+            $ref: "#/definitions/AddressDataV1"
       responses:
-        '400':
+        "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/400ErrorResponseDeprecated'
+            $ref: "#/definitions/400ErrorResponseDeprecated"
       security:
         - api_auth:
-            - 'openid write:patron offline_access api'
+            - "openid write:patron offline_access api"
   /v0.3/validations/username:
     x-swagger-router-controller: validations/username
     post:
@@ -220,30 +220,30 @@ paths:
           description: The username to be validated and checked for availability
           required: true
           schema:
-            $ref: '#/definitions/UsernameData'
+            $ref: "#/definitions/UsernameData"
       responses:
-        '200':
+        "200":
           description: Successful operation
           schema:
-            $ref: '#/definitions/UsernameResponseV03'
-        '400':
+            $ref: "#/definitions/UsernameResponseV03"
+        "400":
           description: Invalid request
           schema:
-            $ref: '#/definitions/400ErrorResponseUsernameV03'
-        '502':
+            $ref: "#/definitions/400ErrorResponseUsernameV03"
+        "502":
           description: ILS Integration Error
           schema:
-            $ref: '#/definitions/502ILSIntegrationUsernameErrorV03'
+            $ref: "#/definitions/502ILSIntegrationUsernameErrorV03"
       security:
         - api_auth:
-            - 'openid write:patron offline_access api'
+            - "openid write:patron offline_access api"
   /v0.3/validations/address:
     x-swagger-router-controller: validations/address
     post:
       tags:
         - validations
       summary: Address validation against Service Objects.
-      description: 'Makes a call to the Service Objects API for patron address and work address validation. Note that 502 server errors from Service Objects will result in a 400 from the endpoint. If there''s a server error, the address is still naively checked and a temporary card is returned. The patron is expected to contact the library.'
+      description: "Makes a call to the Service Objects API for patron address and work address validation. Note that 502 server errors from Service Objects will result in a 400 from the endpoint. If there's a server error, the address is still naively checked and a temporary card is returned. The patron is expected to contact the library."
       operationId: addressV03
       parameters:
         - name: address
@@ -251,30 +251,30 @@ paths:
           description: The address to be validated
           required: true
           schema:
-            $ref: '#/definitions/AddressDataV03'
+            $ref: "#/definitions/AddressDataV03"
       responses:
-        '200':
+        "200":
           description: Successful operation
           schema:
-            $ref: '#/definitions/AddressResponseV03'
-        '400':
+            $ref: "#/definitions/AddressResponseV03"
+        "400":
           description: Invalid request
           schema:
-            $ref: '#/definitions/400ErrorResponseAddressV03'
-        '404':
+            $ref: "#/definitions/400ErrorResponseAddressV03"
+        "404":
           description: This is another example of a 400 error but Swagger can't display multiple 400 errors.
           schema:
-            $ref: '#/definitions/400ErrorResponseAddressAlternateV03'
+            $ref: "#/definitions/400ErrorResponseAddressAlternateV03"
       security:
         - api_auth:
-            - 'openid write:patron offline_access api'
+            - "openid write:patron offline_access api"
 definitions:
   PatronsCreatorDataV01:
     required:
       - simplePatron
     properties:
       simplePatron:
-        $ref: '#/definitions/SimplePatronV01'
+        $ref: "#/definitions/SimplePatronV01"
   SimplePatronV01:
     required:
       - name
@@ -285,7 +285,7 @@ definitions:
     properties:
       name:
         type: string
-        example: 'Mikey Olson, Jr.'
+        example: "Mikey Olson, Jr."
       dateOfBirth:
         type: string
         example: 11/11/1987
@@ -293,13 +293,13 @@ definitions:
         type: string
         example: mjolson@example.com
       address:
-        $ref: '#/definitions/AddressModelV1'
+        $ref: "#/definitions/AddressModelV1"
       username:
         type: string
         example: mjolson54321
       pin:
         type: string
-        example: '1234'
+        example: "1234"
       ecommunications_pref:
         type: boolean
         example: true
@@ -308,14 +308,14 @@ definitions:
         example: web_applicant
       patron_agency:
         type: string
-        example: '198'
+        example: "198"
   AddressDataV1:
     description: The data format of the input address
     required:
       - address
     properties:
       address:
-        $ref: '#/definitions/AddressModelV1'
+        $ref: "#/definitions/AddressModelV1"
       is_work_or_school_address:
         type: boolean
         default: false
@@ -333,7 +333,7 @@ definitions:
         example: 123 Fake Street
       line_2:
         type: string
-        example: ''
+        example: ""
       city:
         type: string
         example: New York
@@ -342,12 +342,12 @@ definitions:
         example: NY
       zip:
         type: string
-        example: '10018'
+        example: "10018"
   PatronsCreatorResponseV02:
     type: object
     properties:
       data:
-        $ref: '#/definitions/PatronsCreatorResponseModelV02'
+        $ref: "#/definitions/PatronsCreatorResponseModelV02"
       count:
         type: number
         example: 1
@@ -364,7 +364,7 @@ definitions:
         items:
           type: string
         example:
-          - 'TestLastName, TestFirstName'
+          - "TestLastName, TestFirstName"
       barcodes:
         type: array
         items:
@@ -373,13 +373,13 @@ definitions:
           - barcode_2018_07_19_328pm
       pin:
         type: string
-        example: '1111'
+        example: "1111"
       expirationDate:
         type: string
-        example: '2019-01-01'
+        example: "2019-01-01"
       birthDate:
         type: string
-        example: '1978-01-01'
+        example: "1978-01-01"
       emails:
         type: array
         items:
@@ -400,7 +400,7 @@ definitions:
       blockInfo:
         type: string
         example:
-          code: '-'
+          code: "-"
       addresses:
         type: array
         items:
@@ -431,7 +431,7 @@ definitions:
         items:
           type: string
         example:
-          - 'TestLastName, TestFirstName'
+          - "TestLastName, TestFirstName"
       barcodes:
         type: array
         items:
@@ -440,13 +440,13 @@ definitions:
           - barcode_2018_07_19_328pm
       pin:
         type: string
-        example: '1234'
+        example: "1234"
       expirationDate:
         type: string
-        example: '2019-01-01'
+        example: "2019-01-01"
       birthDate:
         type: string
-        example: '1978-01-01'
+        example: "1978-01-01"
       emails:
         type: array
         items:
@@ -484,7 +484,7 @@ definitions:
         properties:
           code:
             type: string
-            example: '-'
+            example: "-"
       addresses:
         type: array
         items:
@@ -535,9 +535,9 @@ definitions:
         example: true
       password:
         type: string
-        example: '1234'
+        example: "1234"
       address:
-        $ref: '#/definitions/AddressModelV03'
+        $ref: "#/definitions/AddressModelV03"
       ageGate:
         type: boolean
         example: true
@@ -551,13 +551,13 @@ definitions:
         type: string
         example: simplye
       workAddress:
-        $ref: '#/definitions/AddressModelV03'
+        $ref: "#/definitions/AddressModelV03"
       ecommunicationsPref:
         type: boolean
         example: false
       homeLibraryCode:
         type: string
-        example: eb
+        example: vr
       acceptTerms:
         type: boolean
         example: true
@@ -569,19 +569,19 @@ definitions:
         example: 200
       link:
         type: string
-        example: 'https://link.com/to/ils/1234567'
+        example: "https://link.com/to/ils/1234567"
       type:
         type: string
         example: card-granted
       barcode:
         type: string
-        example: '111122222222345'
+        example: "111122222222345"
       username:
         type: string
         example: username
       password:
         type: string
-        example: '1111'
+        example: "1111"
       temporary:
         type: boolean
         example: false
@@ -590,7 +590,7 @@ definitions:
         example: The library card will be a standard library card.
       patronId:
         type: number
-        example: '1234567'
+        example: "1234567"
   PatronsDependentsDataV03:
     required:
       - barcode
@@ -600,19 +600,19 @@ definitions:
     properties:
       barcode:
         type: string
-        example: '12345678912345'
+        example: "12345678912345"
       parentUsername:
         type: string
         example: parentUsername1
       name:
         type: string
-        example: 'DependentFirstName DependentLastName'
+        example: "DependentFirstName DependentLastName"
       username:
         type: string
         example: dependentUsername1
       password:
         type: string
-        example: '1234'
+        example: "1234"
   PatronsDependentsResponseV03:
     type: object
     properties:
@@ -632,13 +632,13 @@ definitions:
                 example: username12
               name:
                 type: string
-                example: 'DependentFirstName DependentLastName'
+                example: "DependentFirstName DependentLastName"
               barcode:
                 type: string
-                example: '28888888888888'
+                example: "28888888888888"
               password:
                 type: string
-                example: '1234'
+                example: "1234"
           parent:
             type: object
             properties:
@@ -647,10 +647,10 @@ definitions:
                 example: true
               barcode:
                 type: string
-                example: '12345678912345'
+                example: "12345678912345"
               dependents:
                 type: string
-                example: 'DEPENDENTS 28888888888887,28888888888888'
+                example: "DEPENDENTS 28888888888887,28888888888888"
   PatronsEligibilityResponseV03:
     type: object
     properties:
@@ -684,7 +684,7 @@ definitions:
       - address
     properties:
       address:
-        $ref: '#/definitions/AddressModelV03'
+        $ref: "#/definitions/AddressModelV03"
   AddressModelV03:
     type: object
     properties:
@@ -693,7 +693,7 @@ definitions:
         example: 123 Fake Street
       line2:
         type: string
-        example: ''
+        example: ""
       city:
         type: string
         example: New York
@@ -702,7 +702,7 @@ definitions:
         example: NY
       zip:
         type: string
-        example: '10018'
+        example: "10018"
       isResidential:
         type: boolean
         example: true
@@ -722,9 +722,9 @@ definitions:
         type: string
         example: "Valid address"
       address:
-        $ref: '#/definitions/AddressModelValidatedV03'
+        $ref: "#/definitions/AddressModelValidatedV03"
       original_address:
-        $ref: '#/definitions/AddressModelV03'
+        $ref: "#/definitions/AddressModelV03"
   AddressModelValidatedV03:
     type: object
     properties:
@@ -733,13 +733,13 @@ definitions:
         example: 123 Fake Street
       line2:
         type: string
-        example: ''
+        example: ""
       city:
         type: string
         example: New York
       county:
         type: string
-        example: ''
+        example: ""
       state:
         type: string
         example: NY
@@ -830,7 +830,7 @@ definitions:
         example: "Bad Username"
       detail:
         type: object
-        example: 'Usernames should be 5-25 characters, letters or numbers only. Please revise your username.'
+        example: "Usernames should be 5-25 characters, letters or numbers only. Please revise your username."
   400ErrorResponseAddressV03:
     properties:
       status:
@@ -846,7 +846,7 @@ definitions:
         type: string
         example: Address validation error
       originalAddress:
-        $ref: '#/definitions/AddressModelV03'
+        $ref: "#/definitions/AddressModelV03"
       error:
         type: object
         example:
@@ -867,7 +867,7 @@ definitions:
         type: string
         example: Address validation error
       originalAddress:
-        $ref: '#/definitions/AddressModelV03'
+        $ref: "#/definitions/AddressModelV03"
       error:
         type: object
         example:
@@ -982,7 +982,7 @@ securityDefinitions:
   api_auth:
     type: oauth2
     flow: accessCode
-    authorizationUrl: 'https://isso.nypl.org/oauth/authorize'
-    tokenUrl: 'https://isso.nypl.org/oauth/token'
+    authorizationUrl: "https://isso.nypl.org/oauth/authorize"
+    tokenUrl: "https://isso.nypl.org/oauth/token"
     scopes:
-      'openid write:patron offline_access api': Creating Patron and Validations access
+      "openid write:patron offline_access api": Creating Patron and Validations access

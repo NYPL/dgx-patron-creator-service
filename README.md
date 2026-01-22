@@ -180,7 +180,7 @@ Example request:
   "birthdate": "05-30-1988",
   "policyType": "simplye",
   "email": "tomnook@ac.com",
-  "homeLibraryCode": "eb",
+  "homeLibraryCode": "vr",
   "ecommunicationsPref": false,
   "acceptTerms": true,
 }

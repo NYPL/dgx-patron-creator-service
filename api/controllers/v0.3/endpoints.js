@@ -329,10 +329,8 @@ async function createPatron(req, res) {
     ecommunicationsPref: req.body.ecommunicationsPref, // from req
     policy: Policy({ policyType }),
     ilsClient, // created above
-    // SimplyE will always set the home library to the `eb` code. Eventually,
-    // the web app will pass a `homeLibraryCode` parameter with a patron's
-    // home library. For now, `eb` is hardcoded.
-    homeLibraryCode: req.body.homeLibraryCode || "eb",
+    // "vr" is the default library code for digital cards
+    homeLibraryCode: req.body.homeLibraryCode || "vr",
     acceptTerms: req.body.acceptTerms || false,
   });
 
@@ -524,10 +522,7 @@ async function createDependent(req, res) {
     policy, //created above
     ilsClient, // created above,
     varFields: [varField],
-    // SimplyE will always set the home library to the `eb` code. Eventually,
-    // the web app will pass a `homeLibraryCode` parameter with a patron's
-    // home library. For now, `eb` is hardcoded.
-    homeLibraryCode: req.body.homeLibraryCode || "eb",
+    homeLibraryCode: req.body.homeLibraryCode || "vr",
     // For phase one, this value is not needed from the request. This value is
     // needed for the Card object to be valid so it will be set to true. Once
     // an update has been made to the forms that make requests to this endpoint,

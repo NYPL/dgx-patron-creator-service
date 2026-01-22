@@ -35,10 +35,7 @@ class Card {
     this.ecommunicationsPref = !!props.ecommunicationsPref;
     this.policy = props.policy;
     this.varFields = props.varFields || {};
-    // SimplyE will always set the home library to the `eb` code. Eventually,
-    // the web app will pass a `homeLibraryCode` parameter with a patron's
-    // home library. For now, `eb` is hardcoded.
-    this.homeLibraryCode = props.homeLibraryCode || "eb";
+    this.homeLibraryCode = props.homeLibraryCode || "vr";
     this.acceptTerms = strToBool(props.acceptTerms);
     this.ilsClient = props.ilsClient;
 
