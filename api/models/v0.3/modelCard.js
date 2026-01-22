@@ -1,7 +1,11 @@
 const UsernameValidationAPI = require("../../controllers/v0.3/UsernameValidationAPI");
 const Address = require("./modelAddress");
 const Barcode = require("./modelBarcode");
-const { strToBool, normalizedBirthdate } = require("../../helpers/utils");
+const {
+  strToBool,
+  normalizedBirthdate,
+  mapEbToVr,
+} = require("../../helpers/utils");
 const {
   DatabaseError,
   InvalidRequest,
@@ -35,7 +39,7 @@ class Card {
     this.ecommunicationsPref = !!props.ecommunicationsPref;
     this.policy = props.policy;
     this.varFields = props.varFields || {};
-    this.homeLibraryCode = props.homeLibraryCode || "vr";
+    this.homeLibraryCode = mapEbToVr(props.homeLibraryCode) || "vr";
     this.acceptTerms = strToBool(props.acceptTerms);
     this.ilsClient = props.ilsClient;
 

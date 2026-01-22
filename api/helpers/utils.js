@@ -199,6 +199,20 @@ const normalizedBirthdate = (birthdate) => {
   return;
 };
 
+/**
+ * Temporary update as of Jan 22, 2026.
+ *
+ * We will be changing the default library code for digital cards from "eb" to "vr".
+ * Once the front-end is updated to send "vr" as the homeLibraryCode, we can
+ * remove this mapping function.
+ */
+const mapEbToVr = (code) => {
+  if (code === "eb") {
+    return "vr";
+  }
+  return code;
+};
+
 module.exports = {
   strToBool,
   normalizeName,
@@ -209,4 +223,5 @@ module.exports = {
   allowedStates: lowerCaseArray(nyStates),
   allStates: lowerCaseArray(listOfStates),
   normalizedBirthdate,
+  mapEbToVr,
 };

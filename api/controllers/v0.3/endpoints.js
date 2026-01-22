@@ -13,7 +13,11 @@ const {
   errorResponseDataWithTag,
 } = require("../../helpers/responses");
 const DependentAccountAPI = require("./DependentAccountAPI");
-const { normalizeName, updateJuvenileName } = require("../../helpers/utils");
+const {
+  normalizeName,
+  updateJuvenileName,
+  mapEbToVr,
+} = require("../../helpers/utils");
 const { KMSDecryption, InvalidRequest } = require("../../helpers/errors");
 
 const ROUTE_TAG = "CREATE_PATRON_0.3";
@@ -330,7 +334,7 @@ async function createPatron(req, res) {
     policy: Policy({ policyType }),
     ilsClient, // created above
     // "vr" is the default library code for digital cards
-    homeLibraryCode: req.body.homeLibraryCode || "vr",
+    homeLibraryCode: mapEbToVr(req.body.homeLibraryCode) || "vr",
     acceptTerms: req.body.acceptTerms || false,
   });
 
