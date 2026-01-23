@@ -207,7 +207,7 @@ const normalizedBirthdate = (birthdate) => {
  * remove this mapping function.
  */
 const mapEbToVr = (code) => {
-  if (code === "eb") {
+  if (code?.toLowerCase() === "eb") {
     return "vr";
   }
   return code;
