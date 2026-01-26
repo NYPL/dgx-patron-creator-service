@@ -1,7 +1,11 @@
 const UsernameValidationAPI = require("../../controllers/v0.3/UsernameValidationAPI");
 const Address = require("./modelAddress");
 const Barcode = require("./modelBarcode");
-const { strToBool, normalizedBirthdate } = require("../../helpers/utils");
+const {
+  strToBool,
+  normalizedBirthdate,
+  mapEbToVr,
+} = require("../../helpers/utils");
 const {
   DatabaseError,
   InvalidRequest,
@@ -35,10 +39,7 @@ class Card {
     this.ecommunicationsPref = !!props.ecommunicationsPref;
     this.policy = props.policy;
     this.varFields = props.varFields || {};
-    // SimplyE will always set the home library to the `eb` code. Eventually,
-    // the web app will pass a `homeLibraryCode` parameter with a patron's
-    // home library. For now, `eb` is hardcoded.
-    this.homeLibraryCode = props.homeLibraryCode || "eb";
+    this.homeLibraryCode = mapEbToVr(props.homeLibraryCode) || "vr";
     this.acceptTerms = strToBool(props.acceptTerms);
     this.ilsClient = props.ilsClient;
 

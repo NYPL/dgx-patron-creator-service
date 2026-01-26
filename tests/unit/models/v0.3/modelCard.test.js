@@ -63,7 +63,7 @@ describe("Card", () => {
       // `basicCard` does not have a homeLibraryCard value.
       const card = new Card(basicCard);
 
-      expect(card.homeLibraryCode).toEqual("eb");
+      expect(card.homeLibraryCode).toEqual("vr");
     });
 
     it("should update homeLibraryCard to the value passed", () => {
