@@ -6,22 +6,14 @@
   },
   "host": "localhost:3001",
   "basePath": "/api",
-  "schemes": [
-    "http"
-  ],
-  "consumes": [
-    "application/json"
-  ],
-  "produces": [
-    "application/json"
-  ],
+  "schemes": ["http"],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
   "paths": {
     "/v0.1/patrons": {
       "x-swagger-router-controller": "patrons",
       "post": {
-        "tags": [
-          "patrons"
-        ],
+        "tags": ["patrons"],
         "summary": "Create a Patron - Deprecated",
         "description": "Deprecated endpoint. Please see https://github.com/NYPL/dgx-patron-creator-service/wiki for more information. The request parameter in this example will be kept but the response will always return a 400 deprecated note.",
         "operationId": "patrons_creatorV01",
@@ -46,9 +38,7 @@
         },
         "security": [
           {
-            "api_auth": [
-              "openid write:patron offline_access api"
-            ]
+            "api_auth": ["openid write:patron offline_access api"]
           }
         ]
       }
@@ -56,9 +46,7 @@
     "/v0.2/patrons": {
       "x-swagger-router-controller": "patrons",
       "post": {
-        "tags": [
-          "patrons"
-        ],
+        "tags": ["patrons"],
         "summary": "Create a Patron",
         "description": "Create a new patron account via the ILS.",
         "operationId": "patrons_creatorV02",
@@ -95,9 +83,7 @@
         },
         "security": [
           {
-            "api_auth": [
-              "openid write:patron offline_access api"
-            ]
+            "api_auth": ["openid write:patron offline_access api"]
           }
         ]
       }
@@ -105,9 +91,7 @@
     "/v0.3/patrons": {
       "x-swagger-router-controller": "patrons",
       "post": {
-        "tags": [
-          "patrons"
-        ],
+        "tags": ["patrons"],
         "summary": "Create a Patron",
         "description": "Create a new patron account via the ILS.",
         "operationId": "patrons_creatorV03",
@@ -144,9 +128,7 @@
         },
         "security": [
           {
-            "api_auth": [
-              "openid write:patron offline_access api"
-            ]
+            "api_auth": ["openid write:patron offline_access api"]
           }
         ]
       }
@@ -154,9 +136,7 @@
     "/v0.3/patrons/dependents": {
       "x-swagger-router-controller": "patrons",
       "post": {
-        "tags": [
-          "patrons"
-        ],
+        "tags": ["patrons"],
         "summary": "Create a dependent juvenile account",
         "description": "Create a dependent juvenile account based on a parent's patron account.",
         "operationId": "patrons_dependentsV03",
@@ -193,9 +173,7 @@
         },
         "security": [
           {
-            "api_auth": [
-              "openid write:patron offline_access api"
-            ]
+            "api_auth": ["openid write:patron offline_access api"]
           }
         ]
       }
@@ -203,9 +181,7 @@
     "/v0.3/patrons/dependent-eligibility": {
       "x-swagger-router-controller": "patrons",
       "get": {
-        "tags": [
-          "patrons"
-        ],
+        "tags": ["patrons"],
         "summary": "Check Patron's account creation eligibility",
         "description": "Check if a patron is eligible to create dependent juvenile accounts. Pass in either the barcode or username of the existing patron account to check for eligibility.",
         "operationId": "patrons_eligibilityV03",
@@ -245,9 +221,7 @@
         },
         "security": [
           {
-            "api_auth": [
-              "openid write:patron offline_access api"
-            ]
+            "api_auth": ["openid write:patron offline_access api"]
           }
         ]
       }
@@ -255,9 +229,7 @@
     "/v0.1/validations/username": {
       "x-swagger-router-controller": "validations/username",
       "post": {
-        "tags": [
-          "validations"
-        ],
+        "tags": ["validations"],
         "summary": "Patron username validation - Deprecated",
         "description": "Deprecated endpoint. Please see https://github.com/NYPL/dgx-patron-creator-service/wiki for more information. The request parameter in this example will be kept but the response will always return a 400 deprecated note.",
         "operationId": "username",
@@ -282,9 +254,7 @@
         },
         "security": [
           {
-            "api_auth": [
-              "openid write:patron offline_access api"
-            ]
+            "api_auth": ["openid write:patron offline_access api"]
           }
         ]
       }
@@ -292,9 +262,7 @@
     "/v0.1/validations/address": {
       "x-swagger-router-controller": "validations/address",
       "post": {
-        "tags": [
-          "validations"
-        ],
+        "tags": ["validations"],
         "summary": "Patron address validation - Deprecated",
         "description": "Deprecated endpoint. Please see https://github.com/NYPL/dgx-patron-creator-service/wiki for more information. The request parameter in this example will be kept but the response will always return a 400 deprecated note.",
         "operationId": "address",
@@ -319,9 +287,7 @@
         },
         "security": [
           {
-            "api_auth": [
-              "openid write:patron offline_access api"
-            ]
+            "api_auth": ["openid write:patron offline_access api"]
           }
         ]
       }
@@ -329,9 +295,7 @@
     "/v0.3/validations/username": {
       "x-swagger-router-controller": "validations/username",
       "post": {
-        "tags": [
-          "validations"
-        ],
+        "tags": ["validations"],
         "summary": "Patron username validation and availability in the ILS",
         "description": "This endpoint does simple username validation and then makes a call to the ILS API for patron username availability.",
         "operationId": "usernameV0.3",
@@ -368,9 +332,7 @@
         },
         "security": [
           {
-            "api_auth": [
-              "openid write:patron offline_access api"
-            ]
+            "api_auth": ["openid write:patron offline_access api"]
           }
         ]
       }
@@ -378,9 +340,7 @@
     "/v0.3/validations/address": {
       "x-swagger-router-controller": "validations/address",
       "post": {
-        "tags": [
-          "validations"
-        ],
+        "tags": ["validations"],
         "summary": "Address validation against Service Objects.",
         "description": "Makes a call to the Service Objects API for patron address and work address validation. Note that 502 server errors from Service Objects will result in a 400 from the endpoint. If there's a server error, the address is still naively checked and a temporary card is returned. The patron is expected to contact the library.",
         "operationId": "addressV03",
@@ -417,9 +377,7 @@
         },
         "security": [
           {
-            "api_auth": [
-              "openid write:patron offline_access api"
-            ]
+            "api_auth": ["openid write:patron offline_access api"]
           }
         ]
       }
@@ -427,9 +385,7 @@
   },
   "definitions": {
     "PatronsCreatorDataV01": {
-      "required": [
-        "simplePatron"
-      ],
+      "required": ["simplePatron"],
       "properties": {
         "simplePatron": {
           "$ref": "#/definitions/SimplePatronV01"
@@ -437,13 +393,7 @@
       }
     },
     "SimplePatronV01": {
-      "required": [
-        "name",
-        "dateOfBirth",
-        "address",
-        "username",
-        "pin"
-      ],
+      "required": ["name", "dateOfBirth", "address", "username", "pin"],
       "properties": {
         "name": {
           "type": "string",
@@ -484,9 +434,7 @@
     },
     "AddressDataV1": {
       "description": "The data format of the input address",
-      "required": [
-        "address"
-      ],
+      "required": ["address"],
       "properties": {
         "address": {
           "$ref": "#/definitions/AddressModelV1"
@@ -500,12 +448,7 @@
     },
     "AddressModelV1": {
       "type": "object",
-      "required": [
-        "line_1",
-        "city",
-        "state",
-        "zip"
-      ],
+      "required": ["line_1", "city", "state", "zip"],
       "properties": {
         "line_1": {
           "type": "string",
@@ -542,10 +485,7 @@
       }
     },
     "PatronsCreatorResponseModelV02": {
-      "required": [
-        "names",
-        "patronType"
-      ],
+      "required": ["names", "patronType"],
       "properties": {
         "id": {
           "type": "integer",
@@ -556,18 +496,14 @@
           "items": {
             "type": "string"
           },
-          "example": [
-            "TestLastName, TestFirstName"
-          ]
+          "example": ["TestLastName, TestFirstName"]
         },
         "barcodes": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "example": [
-            "barcode_2018_07_19_328pm"
-          ]
+          "example": ["barcode_2018_07_19_328pm"]
         },
         "pin": {
           "type": "string",
@@ -617,10 +553,7 @@
           },
           "example": [
             {
-              "lines": [
-                "ADDRESS LINE 1",
-                "ADDRESS LINE 2"
-              ],
+              "lines": ["ADDRESS LINE 1", "ADDRESS LINE 2"],
               "type": "a"
             }
           ]
@@ -646,28 +579,21 @@
       }
     },
     "PatronsCreatorDataV02": {
-      "required": [
-        "names",
-        "patronType"
-      ],
+      "required": ["names", "patronType"],
       "properties": {
         "names": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "example": [
-            "TestLastName, TestFirstName"
-          ]
+          "example": ["TestLastName, TestFirstName"]
         },
         "barcodes": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "example": [
-            "barcode_2018_07_19_328pm"
-          ]
+          "example": ["barcode_2018_07_19_328pm"]
         },
         "pin": {
           "type": "string",
@@ -697,12 +623,7 @@
         },
         "patronCodes": {
           "type": "object",
-          "required": [
-            "pcode1",
-            "pcode2",
-            "pcode3",
-            "pcode4"
-          ],
+          "required": ["pcode1", "pcode2", "pcode3", "pcode4"],
           "properties": {
             "pcode1": {
               "type": "string",
@@ -724,9 +645,7 @@
         },
         "blockInfo": {
           "type": "object",
-          "required": [
-            "code"
-          ],
+          "required": ["code"],
           "properties": {
             "code": {
               "type": "string",
@@ -738,20 +657,14 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": [
-              "lines",
-              "type"
-            ],
+            "required": ["lines", "type"],
             "properties": {
               "lines": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "example": [
-                  "ADDRESS LINE 1",
-                  "ADDRESS LINE 2"
-                ]
+                "example": ["ADDRESS LINE 1", "ADDRESS LINE 2"]
               },
               "type": {
                 "type": "string",
@@ -764,10 +677,7 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": [
-              "number",
-              "type"
-            ],
+            "required": ["number", "type"],
             "properties": {
               "number": {
                 "type": "string",
@@ -783,12 +693,7 @@
       }
     },
     "PatronsCreatorDataV03": {
-      "required": [
-        "names",
-        "username",
-        "password",
-        "address"
-      ],
+      "required": ["names", "username", "password", "address"],
       "properties": {
         "name": {
           "type": "string",
@@ -834,7 +739,7 @@
         },
         "homeLibraryCode": {
           "type": "string",
-          "example": "eb"
+          "example": "vr"
         },
         "acceptTerms": {
           "type": "boolean",
@@ -884,12 +789,7 @@
       }
     },
     "PatronsDependentsDataV03": {
-      "required": [
-        "barcode",
-        "name",
-        "username",
-        "password"
-      ],
+      "required": ["barcode", "name", "username", "password"],
       "properties": {
         "barcode": {
           "type": "string",
@@ -985,9 +885,7 @@
       }
     },
     "UsernameData": {
-      "required": [
-        "username"
-      ],
+      "required": ["username"],
       "properties": {
         "username": {
           "type": "string",
@@ -1010,9 +908,7 @@
     },
     "AddressDataV03": {
       "description": "The data format of the input address",
-      "required": [
-        "address"
-      ],
+      "required": ["address"],
       "properties": {
         "address": {
           "$ref": "#/definitions/AddressModelV03"

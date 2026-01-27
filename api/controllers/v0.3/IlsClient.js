@@ -153,7 +153,7 @@ const IlsClient = (props) => {
    *   expirationDate: '2020-07-29',
    *   varFields: [ { fieldTag: 'u', content: 'username' } ],
    *   birthDate: '1988-01-01',
-   *   homeLibraryCode: 'eb',
+   *   homeLibraryCode: 'vr',
    * }
    * @param {Card object} patron
    */

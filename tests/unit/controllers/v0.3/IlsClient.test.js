@@ -472,7 +472,7 @@ describe("IlsClient", () => {
           expirationDate: expirationDate.toISOString().slice(0, 10),
           // The patron is not subscribed to e-communications by default.
           patronCodes: { pcode1: "-" },
-          homeLibraryCode: "eb",
+          homeLibraryCode: "vr",
           names: ["LAST, FIRST"],
           patronType: 9,
           // ILS API takes in pin instead of password.
@@ -520,7 +520,7 @@ describe("IlsClient", () => {
           emails: ["TEST@TEST.COM"],
           expirationDate: expirationDate.toISOString().slice(0, 10),
           patronCodes: { pcode1: "-" },
-          homeLibraryCode: "eb",
+          homeLibraryCode: "vr",
           names: ["LAST, FIRST"],
           patronType: 9,
           // ILS API takes in pin instead of password.
